@@ -1,0 +1,81 @@
+#!/bin/sh
+SELF="$0"
+
+OPTS=cl
+
+usage(){
+    echo "Usage: $SELF [-$OPTS] my-package.src.rpm"
+    exit 1
+}
+
+# with the -c option, expect that the base packages are already in root cache
+# with the -l option, expect RHEL-5 RPM on the host
+COV_MOCKBUILD_ARGS=
+
+while getopts $OPTS opt; do
+    case "$opt" in
+        c)
+            COV_MOCKBUILD_ARGS="$COV_MOCKBUILD_ARGS -c"
+            ;;
+
+        l)
+            COV_MOCKBUILD_ARGS="$COV_MOCKBUILD_ARGS -l"
+            ;;
+
+        *)
+            usage
+            ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+# the only operand is the SRPM to build/analyze
+SRPM="`readlink -f "$1"`"
+test -f "$SRPM" || usage
+
+BASE="`basename "$SRPM" .src.rpm`"
+COV="$BASE.cov"
+LOG="$BASE.log"
+OUT="$BASE.out"
+ERR="$BASE.err"
+TGZ="$BASE.tar.gz"
+
+die(){
+    if test -n "$1"; then
+        echo "$SELF: error: $1" >&2
+    else
+        echo "$SELF: generic error" >&2
+    fi
+    exit 1
+}
+
+# look for cov-mockbuild
+TOP="`dirname "$SELF"`"
+COV_MOCKBUILD="`readlink -f "$TOP/cov-mockbuild"`"
+test -x "$COV_MOCKBUILD" || die "cov-mockbuild not found"
+
+# create the directory for results in $TMPDIR
+TMP="`mktemp -d`"
+RESULTS_DIR="$TMP/$BASE"
+mkdir -p "$RESULTS_DIR/run0" "$RESULTS_DIR/run1"
+test -d "$RESULTS_DIR" || die "mktemp failed"
+
+write_logs_to(){
+    grep -v "^|" "$OUT" | grep -v "^\*" > "$1/$OUT"
+    sed 's|^/builddir/build/BUILD/||' "$ERR" > "$1/$ERR"
+    rm -rf "$COV" "$OUT" "$ERR"
+    mv -v "$LOG" "$1/"
+}
+
+# build the package without patches
+(cd "$RESULTS_DIR" || die
+    "$COV_MOCKBUILD" -x $COV_MOCKBUILD_ARGS "$SRPM" || touch run0.FAILED
+    write_logs_to "run0")
+
+# build the package with patches
+(cd "$RESULTS_DIR" || die
+    "$COV_MOCKBUILD" $COV_MOCKBUILD_ARGS "$SRPM" || touch run1.FAILED
+    write_logs_to "run1")
+
+tar -cvz -f "$TGZ" -C "$TMP" "$BASE"
+rm -rf "$TMP"

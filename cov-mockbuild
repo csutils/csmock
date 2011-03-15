@@ -1,0 +1,210 @@
+#!/bin/sh
+SELF="$0"
+
+# some global configuration
+MOCK_CHROOT="rhel-7-x86_64-cscan"
+TMPDIR="/tmp/cscan"
+export MOCK_CHROOT TMPDIR
+
+# rpm macros to use
+RPMM="\
+--define '_smp_mflags -ij5' \
+--define '_without_testsuite 1' \
+--define 'runselftest 0'"
+
+OPTS=clx
+
+usage(){
+    echo "Usage: $SELF [-$OPTS] my-package.src.rpm"
+    exit 1
+}
+
+# with the -c option, expect that the base packages are already in root cache
+CACHE_PREPARED=no
+
+# with the -l option, expect RHEL-5 RPM on the host
+EL5_RPM=no
+
+# with the -x option, build the package without downstream patches
+XPATCH=no
+
+while getopts $OPTS opt; do
+    case "$opt" in
+        c)
+            CACHE_PREPARED=yes
+            ;;
+
+        l)
+            EL5_RPM=yes
+            ;;
+
+        x)
+            XPATCH=yes
+            ;;
+
+        *)
+            usage
+            ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+# the only operand is the SRPM to build/analyze
+SRPM="$1"
+test -f "$SRPM" || usage
+
+die(){
+    if test -n "$1"; then
+        echo "$SELF: error: $1" >&2
+    else
+        echo "$SELF: generic error" >&2
+    fi
+    exit 1
+}
+
+# check if $TMPDIR and $MOCK_CHROOT are prepated
+MOCK_CFG="/etc/mock/$MOCK_CHROOT.cfg"
+test -d "$TMPDIR" || die "'$TMPDIR' is not a directory"
+test -f "$MOCK_CFG" || die "'$MOCK_CFG' is not a regular file"
+
+die_if_exists(){
+    while test -n "$1"; do
+        test -e "$1" && die "'$1' already exists"
+        shift
+    done
+}
+
+# avoid overwriting of .cov, .log, .out, or .err
+BASE="`basename "$SRPM" .src.rpm`"
+COV="`readlink -f "$BASE".cov`"
+LOG="`readlink -f "$BASE".log`"
+OUT="`readlink -f "$BASE".out`"
+ERR="`readlink -f "$BASE".err`"
+die_if_exists "$COV" "$LOG" "$OUT" "$ERR"
+export COV LOG OUT ERR
+
+# copy the SRPM to our temp
+SRPM_BASE="`basename "$SRPM"`"
+SRPM_DUP="$TMPDIR/$SRPM_BASE"
+die_if_exists "$SRPM_DUP"
+cp -t "$TMPDIR" -v "$SRPM" 2>&1 | tee --append "$LOG"
+test -f "$SRPM_DUP" || die
+
+# prepare a dummy patcher
+if test xyes = "x$XPATCH"; then
+    PWRAP="$TMPDIR/pwrap.sh"
+    die_if_exists "$PWRAP"
+    cat > "$PWRAP" << EOF
+need_for_build(){
+    while test -n "\$1"; do
+        if test "x--suffix" = "x\$1"; then
+            shift
+            if test "x_RAWBUILD" = "x\$1"; then
+                return 0
+            fi
+        fi
+
+        shift
+    done
+
+    return 1
+}
+
+if need_for_build "\$@"; then
+    echo "\$0: applying patch annotated by _RAWBUILD" >&2
+    patch "\$@"
+else
+    dd of=/dev/null status=noxfer 2>/dev/null
+fi
+EOF
+    chmod 0755 "$PWRAP"
+    RPMM="$RPMM --define '__patch $PWRAP' \
+--define '_rawbuild -b _RAWBUILD' \
+--define 'nopam 1' \
+--define 'norunuser 1' \
+--define 'noselinux 1' \
+--define '_with_vanilla 1'"
+fi
+
+# prepare .tar of all the files we need inside mock chroot
+TPL="`mktemp`"
+TPL_BASE="`basename "$TPL"`"
+test -f "$TPL" || die "mktemp failed: '$TPL'"
+tar cf "$TPL" "$SRPM_DUP" $PWRAP        \
+    /etc/resolv.conf                    \
+    /opt/coverity/VERSION.xml           \
+    /opt/coverity/config                \
+    /opt/coverity/dtd                   \
+    /opt/coverity/bin/cov-*             \
+    /opt/coverity/bin/libcapture-*.so
+test xyes = "x$XPATCH" && rm -fv "$PWRAP"
+
+# invoke mock with given parameters
+mock_wrap(){
+    printf ">>> %s starting mock %s\n"  \
+        "`date`" "$*"                   \
+        | tee --append "$LOG"           \
+        || die
+
+    mock -r "$MOCK_CHROOT" "$@" 2>&1    \
+        | tee --append "$LOG"           \
+        || die
+}
+
+# NOTE: We can't use --installroot or --installdeps because the host RPM
+# version is completely incompatible with the version inside mock chroot
+
+# initialize mock chroot
+mock_wrap --init
+mock_wrap --copyin "$TPL" /tmp
+rm -fv "$TPL"
+
+# prepare all we need to build the package
+mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\""
+if test xyes = "x$EL5_RPM"; then
+    #mock_wrap --chroot "ln -s 4.4.4 /usr/lib/gcc/x86_64-redhat-linux/4.1.2"
+    mock_wrap --chroot "ln -s 4.6.0 /usr/lib/gcc/x86_64-redhat-linux/4.5.1"
+    if test xyes != "x$CACHE_PREPARED"; then
+        mock_wrap --chroot "yum install yum-utils xml-common"
+    fi
+    mock_wrap -v --chroot "yum-builddep --nogpgcheck \"$SRPM_DUP\""
+else
+    if test xyes != "x$CACHE_PREPARED"; then
+        mock_wrap --install "xml-common"
+    fi
+    mock_wrap -v --installdeps "$SRPM_DUP"
+fi
+
+mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\""
+rm -fv "$SRPM_DUP"
+
+# run the build through cov-build
+SPEC="`printf %s "$SRPM_BASE" | sed 's/-[0-9].*$//'`.spec"
+#mock_wrap --chroot "/opt/coverity/bin/cov-configure --gcc"
+mock_wrap -v --chroot "/opt/coverity/bin/cov-build --dir /builddir/cov \
+rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM"
+
+# get the intermediate directory out of the chroot and store it to $COV
+mock_wrap --chroot "chmod -R +r /builddir/cov"
+mock_wrap --copyout /builddir/cov "$COV"
+cat "$COV/build-log.txt" >> "$LOG" 2>&1
+
+# ###########################################################################
+# we do not need the chroot anymore
+mock_wrap --clean
+
+# run the analysis and store the summary to $OUT
+printf ">>> %s starting analysis\n" "`date`" | tee --append "$LOG"
+cov-analyze --dir "$COV" 2>&1                   \
+    | tee "$OUT"                                \
+    | tee --append "$LOG"                       \
+    || die
+
+# store the list of defects to $ERR
+printf ">>> %s reporting defects\n" "`date`" | tee --append "$LOG"
+(cov-format-errors --dir "$COV" --emacs-style   \
+        | perl -i -p -e 's/([0-9]):\n/\1: /'    \
+        | perl -i -p -e 's/^Error: /\nError: /' \
+        > "$ERR") 2>&1                          \
+    | tee --append "$LOG"                       \
+    || die 
