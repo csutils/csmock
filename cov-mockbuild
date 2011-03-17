@@ -181,7 +181,8 @@ rm -fv "$SRPM_DUP"
 # run the build through cov-build
 SPEC="`printf %s "$SRPM_BASE" | sed 's/-[0-9].*$//'`.spec"
 #mock_wrap --chroot "/opt/coverity/bin/cov-configure --gcc"
-mock_wrap -v --chroot "/opt/coverity/bin/cov-build --dir /builddir/cov \
+mock_wrap -v --chroot "CC=gcc CXX=g++ \
+/opt/coverity/bin/cov-build --dir /builddir/cov \
 rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM"
 
 # get the intermediate directory out of the chroot and store it to $COV
