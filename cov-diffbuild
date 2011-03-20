@@ -9,7 +9,6 @@ usage(){
 }
 
 # with the -c option, expect that the base packages are already in root cache
-# with the -l option, expect RHEL-5 RPM on the host
 COV_MOCKBUILD_ARGS=
 
 while getopts $OPTS opt; do
@@ -19,7 +18,7 @@ while getopts $OPTS opt; do
             ;;
 
         l)
-            COV_MOCKBUILD_ARGS="$COV_MOCKBUILD_ARGS -l"
+            printf "%s -l is deprecated\n" "$SELF" >&2
             ;;
 
         *)

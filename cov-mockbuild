@@ -23,9 +23,6 @@ usage(){
 # with the -c option, expect that the base packages are already in root cache
 CACHE_PREPARED=no
 
-# with the -l option, expect RHEL-5 RPM on the host
-EL5_RPM=no
-
 # with the -x option, build the package without downstream patches
 XPATCH=no
 
@@ -36,7 +33,7 @@ while getopts $OPTS opt; do
             ;;
 
         l)
-            EL5_RPM=yes
+            printf "%s -l is deprecated\n" "$SELF" >&2
             ;;
 
         x)
@@ -167,17 +164,16 @@ rm -fv "$TPL"
 
 # prepare all we need to build the package
 mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\""
-if test xyes = "x$EL5_RPM"; then
-    #mock_wrap --chroot "ln -s 4.4.4 /usr/lib/gcc/x86_64-redhat-linux/4.1.2"
-    mock_wrap --chroot "ln -s 4.6.0 /usr/lib/gcc/x86_64-redhat-linux/4.5.1"
-    if test xyes != "x$CACHE_PREPARED"; then
-        mock_wrap --chroot "yum install yum-utils xml-common"
-    fi
+
+# TODO: branch by RHEL version
+mock_wrap --chroot "ln -s 4.6.0 /usr/lib/gcc/x86_64-redhat-linux/4.5.1"
+
+if test xyes = "x$CACHE_PREPARED"; then
+    # we already have yum-utils in the root cache
     mock_wrap -v --chroot "yum-builddep --nogpgcheck \"$SRPM_DUP\""
 else
-    if test xyes != "x$CACHE_PREPARED"; then
-        mock_wrap --install "xml-common"
-    fi
+    # no yum available
+    mock_wrap --install "xml-common"
     mock_wrap -v --installdeps "$SRPM_DUP"
 fi
 
