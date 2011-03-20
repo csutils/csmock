@@ -4,7 +4,8 @@ SELF="$0"
 # some global configuration
 MOCK_CHROOT="rhel-7-x86_64-cscan"
 TMPDIR="/tmp/cscan"
-export MOCK_CHROOT TMPDIR
+STATUS="$TMPDIR/status"
+export MOCK_CHROOT TMPDIR STATUS
 
 # rpm macros to use
 RPMM="\
@@ -59,6 +60,7 @@ die(){
     else
         echo "$SELF: generic error" >&2
     fi
+    test -f "$STATUS" && echo 1 > "$STATUS"
     exit 1
 }
 
@@ -66,6 +68,9 @@ die(){
 MOCK_CFG="/etc/mock/$MOCK_CHROOT.cfg"
 test -d "$TMPDIR" || die "'$TMPDIR' is not a directory"
 test -f "$MOCK_CFG" || die "'$MOCK_CFG' is not a regular file"
+
+# initialize $STATUS
+echo 0 > "$STATUS" || die "failed to write '$STATUS'"
 
 die_if_exists(){
     while test -n "$1"; do
@@ -146,8 +151,9 @@ mock_wrap(){
         | tee --append "$LOG"           \
         || die
 
-    mock -r "$MOCK_CHROOT" "$@" 2>&1    \
-        | tee --append "$LOG"           \
+    (mock -r "$MOCK_CHROOT" "$@" || die \
+        "\"mock $*\" exited with $?")   \
+        2>&1 | tee --append "$LOG"      \
         || die
 }
 
@@ -196,16 +202,23 @@ mock_wrap --clean
 
 # run the analysis and store the summary to $OUT
 printf ">>> %s starting analysis\n" "`date`" | tee --append "$LOG"
-cov-analyze --dir "$COV" 2>&1                   \
+(cov-analyze --dir "$COV"                       \
+    || die "cov-analyze failed") 2>&1           \
     | tee "$OUT"                                \
     | tee --append "$LOG"                       \
     || die
 
 # store the list of defects to $ERR
 printf ">>> %s reporting defects\n" "`date`" | tee --append "$LOG"
-(cov-format-errors --dir "$COV" --emacs-style   \
+( (cov-format-errors --dir "$COV" --emacs-style \
+    || die "cov-format-errors failed")          \
         | perl -i -p -e 's/([0-9]):\n/\1: /'    \
         | perl -i -p -e 's/^Error: /\nError: /' \
         > "$ERR") 2>&1                          \
     | tee --append "$LOG"                       \
-    || die 
+    || die
+
+EC="`head -n1 "$STATUS" | tr -d "\n"`"
+rm -f "$STATUS"
+echo "<<< $0 has finished, exit code is $EC" | tee --append "$LOG"
+exit $EC

@@ -77,5 +77,10 @@ write_logs_to(){
     "$COV_MOCKBUILD" $COV_MOCKBUILD_ARGS "$SRPM" || touch run1.FAILED
     write_logs_to "run1")
 
+# compare both defect lists
+(cd "$RESULTS_DIR" || die
+    (csdiff "run0/$ERR" "run1/$ERR" || touch ./diff.FAILED) \
+        | tee ./defects-in-patches.err)
+
 tar -cvz -f "$TGZ" -C "$TMP" "$BASE"
 rm -rf "$TMP"
