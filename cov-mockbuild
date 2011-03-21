@@ -92,11 +92,28 @@ die_if_exists "$SRPM_DUP"
 cp -t "$TMPDIR" -v "$SRPM" 2>&1 | tee --append "$LOG"
 test -f "$SRPM_DUP" || die
 
+# prepare a hack to get cov-build working with up2date g++
+CXXFIXUP="$TMPDIR/cxxfixup.sh"
+cat > "$CXXFIXUP" << EOF
+#!/bin/sh
+
+ln -s 4.6.0 /usr/lib/gcc/x86_64-redhat-linux/4.5.1
+
+sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
+    || exit $?
+
+sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
+    /usr/include/c++/4.6.0/bits/c++0x_warning.h \
+    || exit $?
+EOF
+
 # prepare a dummy patcher
 if test xyes = "x$XPATCH"; then
     PWRAP="$TMPDIR/pwrap.sh"
     die_if_exists "$PWRAP"
     cat > "$PWRAP" << EOF
+#!/bin/sh
+
 need_for_build(){
     while test -n "\$1"; do
         if test "x--suffix" = "x\$1"; then
@@ -133,12 +150,16 @@ TPL="`mktemp`"
 TPL_BASE="`basename "$TPL"`"
 test -f "$TPL" || die "mktemp failed: '$TPL'"
 tar cf "$TPL" "$SRPM_DUP" $PWRAP        \
+    "$CXXFIXUP"                         \
     /etc/resolv.conf                    \
     /opt/coverity/VERSION.xml           \
     /opt/coverity/config                \
     /opt/coverity/dtd                   \
     /opt/coverity/bin/cov-*             \
     /opt/coverity/bin/libcapture-*.so
+
+# cleanup
+rm -f "$CXXFIXUP"
 test xyes = "x$XPATCH" && rm -fv "$PWRAP"
 
 # invoke mock with given parameters
@@ -166,7 +187,7 @@ rm -fv "$TPL"
 mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\""
 
 # TODO: branch by RHEL version
-mock_wrap --chroot "ln -s 4.6.0 /usr/lib/gcc/x86_64-redhat-linux/4.5.1"
+mock_wrap --chroot "sh -x $CXXFIXUP"
 
 if test xyes = "x$CACHE_PREPARED"; then
     # we already have yum-utils in the root cache
