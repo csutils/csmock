@@ -1,10 +1,10 @@
 #!/bin/sh
 SELF="$0"
 
-OPTS=cl
+OPTS=c
 
 usage(){
-    echo "Usage: $SELF [-$OPTS] my-package.src.rpm"
+    echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm"
     exit 1
 }
 
@@ -17,10 +17,6 @@ while getopts $OPTS opt; do
             COV_MOCKBUILD_ARGS="$COV_MOCKBUILD_ARGS -c"
             ;;
 
-        l)
-            printf "%s -l is deprecated\n" "$SELF" >&2
-            ;;
-
         *)
             usage
             ;;
@@ -28,8 +24,9 @@ while getopts $OPTS opt; do
 done
 shift $(($OPTIND - 1))
 
-# the only operand is the SRPM to build/analyze
-SRPM="`readlink -f "$1"`"
+# the second operand is the SRPM to build/analyze
+COV_MOCKBUILD_ARGS="$COV_MOCKBUILD_ARGS $1"
+SRPM="`readlink -f "$2"`"
 test -f "$SRPM" || usage
 
 BASE="`basename "$SRPM" .src.rpm`"
@@ -54,7 +51,7 @@ COV_MOCKBUILD="`readlink -f "$TOP/cov-mockbuild"`"
 test -x "$COV_MOCKBUILD" || die "cov-mockbuild not found"
 
 # create the directory for results in $TMPDIR
-TMP="`mktemp -d`"
+TMP="`mktemp -d /tmp/cov-diffbuild.XXXXXX`"
 RESULTS_DIR="$TMP/$BASE"
 mkdir -p "$RESULTS_DIR/run0" "$RESULTS_DIR/run1"
 test -d "$RESULTS_DIR" || die "mktemp failed"

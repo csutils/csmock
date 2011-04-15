@@ -1,22 +1,16 @@
 #!/bin/sh
 SELF="$0"
 
-# some global configuration
-MOCK_CHROOT="rhel-7-x86_64-cscan"
-TMPDIR="/tmp/cscan"
-STATUS="$TMPDIR/status"
-export MOCK_CHROOT TMPDIR STATUS
-
 # rpm macros to use
 RPMM="\
 --define '_smp_mflags -ij5' \
 --define '_without_testsuite 1' \
 --define 'runselftest 0'"
 
-OPTS=clx
+OPTS=cx
 
 usage(){
-    echo "Usage: $SELF [-$OPTS] my-package.src.rpm"
+    echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm"
     exit 1
 }
 
@@ -32,10 +26,6 @@ while getopts $OPTS opt; do
             CACHE_PREPARED=yes
             ;;
 
-        l)
-            printf "%s -l is deprecated\n" "$SELF" >&2
-            ;;
-
         x)
             XPATCH=yes
             ;;
@@ -47,8 +37,14 @@ while getopts $OPTS opt; do
 done
 shift $(($OPTIND - 1))
 
-# the only operand is the SRPM to build/analyze
-SRPM="$1"
+# the first operand is the mock profile to use
+MOCK_PROFILE="$1"
+export MOCK_PROFILE
+MOCK_CFG="/etc/mock/$MOCK_PROFILE.cfg"
+test -f "$MOCK_CFG" || usage
+
+# the second operand is the SRPM to build/analyze
+SRPM="$2"
 test -f "$SRPM" || usage
 
 die(){
@@ -61,13 +57,12 @@ die(){
     exit 1
 }
 
-# check if $TMPDIR and $MOCK_CHROOT are prepated
-MOCK_CFG="/etc/mock/$MOCK_CHROOT.cfg"
-test -d "$TMPDIR" || die "'$TMPDIR' is not a directory"
-test -f "$MOCK_CFG" || die "'$MOCK_CFG' is not a regular file"
-
-# initialize $STATUS
+# prepare $TMP directory
+TMP="`mktemp -d /tmp/cov-mockbuild.XXXXXX`"
+test -d "$TMP" || die "mktemp failed"
+STATUS="$TMP/status"
 echo 0 > "$STATUS" || die "failed to write '$STATUS'"
+export TMP STATUS
 
 die_if_exists(){
     while test -n "$1"; do
@@ -87,30 +82,56 @@ export COV LOG OUT ERR
 
 # copy the SRPM to our temp
 SRPM_BASE="`basename "$SRPM"`"
-SRPM_DUP="$TMPDIR/$SRPM_BASE"
+SRPM_DUP="$TMP/$SRPM_BASE"
 die_if_exists "$SRPM_DUP"
-cp -t "$TMPDIR" -v "$SRPM" 2>&1 | tee --append "$LOG"
+cp -t "$TMP" -v "$SRPM" 2>&1 | tee --append "$LOG"
 test -f "$SRPM_DUP" || die
 
 # prepare a hack to get cov-build working with up2date g++
-CXXFIXUP="$TMPDIR/cxxfixup.sh"
-cat > "$CXXFIXUP" << EOF
+FIXUPS="$TMP/fixups.sh"
+cat > "$FIXUPS" << EOF
 #!/bin/sh
 
-ln -s 4.6.0 /usr/lib/gcc/x86_64-redhat-linux/4.5.1
+# symlink the gcc version we have outside the chroot
+gccdir=/usr/lib/gcc/x86_64-redhat-linux
+gccver="\`find \$gccdir -mindepth 1 -maxdepth 1 -type d | head -n1\`"
+gccver=\`basename \$gccver\`
+ln -s \$gccver /usr/lib/gcc/x86_64-redhat-linux/4.4.4
+ln -s \$gccver /usr/lib/gcc/x86_64-redhat-linux/4.4.5
 
-sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
-    || exit $?
+# patch xmlto if installed
+if test -x /usr/bin/xmlto; then
+    patch /usr/bin/xmlto << XXX
+--- xmlto
++++ xmlto.coverity
+@@ -23,6 +23,8 @@
+ BASH=bash     # GNU bash, for running the format scripts
+ GETOPT=getopt # a getopt that supports --longoptions
+ 
++unset XML_CATALOG_FILES
++
+ version () {
+   echo "xmlto version 0.0.18"
+ }
+XXX
+fi
 
-sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
-    /usr/include/c++/4.6.0/bits/c++0x_warning.h \
-    || exit $?
+# simplify C++ headers for Coverity in case gcc-4.6.0
+if test -d /usr/include/c++/4.6.0; then
+    sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
+        || exit $?
+
+    sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
+        /usr/include/c++/4.6.0/bits/c++0x_warning.h \
+        || exit $?
+fi
 EOF
 
 # prepare a dummy patcher
 if test xyes = "x$XPATCH"; then
-    PWRAP="$TMPDIR/pwrap.sh"
-    die_if_exists "$PWRAP"
+    PWRAP_DIR="$TMP/pwrap";
+    mkdir "$PWRAP_DIR" || die
+    PWRAP="$PWRAP_DIR/patch"
     cat > "$PWRAP" << EOF
 #!/bin/sh
 
@@ -130,9 +151,10 @@ need_for_build(){
 }
 
 if need_for_build "\$@"; then
-    echo "\$0: applying patch annotated by _RAWBUILD" >&2
-    patch "\$@"
+    echo "\$0: applying a patch annotated by _RAWBUILD" >&2
+    /usr/bin/patch "\$@"
 else
+    echo "\$0: ignoring a patch not annotated by _RAWBUILD" >&2
     dd of=/dev/null status=noxfer 2>/dev/null
 fi
 EOF
@@ -149,29 +171,25 @@ fi
 TPL="`mktemp`"
 TPL_BASE="`basename "$TPL"`"
 test -f "$TPL" || die "mktemp failed: '$TPL'"
-tar cf "$TPL" "$SRPM_DUP" $PWRAP        \
-    "$CXXFIXUP"                         \
-    /etc/resolv.conf                    \
-    /opt/coverity/VERSION.xml           \
-    /opt/coverity/config                \
-    /opt/coverity/dtd                   \
-    /opt/coverity/bin/cov-*             \
+tar cf "$TPL" "$SRPM_DUP" $PWRAP                \
+    "$FIXUPS"                                   \
+    /etc/resolv.conf                            \
+    /opt/coverity/VERSION.xml                   \
+    /opt/coverity/config                        \
+    /opt/coverity/dtd                           \
+    /opt/coverity/bin/cov-*                     \
     /opt/coverity/bin/libcapture-*.so
-
-# cleanup
-rm -f "$CXXFIXUP"
-test xyes = "x$XPATCH" && rm -fv "$PWRAP"
 
 # invoke mock with given parameters
 mock_wrap(){
-    printf ">>> %s starting mock %s\n"  \
-        "`date`" "$*"                   \
-        | tee --append "$LOG"           \
+    printf ">>> %s starting mock %s\n"          \
+        "`date`" "$*"                           \
+        | tee --append "$LOG"                   \
         || die
 
-    (mock -r "$MOCK_CHROOT" "$@" || die \
-        "\"mock $*\" exited with $?")   \
-        2>&1 | tee --append "$LOG"      \
+    (mock -r "$MOCK_PROFILE" "$@" || die        \
+        "\"mock $*\" exited with $?")           \
+        2>&1 | tee --append "$LOG"              \
         || die
 }
 
@@ -181,13 +199,9 @@ mock_wrap(){
 # initialize mock chroot
 mock_wrap --init
 mock_wrap --copyin "$TPL" /tmp
-rm -fv "$TPL"
 
 # prepare all we need to build the package
 mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\""
-
-# TODO: branch by RHEL version
-mock_wrap --chroot "sh -x $CXXFIXUP"
 
 if test xyes = "x$CACHE_PREPARED"; then
     # we already have yum-utils in the root cache
@@ -198,13 +212,15 @@ else
     mock_wrap -v --installdeps "$SRPM_DUP"
 fi
 
+# TODO: branch by RHEL version
+mock_wrap --chroot "sh -x $FIXUPS"
+
 mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\""
-rm -fv "$SRPM_DUP"
 
 # run the build through cov-build
 SPEC="`printf %s "$SRPM_BASE" | sed 's/-[0-9].*$//'`.spec"
 #mock_wrap --chroot "/opt/coverity/bin/cov-configure --gcc"
-mock_wrap -v --chroot "CC=gcc CXX=g++ \
+mock_wrap -v --chroot "PATH=$PWRAP_DIR:\$PATH:/usr/kerberos/bin CC=gcc CXX=g++ \
 /opt/coverity/bin/cov-build --dir /builddir/cov \
 rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM"
 
@@ -219,7 +235,7 @@ mock_wrap --clean
 
 # run the analysis and store the summary to $OUT
 printf ">>> %s starting analysis\n" "`date`" | tee --append "$LOG"
-(cov-analyze --dir "$COV"                       \
+(cov-analyze --dir "$COV" --wait-for-license    \
     || die "cov-analyze failed") 2>&1           \
     | tee "$OUT"                                \
     | tee --append "$LOG"                       \
@@ -236,6 +252,6 @@ printf ">>> %s reporting defects\n" "`date`" | tee --append "$LOG"
     || die
 
 EC="`head -n1 "$STATUS" | tr -d "\n"`"
-rm -f "$STATUS"
+rm -rf "$TMP"
 echo "<<< $0 has finished, exit code is $EC" | tee --append "$LOG"
 exit $EC
