@@ -116,7 +116,7 @@ if test -x /usr/bin/xmlto; then
 XXX
 fi
 
-# simplify C++ headers for Coverity in case gcc-4.6.0
+# simplify C++ headers for Coverity in case of gcc-4.6.0
 if test -d /usr/include/c++/4.6.0; then
     sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
         || exit $?
@@ -128,9 +128,9 @@ fi
 EOF
 
 # prepare a dummy patcher
+PWRAP_DIR="$TMP/pwrap";
+mkdir "$PWRAP_DIR" || die
 if test xyes = "x$XPATCH"; then
-    PWRAP_DIR="$TMP/pwrap";
-    mkdir "$PWRAP_DIR" || die
     PWRAP="$PWRAP_DIR/patch"
     cat > "$PWRAP" << EOF
 #!/bin/sh
@@ -168,9 +168,8 @@ EOF
 fi
 
 # prepare .tar of all the files we need inside mock chroot
-TPL="`mktemp`"
-TPL_BASE="`basename "$TPL"`"
-test -f "$TPL" || die "mktemp failed: '$TPL'"
+TPL_BASE="stage1.tar"
+TPL="$TMP/$TPL_BASE"
 tar cf "$TPL" "$SRPM_DUP" $PWRAP                \
     "$FIXUPS"                                   \
     /etc/resolv.conf                            \
@@ -178,7 +177,8 @@ tar cf "$TPL" "$SRPM_DUP" $PWRAP                \
     /opt/coverity/config                        \
     /opt/coverity/dtd                           \
     /opt/coverity/bin/cov-*                     \
-    /opt/coverity/bin/libcapture-*.so
+    /opt/coverity/bin/libcapture-*.so           \
+    || die "failed to create $TPL"
 
 # invoke mock with given parameters
 mock_wrap(){
@@ -199,6 +199,7 @@ mock_wrap(){
 # initialize mock chroot
 mock_wrap --init
 mock_wrap --copyin "$TPL" /tmp
+rm -f "$TPL"
 
 # prepare all we need to build the package
 mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\""
