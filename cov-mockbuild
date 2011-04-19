@@ -7,6 +7,14 @@ RPMM="\
 --define '_without_testsuite 1' \
 --define 'runselftest 0'"
 
+# PATH set for cov-build/rpmbuild
+ENV_PATH="\$PATH:/usr/kerberos/bin"
+
+# other environment variables used for cov-build/rpmbuild
+ENV_VARS="\
+CC=gcc \
+CXX=g++"
+
 OPTS=cx
 
 usage(){
@@ -128,9 +136,15 @@ fi
 EOF
 
 # prepare a dummy patcher
-PWRAP_DIR="$TMP/pwrap";
-mkdir "$PWRAP_DIR" || die
 if test xyes = "x$XPATCH"; then
+    PWRAP_DIR="$TMP/pwrap"
+    mkdir "$PWRAP_DIR" || die
+
+    if echo "$MOCK_PROFILE" | grep "rhel-5"; then
+        # el5 rpm does not seem to use the %{__patch} macro for some reason
+        ENV_PATH="$PWRAP_DIR:$ENV_PATH"
+    fi
+
     PWRAP="$PWRAP_DIR/patch"
     cat > "$PWRAP" << EOF
 #!/bin/sh
@@ -221,7 +235,7 @@ mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\""
 # run the build through cov-build
 SPEC="`printf %s "$SRPM_BASE" | sed 's/-[0-9].*$//'`.spec"
 #mock_wrap --chroot "/opt/coverity/bin/cov-configure --gcc"
-mock_wrap -v --chroot "PATH=$PWRAP_DIR:\$PATH:/usr/kerberos/bin CC=gcc CXX=g++ \
+mock_wrap -v --chroot "PATH=$ENV_PATH $ENV_VARS \
 /opt/coverity/bin/cov-build --dir /builddir/cov \
 rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM"
 
