@@ -5,7 +5,9 @@ SELF="$0"
 RPMM="\
 --define '_smp_mflags -ij5' \
 --define '_without_testsuite 1' \
---define 'runselftest 0'"
+--define 'runselftest 0' \
+--define 'with_docs 0' \
+--define 'with_publican 0'"
 
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"
@@ -124,14 +126,62 @@ if test -x /usr/bin/xmlto; then
 XXX
 fi
 
-# simplify C++ headers for Coverity in case of gcc-4.6.0
-if test -d /usr/include/c++/4.6.0; then
-    sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
-        || exit $?
+dd of=/tmp/type_traits.patch status=noxfer << XXX
+--- type_traits
++++ type_traits.coverity
+@@ -223,30 +223,6 @@
+   template<typename>
+     struct is_function
+     : public false_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes...)>
+-    : public true_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes......)>
+-    : public true_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes...) const>
+-    : public true_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes......) const>
+-    : public true_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes...) volatile>
+-    : public true_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes......) volatile>
+-    : public true_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes...) const volatile>
+-    : public true_type { };
+-  template<typename _Res, typename... _ArgTypes>
+-    struct is_function<_Res(_ArgTypes......) const volatile>
+-    : public true_type { };
 
+   // composite type traits [4.5.2].
+   
+XXX
+
+# simplify C++ headers for Coverity in case of gcc-4.4.5 and gcc-4.6.0
+if test -d /usr/include/c++/4.4.5; then
+    PATCH_STRING_H=yes
+    sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
+        /usr/include/c++/4.4.5/c++0x_warning.h \
+        || exit \$?
+
+    patch /usr/include/c++/4.4.5/tr1_impl/type_traits < /tmp/type_traits.patch
+fi
+if test -d /usr/include/c++/4.6.0; then
+    PATCH_STRING_H=yes
     sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
         /usr/include/c++/4.6.0/bits/c++0x_warning.h \
-        || exit $?
+        || exit \$?
+
+    patch /usr/include/c++/4.6.0/tr1_impl/type_traits < /tmp/type_traits.patch
+fi
+if test xyes = "x\$PATCH_STRING_H"; then
+    sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
+        || exit \$?
 fi
 EOF
 
@@ -228,7 +278,7 @@ else
 fi
 
 # TODO: branch by RHEL version
-mock_wrap --chroot "sh -x $FIXUPS"
+mock_wrap -v --chroot "sh -x $FIXUPS"
 
 mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\""
 
