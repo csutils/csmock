@@ -1,22 +1,17 @@
 #!/bin/sh
 SELF="$0"
 
-OPTS=ci
+OPTS=i
 
 usage(){
     echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm"
     exit 1
 }
 
-# with the -c option, expect that the base packages are already in root cache
 COV_MOCKBUILD_ARGS=
 
 while getopts $OPTS opt; do
     case "$opt" in
-        c)
-            COV_MOCKBUILD_ARGS="$COV_MOCKBUILD_ARGS -c"
-            ;;
-
         i)
             KEEP_COV=yes
             ;;

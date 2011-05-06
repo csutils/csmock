@@ -17,25 +17,18 @@ ENV_VARS="\
 CC=gcc \
 CXX=g++"
 
-OPTS=cx
+OPTS=x
 
 usage(){
     echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm"
     exit 1
 }
 
-# with the -c option, expect that the base packages are already in root cache
-CACHE_PREPARED=no
-
 # with the -x option, build the package without downstream patches
 XPATCH=no
 
 while getopts $OPTS opt; do
     case "$opt" in
-        c)
-            CACHE_PREPARED=yes
-            ;;
-
         x)
             XPATCH=yes
             ;;
@@ -268,14 +261,10 @@ rm -f "$TPL"
 # prepare all we need to build the package
 mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\""
 
-if test xyes = "x$CACHE_PREPARED"; then
-    # we already have yum-utils in the root cache
-    mock_wrap -v --chroot "yum-builddep --nogpgcheck \"$SRPM_DUP\""
-else
-    # no yum available
-    mock_wrap --install "xml-common"
-    mock_wrap -v --installdeps "$SRPM_DUP"
-fi
+# we intentionally do not use 'mock --installdeps' because of --nogpgcheck
+mock_wrap --install "xml-common"
+mock_wrap --install "yum-utils"
+mock_wrap -v --chroot "yum-builddep --nogpgcheck \"$SRPM_DUP\""
 
 # TODO: branch by RHEL version
 mock_wrap -v --chroot "sh -x $FIXUPS"
