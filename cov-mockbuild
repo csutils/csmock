@@ -162,17 +162,22 @@ if test -d /usr/include/c++/4.4.5; then
     sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
         /usr/include/c++/4.4.5/c++0x_warning.h \
         || exit \$?
-
-    patch /usr/include/c++/4.4.5/tr1_impl/type_traits < /tmp/type_traits.patch
 fi
 if test -d /usr/include/c++/4.6.0; then
     PATCH_STRING_H=yes
     sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
         /usr/include/c++/4.6.0/bits/c++0x_warning.h \
         || exit \$?
+fi
 
+# this file is provided by libstdc++-devel, which is not installed by default
+if test -f /usr/include/c++/4.4.5/tr1_impl/type_traits; then
+    patch /usr/include/c++/4.4.5/tr1_impl/type_traits < /tmp/type_traits.patch
+fi
+if test -f /usr/include/c++/4.6.0/tr1_impl/type_traits; then
     patch /usr/include/c++/4.6.0/tr1_impl/type_traits < /tmp/type_traits.patch
 fi
+
 if test xyes = "x\$PATCH_STRING_H"; then
     sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
         || exit \$?
