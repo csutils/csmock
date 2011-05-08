@@ -86,8 +86,7 @@ die_if_exists "$COV" "$LOG" "$OUT" "$ERR"
 export COV LOG OUT ERR
 
 # copy the SRPM to our temp
-SRPM_BASE="`basename "$SRPM"`"
-SRPM_DUP="$TMP/$SRPM_BASE"
+SRPM_DUP="$TMP/`basename "$SRPM"`"
 die_if_exists "$SRPM_DUP"
 cp -t "$TMP" -v "$SRPM" 2>&1 | tee --append "$LOG"
 test -f "$SRPM_DUP" || die
@@ -274,7 +273,7 @@ mock_wrap -v --chroot "sh -x $FIXUPS"
 mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\""
 
 # run the build through cov-build
-SPEC="`printf %s "$SRPM_BASE" | sed 's/-[0-9].*$//'`.spec"
+SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
 #mock_wrap --chroot "/opt/coverity/bin/cov-configure --gcc"
 mock_wrap -v --chroot "PATH=$ENV_PATH $ENV_VARS \
 /opt/coverity/bin/cov-build --dir /builddir/cov \
