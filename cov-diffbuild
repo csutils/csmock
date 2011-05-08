@@ -1,6 +1,8 @@
 #!/bin/sh
 SELF="$0"
 
+test -z "$TMPDIR" && TMPDIR="/tmp"
+
 OPTS=i
 
 usage(){
@@ -50,7 +52,7 @@ COV_MOCKBUILD="`readlink -f "$TOP/cov-mockbuild"`"
 test -x "$COV_MOCKBUILD" || die "cov-mockbuild not found"
 
 # create the directory for results in $TMPDIR
-TMP="`mktemp -d /tmp/cov-diffbuild.XXXXXX`"
+TMP="`mktemp -d $TMPDIR/cov-diffbuild.XXXXXX`"
 RESULTS_DIR="$TMP/$BASE"
 mkdir -p "$RESULTS_DIR/run0" "$RESULTS_DIR/run1"
 test -d "$RESULTS_DIR" || die "mktemp failed"

@@ -1,6 +1,8 @@
 #!/bin/sh
 SELF="$0"
 
+test -z "$TMPDIR" && TMPDIR="/tmp"
+
 # rpm macros to use
 RPMM="\
 --define '_smp_mflags -ij5' \
@@ -61,7 +63,7 @@ die(){
 }
 
 # prepare $TMP directory
-TMP="`mktemp -d /tmp/cov-mockbuild.XXXXXX`"
+TMP="`mktemp -d $TMPDIR/cov-mockbuild.XXXXXX`"
 test -d "$TMP" || die "mktemp failed"
 STATUS="$TMP/status"
 echo 0 > "$STATUS" || die "failed to write '$STATUS'"
