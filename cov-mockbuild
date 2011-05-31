@@ -225,6 +225,7 @@ EOF
     chmod 0755 "$PWRAP"
     RPMM="$RPMM --define '__patch $PWRAP' \
 --define '_rawbuild -b _RAWBUILD' \
+--define 'nofips 1' \
 --define 'nopam 1' \
 --define 'norunuser 1' \
 --define 'noselinux 1' \
@@ -269,9 +270,14 @@ mock_wrap --install "xml-common" "yum-utils"
 # rebuild the SRPM to avoid RPM incompatibilities when resolving deps
 SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
 mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\""
-mock_wrap -v --chroot "rpmbuild -bs --nodeps /builddir/build/SPECS/$SPEC $RPMM"
+mock_wrap --chroot "rpmbuild -bs --nodeps /builddir/build/SPECS/$SPEC $RPMM"
 
-# we intentionally do not use 'mock --installdeps' because of --nogpgcheck
+# ensure the just built SRPM has the same name as the original one
+mock_wrap --chroot "/bin/bash -c 'cd /builddir/build/SRPMS && \
+eval mv -v *.src.rpm $SRPM_BASE || :'"
+
+# 'mock --installdeps' is not always sufficient, neither yum-builddep is
+mock_wrap -v --installdeps "$SRPM_DUP"
 mock_wrap -v --chroot "yum-builddep --nogpgcheck \
 /builddir/build/SRPMS/$SRPM_BASE"
 
