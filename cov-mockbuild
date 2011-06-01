@@ -281,6 +281,13 @@ mock_wrap -v --installdeps "$SRPM_DUP"
 mock_wrap -v --chroot "yum-builddep --nogpgcheck \
 /builddir/build/SRPMS/$SRPM_BASE"
 
+# yet another desperate attempt to install missing deps; without the following
+# hack it was impossible to install lm_sensors-devel as a dependency
+# of net-snmp-5.5-31.el6.src.rpm
+mock_wrap -v --install `rpm -pq "$SRPM_DUP" --requires | while read dep
+    do printf " '%s'" "$dep"
+done`
+
 # TODO: branch by RHEL version
 mock_wrap -v --chroot "sh -x $FIXUPS"
 
