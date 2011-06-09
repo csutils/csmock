@@ -271,7 +271,7 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS"  \
     || die "failed to create $TPL"
 
 cmd_wrap() {
-    { printf "\n>>> %s\t%s\n" "`date`" "$*" | tee --append "$LOG"; } >&2
+    printf "\n>>> %s\t%s\n" "`date`" "$*" >&2
     "$@"
 }
 
@@ -324,15 +324,17 @@ rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM\""  || update_ec
 # get the intermediate directory out of the chroot and store it to $COV
 mock_wrap --chroot "chmod -R +r /builddir/cov"              || update_ec
 mock_wrap --copyout /builddir/cov "$COV"                    || update_ec
-cat "$COV/build-log.txt" >> "$LOG" 2>&1                     || update_ec
 
 # ###########################################################################
 # we do not need the chroot anymore
 mock_wrap --clean                                           || update_ec
 
 # run the analysis and store the summary to $OUT
-cmd_wrap cov-analyze --dir "$COV" --wait-for-license $COV_OPTS 2>&1 \
-    | tee "$OUT" | tee --append "$LOG"                      || update_ec
+{ cmd_wrap cov-analyze --dir "$COV" --wait-for-license $COV_OPTS \
+    | tee "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
+
+# get rid of those fancy progress markers
+grep -v "^|" "$ERR" | grep -v "^\*" > "$OUT"
 
 # store the list of defects to $ERR
 { cmd_wrap cov-format-errors --dir "$COV" --emacs-style \
