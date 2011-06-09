@@ -26,7 +26,7 @@ CXX=g++"
 OPTS=fx
 
 usage(){
-    echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm"
+    echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]"
     exit 1
 }
 
@@ -104,6 +104,11 @@ fi
 
 # avoid overwriting of .cov, .log, .out, or .err
 die_if_exists "$COV" "$LOG" "$OUT" "$ERR"
+
+# extra options for cov-analyze
+shift
+shift
+COV_OPTS="$*"
 
 # copy the SRPM to our temp
 SRPM_BASE="`basename "$SRPM"`"
@@ -255,7 +260,7 @@ fi
 # prepare .tar of all the files we need inside mock chroot
 TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
-printf "\n>>> %s creating %s\n" "`date`" "$TPL" | tee --append "$LOG" || die
+{ printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL" | tee --append "$LOG"; } >&2
 tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS"  \
     /etc/resolv.conf                            \
     /opt/coverity/VERSION.xml                   \
@@ -265,12 +270,15 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS"  \
     /opt/coverity/bin/libcapture-*.so           \
     || die "failed to create $TPL"
 
+cmd_wrap() {
+    { printf "\n>>> %s\t%s\n" "`date`" "$*" | tee --append "$LOG"; } >&2
+    "$@"
+}
+
 # invoke mock with given parameters
 mock_wrap(){
-    printf "\n>>> %s starting mock -r %s %s\n" "`date`" "$MOCK_PROFILE" "$*"  \
-        | tee --append "$LOG" || die
-
-    { mock -r "$MOCK_PROFILE" "$@"; } 2>&1 | tee --append "$LOG"
+    { cmd_wrap mock -r "$MOCK_PROFILE" "$@"; } 2>&1 \
+        | tee --append "$LOG"
 }
 
 # initialize mock chroot
@@ -323,19 +331,17 @@ cat "$COV/build-log.txt" >> "$LOG" 2>&1                     || update_ec
 mock_wrap --clean                                           || update_ec
 
 # run the analysis and store the summary to $OUT
-printf "\n>>> %s starting analysis\n" "`date`" | tee --append "$LOG"
-cov-analyze --dir "$COV" --wait-for-license 2>&1 \
+cmd_wrap cov-analyze --dir "$COV" --wait-for-license $COV_OPTS 2>&1 \
     | tee "$OUT" | tee --append "$LOG"                      || update_ec
 
 # store the list of defects to $ERR
-printf "\n>>> %s reporting defects\n" "`date`" | tee --append "$LOG"
-{ cov-format-errors --dir "$COV" --emacs-style          \
+{ cmd_wrap cov-format-errors --dir "$COV" --emacs-style \
     | perl -i -p -e 's/([0-9]):\n/\1: /'                \
     | perl -i -p -e 's/^Error: /\nError: /'             \
     | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
     > "$ERR"; } 2>&1 | tee --append "$LOG"                  || update_ec
 
-printf "\n<<< %s has finished, exit code is %s\n\n" "$SELF" "${EC:=0}"  \
+printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"  \
     | tee --append "$LOG"
 
 exit $EC
