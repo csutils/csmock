@@ -1,19 +1,31 @@
-#!/bin/sh
+#!/bin/bash
 SELF="$0"
+
+set -o pipefail
 
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
-OPTS=i
+OPTS="fi"
 
 usage(){
     echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm"
     exit 1
 }
 
-COV_MOCKBUILD_ARGS=
+die(){
+    if test -n "$1"; then
+        echo "$SELF: error: $1" >&2
+    else
+        echo "$SELF: generic error" >&2
+    fi
+    exit 1
+}
 
 while getopts $OPTS opt; do
     case "$opt" in
+        f)  OVERWRITE_RESULTS=yes
+            ;;
+
         i)
             KEEP_COV=yes
             ;;
@@ -25,10 +37,16 @@ while getopts $OPTS opt; do
 done
 shift $(($OPTIND - 1))
 
+# the first argument should be mock profile
+MOCK_PROFILE="$1"
+MOCK_CFG="/etc/mock/$MOCK_PROFILE.cfg"
+test -f "$MOCK_CFG" || usage
+
 # the second operand is the SRPM to build/analyze
-COV_MOCKBUILD_ARGS="$COV_MOCKBUILD_ARGS $1"
 SRPM="`readlink -f "$2"`"
-test -f "$SRPM" || usage
+test -n "$SRPM" || usage
+test -r "$SRPM" || die "failed to open $SRPM"
+rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
 
 BASE="`basename "$SRPM" .src.rpm`"
 COV="$BASE.cov"
@@ -37,14 +55,11 @@ OUT="$BASE.out"
 ERR="$BASE.err"
 TGZ="$BASE.tar.lzma"
 
-die(){
-    if test -n "$1"; then
-        echo "$SELF: error: $1" >&2
-    else
-        echo "$SELF: generic error" >&2
-    fi
-    exit 1
-}
+if test xyes = "x$OVERWRITE_RESULTS"; then
+    rm -fv "$TGZ"
+fi
+
+test -e "$TGZ" && die "'$TGZ' already exists"
 
 # look for cov-mockbuild
 TOP="`dirname "$SELF"`"
@@ -57,12 +72,18 @@ RESULTS_DIR="$TMP/$BASE"
 mkdir -p "$RESULTS_DIR/run0" "$RESULTS_DIR/run1"
 test -d "$RESULTS_DIR" || die "mktemp failed"
 
+trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
+
+# FIXME: we should replace 2s by wait() somehow
+trap "echo --- $SELF: killing children... 2>&1; kill -SIGINT 0; sleep 2" \
+    SIGINT SIGTERM SIGHUP
+
 export KEEP_COV
 
 write_logs_to(){
     grep -v "^|" "$OUT" | grep -v "^\*" > "$1/$OUT"
-    sed 's|^/builddir/build/BUILD/||' "$ERR" > "$1/$ERR"
-    rm -rf "$OUT" "$ERR"
+    rm -f "$OUT"
+    mv "$ERR" "$1/$ERR"
 
     if test xyes = "x$KEEP_COV"; then
         mv "$COV" "$1/"
@@ -70,23 +91,37 @@ write_logs_to(){
         rm -rf "$COV"
     fi
 
-    mv -v "$LOG" "$1/"
+    mv "$LOG" "$1/"
 }
 
+cmd_wrap() {
+    printf "\n>>> %s %s\n" "`date`" "$*" >&2
+    "$@" < /dev/null
+    last_ec=$?
+
+    if test 128 -le "$last_ec" -a "$last_ec" -lt 192; then
+        echo "<<< $SELF: child signalled to die by $(($last_ec - 128))" >&2
+        exit $last_ec
+    fi
+
+    return $last_ec
+}
+
+pushd "$RESULTS_DIR" || die
+
 # build the package without patches
-(cd "$RESULTS_DIR" || die
-    "$COV_MOCKBUILD" -x $COV_MOCKBUILD_ARGS "$SRPM" || touch run0.FAILED
-    write_logs_to "run0")
+cmd_wrap "$COV_MOCKBUILD" -x $MOCK_PROFILE "$SRPM" || touch run0.FAILED
+write_logs_to "run0" 2>/dev/null
 
 # build the package with patches
-(cd "$RESULTS_DIR" || die
-    "$COV_MOCKBUILD" $COV_MOCKBUILD_ARGS "$SRPM" || touch run1.FAILED
-    write_logs_to "run1")
+cmd_wrap "$COV_MOCKBUILD" $MOCK_PROFILE "$SRPM" || touch run1.FAILED
+write_logs_to "run1" 2>/dev/null
 
 # compare both defect lists
-(cd "$RESULTS_DIR" || die
-    (csdiff "run0/$ERR" "run1/$ERR" || touch ./diff.FAILED) \
-        | tee ./defects-in-patches.err)
+cmd_wrap csdiff "run0/$ERR" "run1/$ERR"     \
+    | tee "./defects-in-patches.err"        \
+    || touch ./diff.FAILED
 
-tar -cv -C "$TMP" "$BASE" | lzma -c > "$TGZ"
-rm -rf "$TMP"
+# finally write the results
+popd
+cmd_wrap tar -cv -C "$TMP" "$BASE" | lzma -c > "$TGZ"
