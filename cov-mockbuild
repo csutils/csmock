@@ -1,5 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 SELF="$0"
+
+set -o pipefail
+
+export LC_ALL=C
 
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
@@ -19,20 +23,20 @@ ENV_VARS="\
 CC=gcc \
 CXX=g++"
 
-OPTS=x
+OPTS=fx
 
 usage(){
     echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm"
     exit 1
 }
 
-# with the -x option, build the package without downstream patches
-XPATCH=no
-
 while getopts $OPTS opt; do
     case "$opt" in
+        f)  OVERWRITE_RESULTS=yes
+            ;;
+
         x)
-            XPATCH=yes
+            RAWBUILD=yes
             ;;
 
         *)
@@ -44,13 +48,8 @@ shift $(($OPTIND - 1))
 
 # the first operand is the mock profile to use
 MOCK_PROFILE="$1"
-export MOCK_PROFILE
 MOCK_CFG="/etc/mock/$MOCK_PROFILE.cfg"
 test -f "$MOCK_CFG" || usage
-
-# the second operand is the SRPM to build/analyze
-SRPM="$2"
-test -f "$SRPM" || usage
 
 die(){
     if test -n "$1"; then
@@ -58,16 +57,26 @@ die(){
     else
         echo "$SELF: generic error" >&2
     fi
-    test -f "$STATUS" && echo 1 > "$STATUS"
     exit 1
+}
+
+# the second operand is the SRPM to build/analyze
+SRPM="`readlink -f "$2"`"
+test -n "$SRPM" || usage
+test -r "$SRPM" || die "failed to open $SRPM"
+rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
+
+EC=
+update_ec() {
+    last_ec=$?
+    echo "--- $SELF: exit code was: $last_ec" >&2
+    test -n "$EC" || EC=$last_ec
 }
 
 # prepare $TMP directory
 TMP="`mktemp -d $TMPDIR/cov-mockbuild.XXXXXX`"
 test -d "$TMP" || die "mktemp failed"
-STATUS="$TMP/status"
-echo 0 > "$STATUS" || die "failed to write '$STATUS'"
-export TMP STATUS
+trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 
 die_if_exists(){
     while test -n "$1"; do
@@ -76,14 +85,20 @@ die_if_exists(){
     done
 }
 
-# avoid overwriting of .cov, .log, .out, or .err
 BASE="`basename "$SRPM" .src.rpm`"
-COV="`readlink -f "$BASE".cov`"
-LOG="`readlink -f "$BASE".log`"
-OUT="`readlink -f "$BASE".out`"
-ERR="`readlink -f "$BASE".err`"
+BASE_DIR="`dirname "$SRPM"`"
+COV="$PWD/$BASE.cov"
+LOG="$PWD/$BASE.log"
+OUT="$PWD/$BASE.out"
+ERR="$PWD/$BASE.err"
+
+if test xyes = "x$OVERWRITE_RESULTS"; then
+    rm -fv "$LOG" "$OUT" "$ERR"
+    rm -fr "$COV"
+fi
+
+# avoid overwriting of .cov, .log, .out, or .err
 die_if_exists "$COV" "$LOG" "$OUT" "$ERR"
-export COV LOG OUT ERR
 
 # copy the SRPM to our temp
 SRPM_BASE="`basename "$SRPM"`"
@@ -186,7 +201,7 @@ fi
 EOF
 
 # prepare a dummy patcher
-if test xyes = "x$XPATCH"; then
+if test xyes = "x$RAWBUILD"; then
     PWRAP_DIR="$TMP/pwrap"
     mkdir "$PWRAP_DIR" || die
 
@@ -233,10 +248,10 @@ EOF
 fi
 
 # prepare .tar of all the files we need inside mock chroot
-TPL_BASE="stage1.tar"
+TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
-tar cf "$TPL" "$SRPM_DUP" $PWRAP                \
-    "$FIXUPS"                                   \
+printf "\n>>> %s creating %s\n" "`date`" "$TPL" | tee --append "$LOG" || die
+tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS"  \
     /etc/resolv.conf                            \
     /opt/coverity/VERSION.xml                   \
     /opt/coverity/config                        \
@@ -247,29 +262,26 @@ tar cf "$TPL" "$SRPM_DUP" $PWRAP                \
 
 # invoke mock with given parameters
 mock_wrap(){
-    printf ">>> %s starting mock %s\n"          \
-        "`date`" "$*"                           \
-        | tee --append "$LOG"                   \
-        || die
+    printf "\n>>> %s starting mock -r %s %s\n" "`date`" "$MOCK_PROFILE" "$*"  \
+        | tee --append "$LOG" || die
 
-    (mock -r "$MOCK_PROFILE" "$@" || die        \
-        "\"mock $*\" exited with $?")           \
-        2>&1 | tee --append "$LOG"              \
-        || die
+    { mock -r "$MOCK_PROFILE" "$@"; } 2>&1 | tee --append "$LOG"
 }
 
 # initialize mock chroot
-mock_wrap --init
-mock_wrap --copyin "$TPL" /tmp
+mock_wrap --init                || die "mock --init failed"
+mock_wrap --copyin "$TPL" /tmp  || die "mock --copyin failed"
 rm -f "$TPL"
 
 # prepare all we need to build the package
-mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\""
-mock_wrap --install "xml-common" "yum-utils"
+mock_wrap --chroot "tar -C / -xvf \"/tmp/$TPL_BASE\"" || die "bootstrap failed"
+mock_wrap --install "xml-common" "yum-utils" || die "mock --install failed"
+
+SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
+mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\"" \
+    || die "failed to install SRPM"
 
 # rebuild the SRPM to avoid RPM incompatibilities when resolving deps
-SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
-mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\""
 mock_wrap --chroot "rpmbuild -bs --nodeps /builddir/build/SPECS/$SPEC $RPMM"
 
 # ensure the just built SRPM has the same name as the original one
@@ -294,36 +306,30 @@ mock_wrap -v --chroot "sh -x $FIXUPS"
 # run the build through cov-build
 mock_wrap -v --chroot "/bin/su mockbuild -lc \"PATH=$ENV_PATH $ENV_VARS \
 /opt/coverity/bin/cov-build --dir /builddir/cov \
-rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM\""
+rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM\""  || update_ec
 
 # get the intermediate directory out of the chroot and store it to $COV
-mock_wrap --chroot "chmod -R +r /builddir/cov"
-mock_wrap --copyout /builddir/cov "$COV"
-cat "$COV/build-log.txt" >> "$LOG" 2>&1
+mock_wrap --chroot "chmod -R +r /builddir/cov"              || update_ec
+mock_wrap --copyout /builddir/cov "$COV"                    || update_ec
+cat "$COV/build-log.txt" >> "$LOG" 2>&1                     || update_ec
 
 # ###########################################################################
 # we do not need the chroot anymore
-mock_wrap --clean
+mock_wrap --clean                                           || update_ec
 
 # run the analysis and store the summary to $OUT
-printf ">>> %s starting analysis\n" "`date`" | tee --append "$LOG"
-(cov-analyze --dir "$COV" --wait-for-license    \
-    || die "cov-analyze failed") 2>&1           \
-    | tee "$OUT"                                \
-    | tee --append "$LOG"                       \
-    || die
+printf "\n>>> %s starting analysis\n" "`date`" | tee --append "$LOG"
+cov-analyze --dir "$COV" --wait-for-license 2>&1 \
+    | tee "$OUT" | tee --append "$LOG"                      || update_ec
 
 # store the list of defects to $ERR
-printf ">>> %s reporting defects\n" "`date`" | tee --append "$LOG"
-( (cov-format-errors --dir "$COV" --emacs-style \
-    || die "cov-format-errors failed")          \
-        | perl -i -p -e 's/([0-9]):\n/\1: /'    \
-        | perl -i -p -e 's/^Error: /\nError: /' \
-        > "$ERR") 2>&1                          \
-    | tee --append "$LOG"                       \
-    || die
+printf "\n>>> %s reporting defects\n" "`date`" | tee --append "$LOG"
+{ cov-format-errors --dir "$COV" --emacs-style  \
+    | perl -i -p -e 's/([0-9]):\n/\1: /'        \
+    | perl -i -p -e 's/^Error: /\nError: /'     \
+    > "$ERR"; } 2>&1 | tee --append "$LOG"                  || update_ec
 
-EC="`head -n1 "$STATUS" | tr -d "\n"`"
-rm -rf "$TMP"
-echo "<<< $0 has finished, exit code is $EC" | tee --append "$LOG"
+printf "\n<<< %s has finished, exit code is %s\n\n" "$SELF" "${EC:=0}"  \
+    | tee --append "$LOG"
+
 exit $EC
