@@ -58,7 +58,7 @@ COV="$BASE.cov"
 LOG="$BASE.log"
 OUT="$BASE.out"
 ERR="$BASE.err"
-TGZ="$BASE.tar.lzma"
+TGZ="$BASE.tar.xz"
 
 if test xyes = "x$OVERWRITE_RESULTS"; then
     rm -fv "$TGZ"
@@ -128,4 +128,4 @@ cmd_wrap csdiff "run0/$ERR" "run1/$ERR"     \
 
 # finally write the results
 popd >/dev/null || die
-cmd_wrap tar -cv -C "$TMP" "$BASE" | lzma -c > "$TGZ"
+cmd_wrap tar -Jcvf "$TGZ" -C "$TMP" "$BASE"
