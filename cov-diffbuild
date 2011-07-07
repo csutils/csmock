@@ -27,7 +27,7 @@ while getopts $OPTS opt; do
             ;;
 
         i)
-            KEEP_COV=yes
+            COV_MOCKBUILD_OPTS=-i
             ;;
 
         t)  TAR_ONLY=yes
@@ -57,15 +57,13 @@ COV_MOCKBUILD="`readlink -f "$TOP/cov-mockbuild"`"
 test -x "$COV_MOCKBUILD" || die "cov-mockbuild not found"
 
 BASE="`basename "$SRPM" .src.rpm`"
-COV="$BASE.cov"
-LOG="$BASE.log"
-OUT="$BASE.out"
 ERR="$BASE.err"
+RESULTS="$BASE.tar"
 
 if test xyes = "x$TAR_ONLY"; then
-    TGZ="$BASE.tar"
+    TGZ="$RESULTS"
 else
-    TGZ="$BASE.tar.xz"
+    TGZ="$RESULTS.xz"
     TAR_OPTS=-J
 fi
 
@@ -92,19 +90,6 @@ trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 trap "echo --- $SELF: killing children... 2>&1; kill -SIGINT 0; sleep 2" \
     SIGINT SIGTERM SIGHUP
 
-export KEEP_COV
-
-write_logs_to(){
-    mv "$OUT" "$ERR" "$LOG" "$1/"
-
-    if test xyes = "x$KEEP_COV"; then
-        mv "$COV" "$1/"
-    else
-        mv "$COV/build-log.txt" "$1/"
-        rm -rf "$COV"
-    fi
-}
-
 cmd_wrap() {
     printf "\n>>> %s\t%s\n" "`date`" "$*" >&2
     "$@" < /dev/null
@@ -118,20 +103,24 @@ cmd_wrap() {
     return $last_ec
 }
 
-pushd "$RESULTS_DIR" >/dev/null || die
+unpack_results(){
+    cmd_wrap tar xf "$RESULTS" && rm -f "$RESULTS"
+}
+
+pushd "$TMP" >/dev/null || die
 
 # build the package without patches
-cmd_wrap "$COV_MOCKBUILD" -x $MOCK_PROFILE "$SRPM" $COV_OPTS \
-    || touch run0.FAILED
-write_logs_to "run0" 2>/dev/null
+cmd_wrap "$COV_MOCKBUILD" $COV_MOCKBUILD_OPTS -xt $MOCK_PROFILE "$SRPM" \
+    $COV_OPTS || touch run0.FAILED
+unpack_results
 
 # build the package with patches
-cmd_wrap "$COV_MOCKBUILD" $MOCK_PROFILE "$SRPM" $COV_OPTS \
-    || touch run1.FAILED
-write_logs_to "run1" 2>/dev/null
+cmd_wrap "$COV_MOCKBUILD" $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM" \
+    $COV_OPTS || touch run1.FAILED
+unpack_results
 
 # compare both defect lists
-cmd_wrap csdiff "run0/$ERR" "run1/$ERR"     \
+cmd_wrap csdiff "$RESULTS_DIR/run0/$ERR" "$RESULTS_DIR/run1/$ERR" \
     | tee "./defects-in-patches.err"        \
     || touch ./diff.FAILED
 

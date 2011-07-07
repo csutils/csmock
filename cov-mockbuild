@@ -23,7 +23,7 @@ ENV_VARS="\
 CC=gcc \
 CXX=g++"
 
-OPTS=fx
+OPTS=fitx
 
 usage(){
     echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]"
@@ -33,6 +33,13 @@ usage(){
 while getopts $OPTS opt; do
     case "$opt" in
         f)  OVERWRITE_RESULTS=yes
+            ;;
+
+        i)
+            KEEP_COV=yes
+            ;;
+
+        t)  TAR_ONLY=yes
             ;;
 
         x)
@@ -68,6 +75,31 @@ rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
 rpm -lpq "$SRPM" 2>/dev/null | grep '\.spec$' \
     || die "no specfile found in $SRPM"
 
+BASE="`basename "$SRPM" .src.rpm`"
+if test xyes = "x$TAR_ONLY"; then
+    TGZ="$PWD/$BASE.tar"
+else
+    TGZ="$PWD/$BASE.tar.xz"
+    TAR_OPTS=-J
+fi
+
+if test xyes = "x$OVERWRITE_RESULTS"; then
+    rm -fv "$TGZ"
+fi
+
+test -e "$TGZ" && die "'$TGZ' already exists"
+
+if test xyes = "x$RAWBUILD"; then
+    RUN=run0
+else
+    RUN=run1
+fi
+
+cmd_wrap() {
+    printf "\n>>> %s\t%s\n" "`date`" "$*" >&2
+    "$@"
+}
+
 EC=
 update_ec() {
     last_ec=$?
@@ -82,30 +114,17 @@ update_ec() {
 
 # prepare $TMP directory
 TMP="`mktemp -d $TMPDIR/cov-mockbuild.XXXXXX`"
-test -d "$TMP" || die "mktemp failed"
-trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
+BASE_DIR="$TMP/$BASE/$RUN"
+mkdir -p "$BASE_DIR" || die "mktemp failed"
 
-die_if_exists(){
-    while test -n "$1"; do
-        test -e "$1" && die "'$1' already exists"
-        shift
-    done
-}
+# from now on, do the pack/cleanup on exit, no matter if we succeeded or not
+trap "cmd_wrap tar $TAR_OPTS -cvf '$TGZ' -C '$TMP' '$BASE'
+    echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 
-BASE="`basename "$SRPM" .src.rpm`"
-BASE_DIR="`dirname "$SRPM"`"
-COV="$PWD/$BASE.cov"
-LOG="$PWD/$BASE.log"
-OUT="$PWD/$BASE.out"
-ERR="$PWD/$BASE.err"
-
-if test xyes = "x$OVERWRITE_RESULTS"; then
-    rm -fv "$LOG" "$OUT" "$ERR"
-    rm -fr "$COV"
-fi
-
-# avoid overwriting of .cov, .log, .out, or .err
-die_if_exists "$COV" "$LOG" "$OUT" "$ERR"
+COV="$BASE_DIR/$BASE.cov"
+LOG="$BASE_DIR/$BASE.log"
+OUT="$BASE_DIR/$BASE.out"
+ERR="$BASE_DIR/$BASE.err"
 
 # extra options for cov-analyze
 shift
@@ -115,7 +134,6 @@ COV_OPTS="$*"
 # copy the SRPM to our temp
 SRPM_BASE="`basename "$SRPM"`"
 SRPM_DUP="$TMP/$SRPM_BASE"
-die_if_exists "$SRPM_DUP"
 cp -t "$TMP" -v "$SRPM" 2>&1 | tee --append "$LOG"
 test -f "$SRPM_DUP" || die
 
@@ -272,11 +290,6 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS"  \
     /opt/coverity/bin/libcapture-*.so           \
     || die "failed to create $TPL"
 
-cmd_wrap() {
-    printf "\n>>> %s\t%s\n" "`date`" "$*" >&2
-    "$@"
-}
-
 # invoke mock with given parameters
 mock_wrap(){
     { cmd_wrap mock -r "$MOCK_PROFILE" "$@"; } 2>&1 \
@@ -344,6 +357,11 @@ grep -v "^|" "$ERR" | grep -v "^\*" > "$OUT"
     | perl -i -p -e 's/^Error: /\nError: /'             \
     | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
     > "$ERR"; } 2>&1 | tee --append "$LOG"                  || update_ec
+
+if test xyes != "x$KEEP_COV"; then
+    mv "$COV/build-log.txt" "$COV/.."
+    rm -rf "$COV"
+fi
 
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"  \
     | tee --append "$LOG"
