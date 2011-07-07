@@ -26,7 +26,25 @@ CXX=g++"
 OPTS=fitx
 
 usage(){
-    echo "Usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]"
+    cat << EOF
+usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]"
+
+  -f  Overwrite the file with results if it already exists.  By default, this
+      would fail.
+
+  -i  Keep Coverity intermediate directory for further processing.  By default,
+      only build-log.txt is kept.
+
+  -t  Do not compress the resulting tarball.  Used to save time in case it is
+      going to be extracted right away.
+
+  -x  Skip patches not annotated by %{?_rawbuild}.  That is, do a vanilla build.
+
+  MOCK_PROFILE  Only name of the mock profile, without the path and without
+                the .cfg suffix.
+
+  COV_OPTS      Options passed to cov-analyze.
+EOF
     exit 1
 }
 
