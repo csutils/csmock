@@ -65,6 +65,8 @@ SRPM="`readlink -f "$2"`"
 test -n "$SRPM" || usage
 test -r "$SRPM" || die "failed to open $SRPM"
 rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
+rpm -lpq "$SRPM" 2>/dev/null | grep '\.spec$' \
+    || die "no specfile found in $SRPM"
 
 EC=
 update_ec() {
