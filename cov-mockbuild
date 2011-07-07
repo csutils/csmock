@@ -27,7 +27,7 @@ OPTS=fitx
 
 usage(){
     cat << EOF
-usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]"
+usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
 
   -f  Overwrite the file with results if it already exists.  By default, this
       would fail.

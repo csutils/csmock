@@ -1,0 +1,53 @@
+#!/bin/bash
+SELF="$0"
+
+# create a temp file for the patch wrapper
+PWRAP="`mktemp`"
+trap "rm -fv '$PWRAP'" EXIT
+
+# write the patch wrapper
+cat > "$PWRAP" << EOF
+#!/bin/sh
+
+need_for_build(){
+    while test -n "\$1"; do
+        if test "x--suffix" = "x\$1"; then
+            shift
+            if test "x_RAWBUILD" = "x\$1"; then
+                return 0
+            fi
+        fi
+
+        shift
+    done
+
+    return 1
+}
+
+if need_for_build "\$@"; then
+    echo "\$0: applying a patch annotated by _RAWBUILD" >&2
+    /usr/bin/patch "\$@"
+else
+    echo "\$0: ignoring a patch not annotated by _RAWBUILD" >&2
+    dd of=/dev/null status=noxfer 2>/dev/null
+fi
+EOF
+
+# make the patch wrapper executable
+chmod 0755 "$PWRAP" || exit 1
+
+# define RPM macros
+RPMM="--define '__patch $PWRAP'         \
+    --define '_rawbuild -b _RAWBUILD'   \
+    --define '_with_vanilla 1'          \
+    --define '_without_testsuite 1'     \
+    --define 'nofips 1'                 \
+    --define 'nopam 1'                  \
+    --define 'norunuser 1'              \
+    --define 'noselinux 1'              \
+    --define 'runselftest 0'            \
+    --define 'with_docs 0'              \
+    --define 'with_publican 0'"
+
+# run rpmbuild using the RPM macros above
+eval rpmbuild "$RPMM" "$@"
