@@ -127,18 +127,18 @@ pushd "$TMP" >/dev/null || die
 
 # build the package without patches
 cmd_wrap "$COV_MOCKBUILD" $COV_MOCKBUILD_OPTS -xt $MOCK_PROFILE "$SRPM" \
-    $COV_OPTS || touch run0.FAILED
+    $COV_OPTS || touch "$RESULTS_DIR/run0.FAILED"
 unpack_results
 
 # build the package with patches
-cmd_wrap "$COV_MOCKBUILD" $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM" \
-    $COV_OPTS || touch run1.FAILED
+cmd_wrap "$COV_MOCKBUILD" $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM"  \
+    $COV_OPTS || touch "$RESULTS_DIR/run1.FAILED"
 unpack_results
 
 # compare both defect lists
-cmd_wrap csdiff "$RESULTS_DIR/run0/$ERR" "$RESULTS_DIR/run1/$ERR" \
-    | tee "./defects-in-patches.err"        \
-    || touch ./diff.FAILED
+cmd_wrap csdiff "$RESULTS_DIR/run0/$ERR" "$RESULTS_DIR/run1/$ERR"       \
+    | tee "$RESULTS_DIR/defects-in-patches.err"                         \
+    || touch "$RESULTS_DIR/diff.FAILED"
 
 # finally write the results
 popd >/dev/null || die
