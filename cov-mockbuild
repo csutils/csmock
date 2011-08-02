@@ -184,6 +184,23 @@ if test -x /usr/bin/xmlto; then
 XXX
 fi
 
+# patch gtkdoc-mkhtml if installed
+if test -x /usr/bin/gtkdoc-mkhtml; then
+    patch /usr/bin/gtkdoc-mkhtml << XXX
+--- gtkdoc-mkhtml
++++ gtkdoc-mkhtml.coverity
+@@ -1,6 +1,8 @@
+ #!/bin/sh
+ #
+ 
++unset XML_CATALOG_FILES
++
+ usage="\\\\
+ Usage: gtkdoc-mkhtml [--path=SEARCH_PATH] MODULE DRIVER_FILE [BACKEND_OPTIONS...]"
+ 
+XXX
+fi
+
 dd of=/tmp/type_traits.patch status=noxfer << XXX
 --- type_traits
 +++ type_traits.coverity
