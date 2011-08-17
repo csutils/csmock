@@ -1,5 +1,6 @@
 #!/bin/bash
 SELF="$0"
+ARGS="$@"
 
 set -o pipefail
 
@@ -139,10 +140,46 @@ mkdir -p "$BASE_DIR" || die "mktemp failed"
 trap "cmd_wrap tar $TAR_OPTS -cvf '$TGZ' -C '$TMP' '$BASE'
     echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 
+INI="$BASE_DIR/$BASE.ini"
 COV="$BASE_DIR/$BASE.cov"
 LOG="$BASE_DIR/$BASE.log"
 OUT="$BASE_DIR/$BASE.out"
 ERR="$BASE_DIR/$BASE.err"
+
+git_stamp() {
+    git show --pretty="%cd-%h" --date=short $1 | head -1 | tr -d '\n'
+}
+
+self_ver() (
+    self="`readlink -f "$SELF"`"
+    git="`dirname "$self"`"
+    if cd "$git/.." && test -r .git/config; then
+        sha_head="`git_stamp`"
+        printf '%s' "$sha_head"
+
+        origin="`git merge-base HEAD origin/master`"
+        sha_orig="`git_stamp "$origin"`"
+        if test "$sha_head" != "$sha_orig"; then
+            printf ' (upstream %s)' "$sha_orig"
+        fi
+    else
+        echo "not a git repository"
+    fi
+)
+
+echo
+printf "[scan]
+tool = cov-mockbuild
+tool-version = %s
+tool-args = %s
+analyzer = coverity
+analyzer-version = %s
+host = %s
+config = %s
+started = %s\n" \
+    "`self_ver`" "$ARGS" "`cov-analyze --ident`" "`hostname`" "$MOCK_PROFILE" \
+    "`date '+%Y-%m-%d %H:%M:%S'`" \
+    | tee "$INI"
 
 # extra options for cov-analyze
 shift
@@ -152,7 +189,7 @@ COV_OPTS="$*"
 # copy the SRPM to our temp
 SRPM_BASE="`basename "$SRPM"`"
 SRPM_DUP="$TMP/$SRPM_BASE"
-cp -t "$TMP" -v "$SRPM" 2>&1 | tee --append "$LOG"
+cp -t "$TMP" "$SRPM" 2>&1 | tee --append "$LOG"
 test -f "$SRPM_DUP" || die
 
 # prepare a hack to get cov-build working with up2date g++
@@ -392,6 +429,8 @@ grep -v "^|" "$ERR" | grep -v "^\*" > "$OUT"
     | perl -i -p -e 's/^Error: /\nError: /'             \
     | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
     > "$ERR"; } 2>&1 | tee --append "$LOG"                  || update_ec
+
+printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 if test xyes != "x$KEEP_COV"; then
     mv "$COV/build-log.txt" "$COV/.."

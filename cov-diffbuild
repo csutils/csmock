@@ -1,5 +1,6 @@
 #!/bin/bash
 SELF="$0"
+ARGS="$@"
 
 set -o pipefail
 
@@ -97,6 +98,7 @@ COV_OPTS="$*"
 # create the directory for results in $TMPDIR
 TMP="`mktemp -d $TMPDIR/cov-diffbuild.XXXXXX`"
 RESULTS_DIR="$TMP/$BASE"
+INI="$RESULTS_DIR/$BASE.ini"
 mkdir -p "$RESULTS_DIR/run0" "$RESULTS_DIR/run1"
 test -d "$RESULTS_DIR" || die "mktemp failed"
 
@@ -123,6 +125,44 @@ unpack_results(){
     cmd_wrap tar xf "$RESULTS" && rm -f "$RESULTS"
 }
 
+# FIXME: copy/pasted from cov-mockbuild
+git_stamp() {
+    git show --pretty="%cd-%h" --date=short $1 | head -1 | tr -d '\n'
+}
+
+# FIXME: copy/pasted from cov-mockbuild
+self_ver() (
+    self="`readlink -f "$SELF"`"
+    git="`dirname "$self"`"
+    if cd "$git/.." && test -r .git/config; then
+        sha_head="`git_stamp`"
+        printf '%s' "$sha_head"
+
+        origin="`git merge-base HEAD origin/master`"
+        sha_orig="`git_stamp "$origin"`"
+        if test "$sha_head" != "$sha_orig"; then
+            printf ' (upstream %s)' "$sha_orig"
+        fi
+    else
+        echo "not a git repository"
+    fi
+)
+
+# FIXME: copy/pasted from cov-mockbuild
+echo
+printf "[scan]
+tool = cov-diffbuild
+tool-version = %s
+tool-args = %s
+analyzer = coverity
+analyzer-version = %s
+host = %s
+config = %s
+started = %s\n" \
+    "`self_ver`" "$ARGS" "`cov-analyze --ident`" "`hostname`" "$MOCK_PROFILE" \
+    "`date '+%Y-%m-%d %H:%M:%S'`" \
+    | tee "$INI"
+
 pushd "$TMP" >/dev/null || die
 
 # build the package without patches
@@ -139,6 +179,8 @@ unpack_results
 cmd_wrap csdiff "$RESULTS_DIR/run0/$ERR" "$RESULTS_DIR/run1/$ERR"       \
     | tee "$RESULTS_DIR/defects-in-patches.err"                         \
     || touch "$RESULTS_DIR/diff.FAILED"
+
+printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 # finally write the results
 popd >/dev/null || die
