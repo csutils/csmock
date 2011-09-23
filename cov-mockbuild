@@ -170,6 +170,11 @@ self_ver() (
     fi
 )
 
+# extra options for cov-analyze
+shift
+shift
+COV_OPTS="--wait-for-license $*"
+
 echo
 printf "[scan]
 tool = cov-mockbuild
@@ -177,17 +182,13 @@ tool-version = %s
 tool-args = %s
 analyzer = coverity
 analyzer-version = %s
+analyzer-args = %s
 host = %s
 config = %s
 started = %s\n" \
-    "`self_ver`" "$ARGS" "`cov-analyze --ident`" "`hostname`" "$MOCK_PROFILE" \
-    "`date '+%Y-%m-%d %H:%M:%S'`" \
+    "`self_ver`" "$ARGS" "`cov-analyze --ident`" "$COV_OPTS" "`hostname`" \
+    "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
-
-# extra options for cov-analyze
-shift
-shift
-COV_OPTS="$*"
 
 # copy the SRPM to our temp
 SRPM_BASE="`basename "$SRPM"`"
@@ -420,7 +421,7 @@ mock_wrap --copyout /builddir/cov "$COV"                    || update_ec
 mock_wrap --clean                                           || update_ec
 
 # run the analysis and store the summary to $OUT
-{ cmd_wrap cov-analyze --dir "$COV" --wait-for-license $COV_OPTS \
+{ cmd_wrap cov-analyze --dir "$COV" $COV_OPTS \
     | tee "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
 
 # get rid of those fancy progress markers

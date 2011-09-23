@@ -156,11 +156,12 @@ tool-version = %s
 tool-args = %s
 analyzer = coverity
 analyzer-version = %s
+analyzer-args = %s
 host = %s
 config = %s
 started = %s\n" \
-    "`self_ver`" "$ARGS" "`cov-analyze --ident`" "`hostname`" "$MOCK_PROFILE" \
-    "`date '+%Y-%m-%d %H:%M:%S'`" \
+    "`self_ver`" "$ARGS" "`cov-analyze --ident`" "$COV_OPTS" "`hostname`" \
+    "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
 
 pushd "$TMP" >/dev/null || die
