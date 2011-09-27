@@ -20,11 +20,6 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"
 
-# other environment variables used for cov-build/rpmbuild
-ENV_VARS="\
-CC=gcc \
-CXX=g++"
-
 OPTS=fitx
 
 usage(){
@@ -306,6 +301,15 @@ if test xyes = "x\$PATCH_STRING_H"; then
 fi
 EOF
 
+TOP="`dirname "$SELF"`"
+BASHRC="$TMP/bashrc"
+BASHRC_TPL="`readlink -f "$TOP/bashrc"`"
+if test -r "$BASHRC_TPL"; then
+    cp "$BASHRC_TPL" "$BASHRC"
+else
+    touch "$BASHRC"
+fi
+
 # prepare a dummy patcher
 if test xyes = "x$RAWBUILD"; then
     PWRAP_DIR="$TMP/pwrap"
@@ -357,7 +361,7 @@ fi
 TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
 { printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL" | tee --append "$LOG"; } >&2
-tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS"  \
+tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" \
     /etc/resolv.conf                            \
     /opt/coverity/VERSION.xml                   \
     /opt/coverity/config                        \
@@ -408,7 +412,7 @@ done`
 mock_wrap -v --chroot "sh -x $FIXUPS"
 
 # run the build through cov-build
-mock_wrap -v --chroot "/bin/su mockbuild -lc \"PATH=$ENV_PATH $ENV_VARS \
+mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 /opt/coverity/bin/cov-build --dir /builddir/cov \
 rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM\""  || update_ec
 

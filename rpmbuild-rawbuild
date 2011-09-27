@@ -1,5 +1,7 @@
 #!/bin/bash
 SELF="$0"
+LC_ALL=C
+export SELF LC_ALL
 
 # create a temp file for the patch wrapper
 PWRAP="`mktemp`"

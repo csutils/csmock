@@ -4,6 +4,8 @@ ARGS="$@"
 
 set -o pipefail
 
+export LC_ALL=C
+
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
 OPTS="fit"
