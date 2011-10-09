@@ -237,6 +237,23 @@ if test -x /usr/bin/gtkdoc-mkhtml; then
 XXX
 fi
 
+# patch asciidoc if installed
+if test -x /usr/bin/a2x; then
+    patch /usr/bin/a2x << XXX
+--- a2x
++++ a2x.coverity
+@@ -7,6 +7,8 @@
+ # under the terms of the GNU General Public License (GPL).
+ #
+ 
++unset XML_CATALOG_FILES
++
+ VERSION=1.0.0
+ BASENAME=\\\$(basename "\\\$0")
+ REALNAME="\\\$0"
+XXX
+fi
+
 dd of=/tmp/type_traits.patch status=noxfer << XXX
 --- type_traits
 +++ type_traits.coverity
