@@ -12,6 +12,7 @@ test -z "$TMPDIR" && TMPDIR="/tmp"
 RPMM="\
 --define '_smp_mflags -ij5' \
 --define '_without_testsuite 1' \
+--define 'cmake cmake' \
 --define 'libguestfs_runtests 0' \
 --define 'runselftest 0' \
 --define 'with_docs 0' \
@@ -223,17 +224,9 @@ fi
 # patch gtkdoc-mkhtml if installed
 if test -x /usr/bin/gtkdoc-mkhtml; then
     patch /usr/bin/gtkdoc-mkhtml << XXX
---- gtkdoc-mkhtml
-+++ gtkdoc-mkhtml.coverity
-@@ -1,6 +1,8 @@
- #!/bin/sh
- #
- 
-+unset XML_CATALOG_FILES
-+
- usage="\\\\
- Usage: gtkdoc-mkhtml [--path=SEARCH_PATH] MODULE DRIVER_FILE [BACKEND_OPTIONS...]"
- 
+3a4,5
+> unset XML_CATALOG_FILES
+> 
 XXX
 fi
 
