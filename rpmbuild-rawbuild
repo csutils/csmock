@@ -3,6 +3,17 @@ SELF="$0"
 LC_ALL=C
 export SELF LC_ALL
 
+if test -z "$1" || test "x--help" = "x$1"; then
+    printf "Usage: %s RPMBUILD_OPTIONS SPEC|SRPM
+
+    This script performs a vanilla build of the given package.  It takes the
+    same parameters as rpmbuild does.  Please mark patches that are needed for
+    build of the pcakge by %%{?_rawbuild} at end of the %%patchNNN lines.  This
+    script will then include them into the vanilla build.\n\n" "$SELF"
+
+    exit 1
+fi
+
 # create a temp file for the patch wrapper
 PWRAP="`mktemp`"
 trap "rm -fv '$PWRAP'" EXIT
