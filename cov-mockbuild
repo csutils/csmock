@@ -197,13 +197,6 @@ FIXUPS="$TMP/fixups.sh"
 cat > "$FIXUPS" << EOF
 #!/bin/sh
 
-# symlink the gcc version we have outside the chroot
-gccdir=/usr/lib/gcc/x86_64-redhat-linux
-gccver="\`find \$gccdir -mindepth 1 -maxdepth 1 -type d | head -n1\`"
-gccver=\`basename \$gccver\`
-ln -s \$gccver /usr/lib/gcc/x86_64-redhat-linux/4.4.4
-ln -s \$gccver /usr/lib/gcc/x86_64-redhat-linux/4.4.5
-
 # patch xmlto if installed
 if test -x /usr/bin/xmlto; then
     patch /usr/bin/xmlto << XXX
@@ -245,69 +238,6 @@ if test -x /usr/bin/a2x; then
  BASENAME=\\\$(basename "\\\$0")
  REALNAME="\\\$0"
 XXX
-fi
-
-dd of=/tmp/type_traits.patch status=noxfer << XXX
---- type_traits
-+++ type_traits.coverity
-@@ -223,30 +223,6 @@
-   template<typename>
-     struct is_function
-     : public false_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes...)>
--    : public true_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes......)>
--    : public true_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes...) const>
--    : public true_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes......) const>
--    : public true_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes...) volatile>
--    : public true_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes......) volatile>
--    : public true_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes...) const volatile>
--    : public true_type { };
--  template<typename _Res, typename... _ArgTypes>
--    struct is_function<_Res(_ArgTypes......) const volatile>
--    : public true_type { };
-
-   // composite type traits [4.5.2].
-   
-XXX
-
-# simplify C++ headers for Coverity in case of gcc-4.4.5 and gcc-4.6.0
-if test -d /usr/include/c++/4.4.5; then
-    PATCH_STRING_H=yes
-    sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
-        /usr/include/c++/4.4.5/c++0x_warning.h \
-        || exit \$?
-fi
-if test -d /usr/include/c++/4.6.0; then
-    PATCH_STRING_H=yes
-    sed -i 's/^#ifndef __GXX_EXPERIMENTAL_CXX0X__$/#if 0/' \
-        /usr/include/c++/4.6.0/bits/c++0x_warning.h \
-        || exit \$?
-fi
-
-# this file is provided by libstdc++-devel, which is not installed by default
-if test -f /usr/include/c++/4.4.5/tr1_impl/type_traits; then
-    patch /usr/include/c++/4.4.5/tr1_impl/type_traits < /tmp/type_traits.patch
-fi
-if test -f /usr/include/c++/4.6.0/tr1_impl/type_traits; then
-    patch /usr/include/c++/4.6.0/tr1_impl/type_traits < /tmp/type_traits.patch
-fi
-
-if test xyes = "x\$PATCH_STRING_H"; then
-    sed -i 's/__GNUC_PREREQ (4, 4)$/0/' /usr/include/string.h \
-        || exit \$?
 fi
 EOF
 
