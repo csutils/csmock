@@ -351,10 +351,14 @@ done`
 # TODO: branch by RHEL version
 mock_wrap -v --chroot "sh -x $FIXUPS"
 
-# run the build through cov-build
+# run the %prep phase as usually (without cov-build)
 mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
-/opt/coverity/bin/cov-build --dir /builddir/cov \
-rpmbuild -bc --nodeps /builddir/build/SPECS/$SPEC $RPMM\""  || update_ec
+rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\""  || update_ec
+
+# run the %build phase through cov-build
+mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+/opt/coverity/bin/cov-build --dir /builddir/cov rpmbuild -bc --nodeps \
+--short-circuit /builddir/build/SPECS/$SPEC $RPMM\""        || update_ec
 
 # get the intermediate directory out of the chroot and store it to $COV
 mock_wrap --chroot "chmod -R +r /builddir/cov"              || update_ec
