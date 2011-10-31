@@ -335,6 +335,17 @@ if test -n "$EXTRA_DEPS"; then
     mock_wrap --install $EXTRA_DEPS || update_ec
 fi
 
+# yet another desperate attempt to install missing deps; without the following
+# hack it was impossible to install lm_sensors-devel as a dependency
+# of net-snmp-5.5-31.el6.src.rpm
+eval mock_wrap -v --install "`rpm -pq "$SRPM_DUP" --requires | while read dep
+    do printf " '%s'" "$dep"
+done`"
+
+# 'mock --installdeps' is not always sufficient, neither yum-builddep is
+mock_wrap -v --installdeps "$SRPM_DUP"
+
+# install the SRPM within the mock chroot
 SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
 mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\"" \
     || die "failed to install SRPM"
@@ -350,16 +361,8 @@ mock_wrap --chroot "/bin/bash -c 'cd /builddir/build/SRPMS && \
 eval mv -v *.src.rpm $SRPM_BASE || :'"
 
 # 'mock --installdeps' is not always sufficient, neither yum-builddep is
-mock_wrap -v --installdeps "$SRPM_DUP"
 mock_wrap -v --chroot "yum-builddep --nogpgcheck \
 /builddir/build/SRPMS/$SRPM_BASE"
-
-# yet another desperate attempt to install missing deps; without the following
-# hack it was impossible to install lm_sensors-devel as a dependency
-# of net-snmp-5.5-31.el6.src.rpm
-mock_wrap -v --install `rpm -pq "$SRPM_DUP" --requires | while read dep
-    do printf " '%s'" "$dep"
-done`
 
 # TODO: branch by RHEL version
 mock_wrap -v --chroot "sh -x $FIXUPS"
