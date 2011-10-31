@@ -21,11 +21,13 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"
 
-OPTS=fitx
+OPTS=d:fitx
 
 usage(){
     cat << EOF
 usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
+
+  -d  A space-separated list of manually added dependences needed for build.
 
   -f  Overwrite the file with results if it already exists.  By default, this
       would fail.
@@ -48,6 +50,9 @@ EOF
 
 while getopts $OPTS opt; do
     case "$opt" in
+        d)  EXTRA_DEPS="$OPTARG"
+            ;;
+
         f)  OVERWRITE_RESULTS=yes
             ;;
 
@@ -325,9 +330,17 @@ rm -f "$TPL"
 mock_wrap --chroot "tar -C / -xf \"/tmp/$TPL_BASE\"" || die "bootstrap failed"
 mock_wrap --install "xml-common" "yum-utils" || die "mock --install failed"
 
+if test -n "$EXTRA_DEPS"; then
+    # install all dependences manually specified by the user
+    mock_wrap --install $EXTRA_DEPS || update_ec
+fi
+
 SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
 mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\"" \
     || die "failed to install SRPM"
+
+# make the unpacked contents of the SRPM accessible (if the maintainer did not)
+mock_wrap --chroot "chmod -R +r /builddir/build"
 
 # rebuild the SRPM to avoid RPM incompatibilities when resolving deps
 mock_wrap --chroot "rpmbuild -bs --nodeps /builddir/build/SPECS/$SPEC $RPMM"
