@@ -361,6 +361,8 @@ mock_wrap --chroot "/bin/bash -c 'cd /builddir/build/SRPMS && \
 eval mv -v *.src.rpm $SRPM_BASE || :'"
 
 # 'mock --installdeps' is not always sufficient, neither yum-builddep is
+mock_wrap --copyout "/builddir/build/SRPMS/$SRPM_BASE" "$SRPM_DUP"
+mock_wrap -v --installdeps "$SRPM_DUP"
 mock_wrap -v --chroot "yum-builddep --nogpgcheck \
 /builddir/build/SRPMS/$SRPM_BASE"
 
