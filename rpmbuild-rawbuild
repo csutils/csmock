@@ -72,6 +72,7 @@ RPMM="--define '__patch $PWRAP'         \
     --define '_rawbuild -b _RAWBUILD'   \
     --define '_with_vanilla 1'          \
     --define '_without_testsuite 1'     \
+    --define 'cmake cmake'              \
     --define 'libguestfs_runtests 0'    \
     --define 'nofips 1'                 \
     --define 'nopam 1'                  \
