@@ -88,11 +88,6 @@ test -n "$SRPM" || usage
 test -r "$SRPM" || die "failed to open $SRPM"
 rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
 
-# look for cov-mockbuild
-TOP="`dirname "$SELF"`"
-COV_MOCKBUILD="`readlink -f "$TOP/cov-mockbuild"`"
-test -x "$COV_MOCKBUILD" || die "cov-mockbuild not found"
-
 BASE="`basename "$SRPM" .src.rpm`"
 ERR="$BASE.err"
 RESULTS="$BASE.tar"
@@ -145,27 +140,8 @@ unpack_results(){
     cmd_wrap tar xf "$RESULTS" && rm -f "$RESULTS"
 }
 
-# FIXME: copy/pasted from cov-mockbuild
-git_stamp() {
-    git show --pretty="%cd-%h" --date=short $1 | head -1 | tr -d '\n'
-}
-
-# FIXME: copy/pasted from cov-mockbuild
 self_ver() (
-    self="`readlink -f "$SELF"`"
-    git="`dirname "$self"`"
-    if cd "$git/.." && test -r .git/config; then
-        sha_head="`git_stamp`"
-        printf '%s' "$sha_head"
-
-        origin="`git merge-base HEAD origin/master`"
-        sha_orig="`git_stamp "$origin"`"
-        if test "$sha_head" != "$sha_orig"; then
-            printf ' (upstream %s)' "$sha_orig"
-        fi
-    else
-        echo "not a git repository"
-    fi
+    rpm -q cov-mockbuild 2>&1
 )
 
 # FIXME: copy/pasted from cov-mockbuild
@@ -187,12 +163,12 @@ started = %s\n" \
 pushd "$TMP" >/dev/null || die
 
 # build the package without patches
-cmd_wrap "$COV_MOCKBUILD" $COV_MOCKBUILD_OPTS -xt $MOCK_PROFILE "$SRPM" \
+cmd_wrap cov-mockbuild $COV_MOCKBUILD_OPTS -xt $MOCK_PROFILE "$SRPM" \
     $COV_OPTS || touch "$RESULTS_DIR/run0.FAILED"
 unpack_results
 
 # build the package with patches
-cmd_wrap "$COV_MOCKBUILD" $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM"  \
+cmd_wrap cov-mockbuild $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM"  \
     $COV_OPTS || touch "$RESULTS_DIR/run1.FAILED"
 unpack_results
 
