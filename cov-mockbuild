@@ -270,7 +270,7 @@ if test -w /usr/include/nss3/pkcs11n.h; then
 diff --git a/mock/pkcs11n.h b/mock/pkcs11n.h
 --- a/mock/pkcs11n.h
 +++ b/mock/pkcs11n.h
-@@ -362,7 +362,7 @@ typedef CK_ULONG          CK_TRUST;
+@@ -362,7 +362,7 @@
   *  cast the resulting value to the deprecated type in the #define, thus
   *  producting the warning when the #define is used.
   */
@@ -288,11 +288,11 @@ if test -w /usr/include/nspr4/prtypes.h; then
 diff --git a/mock/prtypes.h b/mock/prtypes.h
 --- a/mock/prtypes.h
 +++ b/mock/prtypes.h
-@@ -548,8 +548,8 @@ typedef unsigned long PRUword;
+@@ -548,8 +548,8 @@
  ** The macro can be used only in places where an "extern" declaration is
  ** allowed.
  */
--#define PR_STATIC_ASSERT(condition) \
+-#define PR_STATIC_ASSERT(condition) \\\\
 -    extern void pr_static_assert(int arg[(condition) ? 1 : -1])
 +#define PR_STATIC_ASSERT(condition)
 +
