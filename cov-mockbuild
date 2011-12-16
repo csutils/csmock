@@ -264,11 +264,28 @@ diff --git a/gmacros.h b/gmacros.h
 XXX
 fi
 
+# Coverity 5.4.1 does not support the 'deprecated' attribute taking an argument
+if test -w /usr/include/nss3/pkcs11n.h; then
+    patch /usr/include/nss3/pkcs11n.h << XXX
+diff --git a/mock/pkcs11n.h b/mock/pkcs11n.h
+--- a/mock/pkcs11n.h
++++ b/mock/pkcs11n.h
+@@ -362,7 +362,7 @@ typedef CK_ULONG          CK_TRUST;
+  *  cast the resulting value to the deprecated type in the #define, thus
+  *  producting the warning when the #define is used.
+  */
+-#if (__GNUC__  == 4) && (__GNUC_MINOR__ < 5)
++#if 1
+ /* The mac doesn't like the friendlier deprecate messages. I'm assuming this
+  * is a gcc version issue rather than mac or ppc specific */
+ typedef CK_TRUST __CKT_NSS_UNTRUSTED __attribute__((deprecated));
+XXX
+fi
+
 # Coverity 5.4.1 does not support NSPR-style static assertions
 if test -w /usr/include/nspr4/prtypes.h; then
     patch /usr/include/nspr4/prtypes.h << XXX
 diff --git a/mock/prtypes.h b/mock/prtypes.h
-index 9cd5e25..ecf52ed 100644
 --- a/mock/prtypes.h
 +++ b/mock/prtypes.h
 @@ -548,8 +548,8 @@ typedef unsigned long PRUword;
