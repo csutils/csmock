@@ -54,6 +54,8 @@ Source3:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 
 Requires: cov-sa
 Requires: csdiff
+Requires: mock
+Requires: rpm-build
 
 %description
 This package contains cov-mockbuild and cov-diffbuild tools that allow to scan

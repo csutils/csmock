@@ -245,6 +245,24 @@ if test -x /usr/bin/a2x; then
  REALNAME="\\\$0"
 XXX
 fi
+
+# Coverity 5.4.1 does not support the 'deprecated' attribute taking an argument
+if test -w /usr/include/glib-2.0/glib/gmacros.h; then
+    patch /usr/include/glib-2.0/glib/gmacros.h << XXX
+diff --git a/gmacros.h b/gmacros.h
+--- a/gmacros.h
++++ b/gmacros.h
+@@ -295,7 +295,7 @@
+ #define G_DEPRECATED
+ #endif
+ 
+-#if    __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
++#if 0
+ #define G_DEPRECATED_FOR(f) __attribute__((deprecated("Use '" #f "' instead")))
+ #elif defined(_MSC_FULL_VER) && (_MSC_FULL_VER > 140050320)
+ #define G_DEPRECATED_FOR(f) __declspec(deprecated("is deprecated. Use '" #f "' instead"))
+XXX
+fi
 EOF
 
 BASHRC="$TMP/bashrc"
