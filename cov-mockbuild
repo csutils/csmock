@@ -263,6 +263,27 @@ diff --git a/gmacros.h b/gmacros.h
  #define G_DEPRECATED_FOR(f) __declspec(deprecated("is deprecated. Use '" #f "' instead"))
 XXX
 fi
+
+# Coverity 5.4.1 does not support NSPR-style static assertions
+if test -w /usr/include/nspr4/prtypes.h; then
+    patch /usr/include/nspr4/prtypes.h << XXX
+diff --git a/mock/prtypes.h b/mock/prtypes.h
+index 9cd5e25..ecf52ed 100644
+--- a/mock/prtypes.h
++++ b/mock/prtypes.h
+@@ -548,8 +548,8 @@ typedef unsigned long PRUword;
+ ** The macro can be used only in places where an "extern" declaration is
+ ** allowed.
+ */
+-#define PR_STATIC_ASSERT(condition) \
+-    extern void pr_static_assert(int arg[(condition) ? 1 : -1])
++#define PR_STATIC_ASSERT(condition)
++
+ 
+ PR_END_EXTERN_C
+ 
+XXX
+fi
 EOF
 
 BASHRC="$TMP/bashrc"
