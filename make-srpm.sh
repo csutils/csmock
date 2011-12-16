@@ -57,6 +57,9 @@ Requires: csdiff
 Requires: mock
 Requires: rpm-build
 
+BuildArch:  noarch
+Obsoletes:  cov-mockbuild.x86_64 < %{version}-%{release}
+
 %description
 This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
 SRPMs by Coverity Static Analysis in a fully automated way.
