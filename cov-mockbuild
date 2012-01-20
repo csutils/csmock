@@ -39,11 +39,13 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"
 
-OPTS=d:fitx
+OPTS=cd:fitx
 
 usage(){
     cat << EOF
 usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
+
+  -c  Run cppcheck on the sources after the build (before running cov-analyze).
 
   -d  A space-separated list of manually added dependences needed for build.
 
@@ -66,8 +68,18 @@ EOF
     exit 1
 }
 
+CPPCHECK=
+CPPCHECK_FILES=
+
 while getopts $OPTS opt; do
     case "$opt" in
+        c)  CPPCHECK="/usr/bin/cppcheck"
+            test -x "$CPPCHECK" || die "$CPPCHECK not found"
+            TINYXML="/usr/lib64/libtinyxml.so.0"
+            test -e "$TINYXML" || die "$TINYXML not found"
+            CPPCHECK_FILES="$CPPCHECK $TINYXML $(readlink -f $TINYXML)"
+            ;;
+
         d)  EXTRA_DEPS="$OPTARG"
             ;;
 
@@ -362,7 +374,7 @@ fi
 TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
 { printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL" | tee --append "$LOG"; } >&2
-tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" \
+tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
     /etc/resolv.conf                            \
     /opt/coverity/VERSION.xml                   \
     /opt/coverity/config                        \
@@ -434,6 +446,12 @@ mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 /opt/coverity/bin/cov-build --dir /builddir/cov rpmbuild -bc --nodeps \
 --short-circuit /builddir/build/SPECS/$SPEC $RPMM\""        || update_ec
 
+if test -n "$CPPCHECK"; then
+mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+$CPPCHECK -j9 --template gcc --suppress=toomanyconfigs --inline-suppr \
+/builddir/build/BUILD 2>/builddir/cov/cppcheck.out\""       || update_ec
+fi
+
 # get the intermediate directory out of the chroot and store it to $COV
 mock_wrap --chroot "chmod -R +r /builddir/cov"              || update_ec
 mock_wrap --copyout /builddir/cov "$COV"                    || update_ec
@@ -441,6 +459,10 @@ mock_wrap --copyout /builddir/cov "$COV"                    || update_ec
 # ###########################################################################
 # we do not need the chroot anymore
 mock_wrap --clean                                           || update_ec
+
+if test -e "$COV/cppcheck.out"; then
+    mv "$COV/cppcheck.out" "$COV/.."
+fi
 
 # run the analysis and store the summary to $OUT
 { cmd_wrap cov-analyze --dir "$COV" $COV_OPTS \
