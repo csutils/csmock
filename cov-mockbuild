@@ -400,7 +400,7 @@ mock_wrap --install "xml-common" "yum-utils" || die "mock --install failed"
 
 if test -n "$EXTRA_DEPS"; then
     # install all dependences manually specified by the user
-    mock_wrap --install $EXTRA_DEPS || update_ec
+    mock_wrap -v --install $EXTRA_DEPS || update_ec
 fi
 
 # yet another desperate attempt to install missing deps; without the following
@@ -411,7 +411,7 @@ eval mock_wrap -v --install "`rpm -pq "$SRPM_DUP" --requires | while read dep
 done`"
 
 # 'mock --installdeps' is not always sufficient, neither yum-builddep is
-mock_wrap -v --installdeps "$SRPM_DUP"
+mock_wrap --installdeps "$SRPM_DUP"
 
 # install the SRPM within the mock chroot
 SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
@@ -430,24 +430,24 @@ eval mv -v *.src.rpm $SRPM_BASE || :'"
 
 # 'mock --installdeps' is not always sufficient, neither yum-builddep is
 mock_wrap --copyout "/builddir/build/SRPMS/$SRPM_BASE" "$SRPM_DUP"
-mock_wrap -v --installdeps "$SRPM_DUP"
-mock_wrap -v --chroot "yum-builddep --nogpgcheck \
+mock_wrap --installdeps "$SRPM_DUP"
+mock_wrap --chroot "yum-builddep --nogpgcheck \
 /builddir/build/SRPMS/$SRPM_BASE"
 
 # TODO: branch by RHEL version
-mock_wrap -v --chroot "sh -x $FIXUPS"
+mock_wrap --chroot "sh -x $FIXUPS"
 
 # run the %prep phase as usually (without cov-build)
-mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\""  || update_ec
 
 # run the %build phase through cov-build
-mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 /opt/coverity/bin/cov-build --dir /builddir/cov rpmbuild -bc --nodeps \
 --short-circuit /builddir/build/SPECS/$SPEC $RPMM\""        || update_ec
 
 if test -n "$CPPCHECK"; then
-mock_wrap -v --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 $CPPCHECK -j9 --template gcc --suppress=toomanyconfigs --inline-suppr \
 /builddir/build/BUILD 2>/builddir/cov/cppcheck.out\""       || update_ec
 fi
