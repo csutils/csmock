@@ -313,6 +313,10 @@ diff --git a/mock/prtypes.h b/mock/prtypes.h
  
 XXX
 fi
+
+# Coverity 5.5.1 does not seem to support int128_t
+sed -i 's|#define _GLIBCXX_USE_INT128 1|/* #undef _GLIBCXX_USE_INT128 */|' \\
+    /usr/include/c++/4.7.0/x86_64-redhat-linux/bits/c++config.h
 EOF
 
 BASHRC="$TMP/bashrc"
