@@ -180,9 +180,13 @@ LOG="$BASE_DIR/$BASE.log"
 OUT="$BASE_DIR/$BASE.out"
 ERR="$BASE_DIR/$BASE.err"
 
-self_ver() (
+cov_version() {
+    cov-analyze --ident | perl -i -p -e 's/\n/\\n/'
+}
+
+self_version() {
     rpm -q cov-mockbuild 2>&1
-)
+}
 
 # extra options for cov-analyze
 shift
@@ -200,7 +204,7 @@ analyzer-args = %s
 host = %s
 config = %s
 started = %s\n" \
-    "`self_ver`" "$ARGS" "`cov-analyze --ident`" "$COV_OPTS" "`hostname`" \
+    "`self_version`" "$ARGS" "`cov_version`" "$COV_OPTS" "`hostname`" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
 
