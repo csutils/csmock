@@ -127,7 +127,7 @@ die(){
     else
         echo "$SELF: generic error" >&2
     fi
-    update_ec 1
+    false; update_ec
     exit 1
 }
 
@@ -472,19 +472,23 @@ if test -e "$COV/cppcheck.out"; then
     mv "$COV/cppcheck.out" "$COV/.."
 fi
 
-# run the analysis and store the summary to $OUT
-{ cmd_wrap cov-analyze --dir "$COV" $COV_OPTS \
-    | tee "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
+# check whether it makes sense to wait for the license to become available
+if test -f "$COV"/c/emit/*/emit-db.write-lock; then
 
-# get rid of those fancy progress markers
-grep -v "^|" "$ERR" | grep -v "^\*" > "$OUT"
+    # run the analysis and store the summary to $OUT
+    { cmd_wrap cov-analyze --dir "$COV" $COV_OPTS \
+        | tee "$ERR"; } 2>&1 | tee --append "$LOG"          || update_ec
 
-# store the list of defects to $ERR
-{ cmd_wrap cov-format-errors --dir "$COV" --emacs-style \
-    | perl -i -p -e 's/([0-9]):\n/\1: /'                \
-    | perl -i -p -e 's/^Error: /\nError: /'             \
-    | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
-    > "$ERR"; } 2>&1 | tee --append "$LOG"                  || update_ec
+    # get rid of those fancy progress markers
+    grep -v "^|" "$ERR" | grep -v "^\*" > "$OUT"
+
+    # store the list of defects to $ERR
+    { cmd_wrap cov-format-errors --dir "$COV" --emacs-style \
+        | perl -i -p -e 's/([0-9]):\n/\1: /'                \
+        | perl -i -p -e 's/^Error: /\nError: /'             \
+        | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
+        > "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
+fi
 
 printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
