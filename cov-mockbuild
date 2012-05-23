@@ -472,6 +472,22 @@ if test -e "$COV/cppcheck.out"; then
     mv "$COV/cppcheck.out" "$COV/.."
 fi
 
+# get the line stating count of successfully parsed compilation units
+PSTAT="`grep 'C/C++ compilation units (.*%) are ready for analysis$' \
+    "$COV/build-log.txt"`"
+
+# parse the absolute/relative count of successfully parsed compilation units
+U_COUNT="`printf '%s\n' "$PSTAT" | sed -r 's|^[^0-9]*([0-9]+) C/C\+\+ .*$|\1|'`"
+U_RATIO="`printf '%s\n' "$PSTAT" | sed -r 's|^.* \(([0-9]+)%\) .*$|\1|'`"
+
+# assume zero successfully parsed compilation units unless proven otherwise
+test 0 -lt "$U_COUNT" 2>/dev/null || U_COUNT=0
+test 0 -lt "$U_RATIO" 2>/dev/null || U_RATIO=0
+
+# write the parsing statistics to .ini
+printf "compilation-unit-count = %d\ncompilation-unit-ratio = %d\n" \
+    "$U_COUNT" "$U_RATIO" | tee --append "$INI"
+
 # check whether it makes sense to wait for the license to become available
 if test -f "$COV"/c/emit/*/emit-db.write-lock; then
 
