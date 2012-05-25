@@ -318,9 +318,16 @@ diff --git a/mock/prtypes.h b/mock/prtypes.h
 XXX
 fi
 
-# Coverity 5.5.1 does not seem to support int128_t
-sed -i 's|#define _GLIBCXX_USE_INT128 1|/* #undef _GLIBCXX_USE_INT128 */|' \\
-    /usr/include/c++/4.7.0/x86_64-redhat-linux/bits/c++config.h
+# Coverity 5.5.3 does not seem to support int128_t, noexcept, constexpr, etc.
+sed -i /usr/include/c++/4.7.0/x86_64-redhat-linux/bits/c++config.h \\
+    -e 's|#define _GLIBCXX_USE_FLOAT128 1|/* #undef _GLIBCXX_USE_FLOAT128 */|' \\
+    -e 's|#define _GLIBCXX_USE_INT128 1|/* #undef _GLIBCXX_USE_INT128 */|' \\
+    -e 's|# ifdef __GXX_EXPERIMENTAL_CXX0X__|# if 0|'
+sed -i /usr/include/c++/4.7.0/bits/exception_ptr.h \\
+    -e 's|#ifdef __GXX_EXPERIMENTAL_CXX0X__|#if 0|'
+sed -i /usr/include/c++/4.7.0/bits/nested_exception.h \\
+    -e 's|noexcept|throw()|'
+sed -i 's|constexpr|const|' /usr/include/c++/4.7.0/type_traits
 EOF
 
 BASHRC="$TMP/bashrc"
