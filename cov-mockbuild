@@ -511,6 +511,9 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         | perl -i -p -e 's/^Error: /\nError: /'             \
         | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
         > "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
+else
+    # just make sure we return non-zero exit code if we analyzed nothing
+    fail; update_ec
 fi
 
 printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
