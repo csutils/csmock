@@ -51,6 +51,9 @@ Source0:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 Source1:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-diffbuild
 Source2:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=aux/rpmbuild-rawbuild
 Source3:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/bashrc
+Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project
+Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-defects
+Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-project
 
 Requires: cov-sa
 Requires: csdiff
@@ -65,14 +68,24 @@ This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
 SRPMs by Coverity Static Analysis in a fully automated way.
 
 %install
-install -m0755 -d "\$RPM_BUILD_ROOT%{_bindir}" "\$RPM_BUILD_ROOT/usr/share/covscan"
-install -m0755 %{SOURCE0} %{SOURCE1} %{SOURCE2} "\$RPM_BUILD_ROOT%{_bindir}"
-install -m0644 %{SOURCE3} "\$RPM_BUILD_ROOT/usr/share/covscan"
+install -m0755 -d \\
+    "\$RPM_BUILD_ROOT%{_bindir}" \\
+    "\$RPM_BUILD_ROOT/usr/share/covscan"
+
+install -m0755 \\
+    %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE4} %{SOURCE5} %{SOURCE6} \\
+    "\$RPM_BUILD_ROOT%{_bindir}"
+
+install -m0644 %{SOURCE3} \\
+    "\$RPM_BUILD_ROOT/usr/share/covscan"
 
 %files
 %defattr(-,root,root,-)
+%{_bindir}/cov-commit-project
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
+%{_bindir}/cov-query-defects
+%{_bindir}/cov-query-project
 %{_bindir}/rpmbuild-rawbuild
 /usr/share/covscan
 EOF

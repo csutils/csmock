@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2011 Red Hat, Inc.
+# Copyright (C) 2011-2012 Red Hat, Inc.
 #
 # This file is part of csdiff.
 #
@@ -39,7 +39,7 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"
 
-OPTS=cd:fitx
+OPTS=cd:fimtx
 
 usage(){
     cat << EOF
@@ -54,6 +54,8 @@ usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
 
   -i  Keep Coverity intermediate directory for further processing.  By default,
       only build-log.txt is kept.
+
+  -m  Commit the results to Integrity Manager and obtain the project/defect IDs.
 
   -t  Do not compress the resulting tarball.  Used to save time in case it is
       going to be extracted right away.
@@ -88,6 +90,10 @@ while getopts $OPTS opt; do
 
         i)
             KEEP_COV=yes
+            ;;
+
+        m)
+            COMMIT_TO_IM=yes
             ;;
 
         t)  TAR_ONLY=yes
@@ -178,6 +184,7 @@ COV="$BASE_DIR/$BASE.cov"
 ERR="$BASE_DIR/$BASE.err"
 INI="$BASE_DIR/$BASE.ini"
  JS="$BASE_DIR/$BASE.js"
+MAP="$BASE_DIR/$BASE.map"
 LOG="$BASE_DIR/$BASE.log"
 
 cov_version() {
@@ -511,6 +518,21 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
         | perl -i -p -e 's/^path://'                        \
         > "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
+
+    if test xyes = "x$COMMIT_TO_IM"; then
+        PROJ_NAME="$BASE"
+        test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
+        printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
+        cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1 \
+            | tee --append "$LOG"                               || udpate_ec
+
+        PROJ_ID="`cov-query-project -p "$PROJ_NAME"`"
+        if test 0 -lt "$PROJ_ID"; then
+            printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
+            { cmd_wrap cov-query-defects "$PROJ_NAME" > "$MAP"; } \
+                2>&1 | tee --append "$LOG"                      || update_ec
+        fi
+    fi
 else
     # just make sure we return non-zero exit code if we analyzed nothing
     fail; update_ec
@@ -518,9 +540,8 @@ fi
 
 printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
-# TODO: commit to IM and retrieve project/defect IDs (if asked to do so)
-
-cslinker "$ERR" "$INI" > "$JS"
+test -r $MAP || MAP=
+{ cmd_wrap cslinker "$ERR" "$INI" $MAP > "$JS"; } 2>&1 | tee --append "$LOG"
 
 if test xyes != "x$KEEP_COV"; then
     mv "$COV/build-log.txt" "$COV/.."
