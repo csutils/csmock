@@ -182,7 +182,9 @@ LOG="$BASE_DIR/$BASE.log"
 OUT="$BASE_DIR/$BASE.out"
 
 cov_version() {
-    cov-analyze --ident | perl -i -p -e 's/\n/\\n/'
+    cov-analyze --ident \
+        | perl -i -p -e 's/\n/\\n/' \
+        | perl -i -p -e 's/(\\n)*$//'
 }
 
 self_version() {

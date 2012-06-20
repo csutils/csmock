@@ -140,8 +140,11 @@ unpack_results(){
     cmd_wrap tar xf "$RESULTS" && rm -f "$RESULTS"
 }
 
+# FIXME: copy/pasted from cov-mockbuild
 cov_version() {
-    cov-analyze --ident | perl -i -p -e 's/\n/\\n/'
+    cov-analyze --ident \
+        | perl -i -p -e 's/\n/\\n/' \
+        | perl -i -p -e 's/(\\n)*$//'
 }
 
 self_version() {
