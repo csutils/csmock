@@ -89,7 +89,7 @@ test -r "$SRPM" || die "failed to open $SRPM"
 rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
 
 BASE="`basename "$SRPM" .src.rpm`"
-ERR="$BASE.err"
+JS="$BASE.js"
 RESULTS="$BASE.tar"
 
 if test xyes = "x$TAR_ONLY"; then
@@ -177,8 +177,8 @@ cmd_wrap cov-mockbuild $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM"  \
 unpack_results
 
 # compare both defect lists
-cmd_wrap csdiff "$RESULTS_DIR/run0/$ERR" "$RESULTS_DIR/run1/$ERR"       \
-    | tee "$RESULTS_DIR/defects-in-patches.err"                         \
+cmd_wrap csdiff "$RESULTS_DIR/run0/$JS" "$RESULTS_DIR/run1/$JS"       \
+    | tee "$RESULTS_DIR/defects-in-patches.js"                        \
     || touch "$RESULTS_DIR/diff.FAILED"
 
 printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
