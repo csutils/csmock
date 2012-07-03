@@ -34,7 +34,9 @@ RPMM="\
 --define 'libguestfs_runtests 0' \
 --define 'runselftest 0' \
 --define 'with_docs 0' \
---define 'with_publican 0'"
+--define 'with_publican 0' \
+--without binfilter \
+--without langpacks"
 
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"

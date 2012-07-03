@@ -80,7 +80,9 @@ RPMM="--define '__patch $PWRAP'         \
     --define 'noselinux 1'              \
     --define 'runselftest 0'            \
     --define 'with_docs 0'              \
-    --define 'with_publican 0'"
+    --define 'with_publican 0'          \
+    --without binfilter                 \
+    --without langpacks"
 
 # run rpmbuild using the RPM macros above
 eval rpmbuild "$RPMM" "$@"
