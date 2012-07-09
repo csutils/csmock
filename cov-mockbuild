@@ -184,6 +184,7 @@ trap "test -z \"\$EC\" || touch \"${BASE_DIR}.FAILED\"
 
 COV="$BASE_DIR/$BASE.cov"
 ERR="$BASE_DIR/$BASE.err"
+HTML="$BASE_DIR/$BASE.html"
 INI="$BASE_DIR/$BASE.ini"
  JS="$BASE_DIR/$BASE.js"
 MAP="$BASE_DIR/$BASE.map"
@@ -555,6 +556,8 @@ printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 test -r $MAP || MAP=
 { cmd_wrap cslinker "$ERR" "$INI" $MAP > "$JS"; } 2>&1 | tee --append "$LOG"
+
+{ cmd_wrap cshtml "$JS" > "$HTML"; } 2>&1 | tee --append "$LOG"
 
 if test xyes != "x$KEEP_COV"; then
     mv "$COV/build-log.txt" "$COV/.."
