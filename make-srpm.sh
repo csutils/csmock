@@ -54,6 +54,7 @@ Source3:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project
 Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-defects
 Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-project
+Source7:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=covscan-stats/def-to-cwe.map
 
 Requires: cov-sa
 Requires: csdiff
@@ -76,7 +77,7 @@ install -m0755 \\
     %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE4} %{SOURCE5} %{SOURCE6} \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
-install -m0644 %{SOURCE3} \\
+install -m0644 %{SOURCE3} %{SOURCE7} \\
     "\$RPM_BUILD_ROOT/usr/share/covscan"
 
 %files

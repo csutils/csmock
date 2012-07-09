@@ -521,6 +521,17 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         | perl -i -p -e 's/^path://'                        \
         > "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
 
+    # embed CWE numbers
+    { cmd_wrap csannot /usr/share/covscan/def-to-cwe.map <"${ERR}" >"${ERR}.cwe"
+        size_src="`stat -c%s "${ERR}"`"
+        size_dst="`stat -c%s "${ERR}.cwe"`"
+        if test "$size_src" -lt "$size_dst"; then
+            mv -v "${ERR}.cwe" "${ERR}"
+        else
+            rm -v "${ERR}.cwe"
+        fi
+    } 2>&1 | tee --append "$LOG"
+
     if test xyes = "x$COMMIT_TO_IM"; then
         PROJ_NAME="$BASE"
         test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
