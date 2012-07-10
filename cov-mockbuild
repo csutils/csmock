@@ -538,7 +538,7 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
         printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
         cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1 \
-            | tee --append "$LOG"                               || udpate_ec
+            | tee --append "$LOG"                               || update_ec
 
         PROJ_ID="`cov-query-project -p "$PROJ_NAME"`"
         if test 0 -lt "$PROJ_ID"; then
