@@ -168,8 +168,8 @@ analyzer = coverity
 analyzer-version = %s
 analyzer-args = %s
 host = %s
-config = %s
-started = %s
+mock-config = %s
+time-created = %s
 title = %s - Defects in Patches\n" \
     "`self_version`" "$ARGS" "`cov_version`" "$COV_OPTS" "`hostname`" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" "$BASE" \
@@ -187,7 +187,7 @@ cmd_wrap cov-mockbuild $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM"  \
     $COV_OPTS || touch "$RESULTS_DIR/run1.FAILED"
 unpack_results
 
-printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
+printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 # compare both defect lists
 JS_DIFF="$RESULTS_DIR/defects-in-patches.js"

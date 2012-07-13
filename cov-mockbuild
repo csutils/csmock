@@ -214,8 +214,8 @@ analyzer = coverity
 analyzer-version = %s
 analyzer-args = %s
 host = %s
-config = %s
-started = %s\n" \
+mock-config = %s
+time-created = %s\n" \
     "`self_version`" "$ARGS" "`cov_version`" "$COV_OPTS" "`hostname`" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
@@ -557,7 +557,7 @@ else
     fail; update_ec
 fi
 
-printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
+printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 test -r $MAP || MAP=
 { cmd_wrap cslinker "$ERR" "$INI" $MAP > "$JS"; } 2>&1 | tee --append "$LOG"
