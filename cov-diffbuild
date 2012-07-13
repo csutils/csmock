@@ -179,12 +179,12 @@ pushd "$TMP" >/dev/null || die
 
 # build the package without patches
 cmd_wrap cov-mockbuild $COV_MOCKBUILD_OPTS -xt $MOCK_PROFILE "$SRPM" \
-    $COV_OPTS || touch "$RESULTS_DIR/run0.FAILED"
+    $COV_OPTS || printf "status-run0 = %d\n" "$?" >> "$INI"
 unpack_results
 
 # build the package with patches
 cmd_wrap cov-mockbuild $COV_MOCKBUILD_OPTS -t $MOCK_PROFILE "$SRPM"  \
-    $COV_OPTS || touch "$RESULTS_DIR/run1.FAILED"
+    $COV_OPTS || printf "status-run1 = %d\n" "$?" >> "$INI"
 unpack_results
 
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"

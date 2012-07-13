@@ -120,6 +120,7 @@ test -f "$MOCK_CFG" || usage
 EC=
 update_ec() {
     last_ec=$?
+    test -z "$1" || last_ec="$1"
     if test 128 -le "$last_ec" -a "$last_ec" -lt 192; then
         echo "<<< $SELF: child signalled to die by $(($last_ec - 128))" >&2
         exit $last_ec
@@ -129,7 +130,7 @@ update_ec() {
     test -n "$EC" || EC=$last_ec
 }
 
-die(){
+die() {
     if test -n "$1"; then
         echo "$SELF: error: $1" >&2
     else
@@ -137,6 +138,21 @@ die(){
     fi
     false; update_ec
     exit 1
+}
+
+# $1 ... key in .ini
+write_status_and_update_ec() {
+    last_ec=$?
+    printf "status-$1 = %d\n" "$last_ec" >> "$INI"
+    test 0 -eq "$last_ec" || update_ec "$last_ec"
+}
+
+# $1 ... key in .ini, $2 ... error mesage
+write_status_and_die() {
+    last_ec=$?
+    printf "status-$1 = %d\n" "$last_ec" >> "$INI"
+    test -n "$2" && printf "error-message = %s\n" "$2" >> "$INI"
+    die "$last_ec" "$2"
 }
 
 # the second operand is the SRPM to build/analyze
@@ -224,7 +240,7 @@ time-created = %s\n" \
 SRPM_BASE="`basename "$SRPM"`"
 SRPM_DUP="$TMP/$SRPM_BASE"
 cp -t "$TMP" "$SRPM" 2>&1 | tee --append "$LOG"
-test -f "$SRPM_DUP" || die
+test -f "$SRPM_DUP" || write_status_and_die "bootstrap"
 
 # prepare a hack to get cov-build working with up2date g++
 FIXUPS="$TMP/fixups.sh"
@@ -353,7 +369,7 @@ fi
 # prepare a dummy patcher
 if test xyes = "x$RAWBUILD"; then
     PWRAP_DIR="$TMP/pwrap"
-    mkdir "$PWRAP_DIR" || die
+    mkdir "$PWRAP_DIR" || write_status_and_die "bootstrap"
 
     if echo "$MOCK_PROFILE" | grep "rhel-5"; then
         # el5 rpm does not seem to use the %{__patch} macro for some reason
@@ -408,7 +424,7 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
     /opt/coverity/dtd                           \
     /opt/coverity/bin/cov-*                     \
     /opt/coverity/bin/libcapture-*.so           \
-    || die "failed to create $TPL"
+    || write_status_and_die "bootstrap" "failed to create $TPL"
 
 # invoke mock with given parameters
 mock_wrap(){
@@ -417,17 +433,22 @@ mock_wrap(){
 }
 
 # initialize mock chroot
-mock_wrap --init                || die "mock --init failed"
-mock_wrap --copyin "$TPL" /tmp  || die "mock --copyin failed"
+mock_wrap --init \
+    || write_status_and_die "bootstrap" "mock --init failed"
+mock_wrap --copyin "$TPL" /tmp \
+    || write_status_and_die "bootstrap" "mock --copyin failed"
 rm -f "$TPL"
 
 # prepare all we need to build the package
-mock_wrap --chroot "tar -C / -xf \"/tmp/$TPL_BASE\"" || die "bootstrap failed"
-mock_wrap --install "xml-common" "yum-utils" || die "mock --install failed"
+mock_wrap --chroot "tar -C / -xf \"/tmp/$TPL_BASE\"" \
+    || write_status_and_die "bootstrap" "bootstrap failed"
+mock_wrap --install "xml-common" "yum-utils" \
+    || write_status_and_die "bootstrap" "mock --install failed"
 
 if test -n "$EXTRA_DEPS"; then
     # install all dependences manually specified by the user
-    mock_wrap -v --install $EXTRA_DEPS || update_ec
+    mock_wrap -v --install $EXTRA_DEPS \
+        || write_status_and_update_ec installdeps
 fi
 
 # yet another desperate attempt to install missing deps; without the following
@@ -443,7 +464,7 @@ mock_wrap --installdeps "$SRPM_DUP"
 # install the SRPM within the mock chroot
 SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
 mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\"" \
-    || die "failed to install SRPM"
+    || write_status_and_die "bootstrap" "failed to install SRPM"
 
 # make the unpacked contents of the SRPM accessible (if the maintainer did not)
 mock_wrap --chroot "chmod -R +r /builddir/build"
@@ -466,26 +487,32 @@ mock_wrap --chroot "sh -x $FIXUPS"
 
 # run the %prep phase as usually (without cov-build)
 mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
-rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\""  || update_ec
+rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
+    || write_status_and_update_ec "prep"
 
 # run the %build phase through cov-build
 mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 /opt/coverity/bin/cov-build --dir /builddir/cov rpmbuild -bc --nodeps \
---short-circuit /builddir/build/SPECS/$SPEC $RPMM\""        || update_ec
+--short-circuit /builddir/build/SPECS/$SPEC $RPMM\"" \
+    || write_status_and_update_ec "build"
 
 if test -n "$CPPCHECK"; then
 mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 $CPPCHECK -j9 --template gcc --suppress=toomanyconfigs --inline-suppr \
-/builddir/build/BUILD 2>/builddir/cov/cppcheck.out\""       || update_ec
+/builddir/build/BUILD 2>/builddir/cov/cppcheck.out\"" \
+    || write_status_and_update_ec "cppcheck"
 fi
 
 # get the intermediate directory out of the chroot and store it to $COV
-mock_wrap --chroot "chmod -R +r /builddir/cov"              || update_ec
-mock_wrap --copyout /builddir/cov "$COV"                    || update_ec
+mock_wrap --chroot "chmod -R +r /builddir/cov" \
+    || write_status_and_update_ec "post"
+mock_wrap --copyout /builddir/cov "$COV" \
+    || write_status_and_update_ec "post"
 
 # ###########################################################################
 # we do not need the chroot anymore
-mock_wrap --clean                                           || update_ec
+mock_wrap --clean \
+    || write_status_and_update_ec "post"
 
 if test -e "$COV/cppcheck.out"; then
     mv "$COV/cppcheck.out" "$COV/.."
@@ -516,7 +543,8 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
 
     # run the analysis
     cmd_wrap cov-analyze --dir "$COV" $COV_OPTS 2>&1        \
-        | tee --append "$LOG"                               || update_ec
+        | tee --append "$LOG"                               \
+        || write_status_and_update_ec "analyze"
 
     # store the list of defects to $ERR
     { cmd_wrap cov-format-errors --dir "$COV" --emacs-style \
@@ -524,7 +552,8 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         | perl -i -p -e 's/^Error: /\nError: /'             \
         | perl -i -p -e 's/^\/buildddir\/build\/BUILD//'    \
         | perl -i -p -e 's/^path://'                        \
-        > "$ERR"; } 2>&1 | tee --append "$LOG"              || update_ec
+        > "$ERR"; } 2>&1 | tee --append "$LOG"              \
+        || write_status_and_update_ec "analyze"
 
     # embed CWE numbers
     { cmd_wrap csannot /usr/share/covscan/def-to-cwe.map <"${ERR}" >"${ERR}.cwe"
@@ -538,14 +567,16 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
     } 2>&1 | tee --append "$LOG"
 
     if test xyes = "x$COMMIT_TO_IM"; then
-        cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1 \
-            | tee --append "$LOG"                               || update_ec
+        cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1        \
+            | tee --append "$LOG"                                   \
+                || write_status_and_update_ec "commit"
 
         PROJ_ID="`cov-query-project -p "$PROJ_NAME"`"
         if test 0 -lt "$PROJ_ID"; then
             printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
-            { cmd_wrap cov-query-defects "$PROJ_NAME" > "$MAP"; } \
-                2>&1 | tee --append "$LOG"                      || update_ec
+            { cmd_wrap cov-query-defects "$PROJ_NAME" > "$MAP"; }   \
+                2>&1 | tee --append "$LOG"                          \
+                || write_status_and_update_ec "commit"
 
             CSHTML_OPTS="--defect-url-template ${COV_IM_PUB_URL}/\
 sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
@@ -554,7 +585,7 @@ sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
 else
     # just make sure we return non-zero exit code if we analyzed nothing
     touch "$ERR"
-    fail; update_ec
+    fail; update_ec "analyze"
 fi
 
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
