@@ -507,6 +507,10 @@ test 0 -lt "$U_RATIO" 2>/dev/null || U_RATIO=0
 printf "compilation-unit-count = %d\ncompilation-unit-ratio = %d\n" \
     "$U_COUNT" "$U_RATIO" | tee --append "$INI"
 
+PROJ_NAME="$BASE"
+test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
+printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
+
 # check whether it makes sense to wait for the license to become available
 if test -f "$COV"/c/emit/*/emit-db.write-lock; then
 
@@ -534,9 +538,6 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
     } 2>&1 | tee --append "$LOG"
 
     if test xyes = "x$COMMIT_TO_IM"; then
-        PROJ_NAME="$BASE"
-        test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
-        printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
         cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1 \
             | tee --append "$LOG"                               || update_ec
 
@@ -545,10 +546,14 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
             printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
             { cmd_wrap cov-query-defects "$PROJ_NAME" > "$MAP"; } \
                 2>&1 | tee --append "$LOG"                      || update_ec
+
+            CSHTML_OPTS="--defect-url-template ${COV_IM_PUB_URL}/\
+sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
         fi
     fi
 else
     # just make sure we return non-zero exit code if we analyzed nothing
+    touch "$ERR"
     fail; update_ec
 fi
 
@@ -557,7 +562,7 @@ printf "finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 test -r $MAP || MAP=
 { cmd_wrap cslinker "$ERR" "$INI" $MAP > "$JS"; } 2>&1 | tee --append "$LOG"
 
-{ cmd_wrap cshtml "$JS" > "$HTML"; } 2>&1 | tee --append "$LOG"
+{ cmd_wrap cshtml $CSHTML_OPTS "$JS" > "$HTML"; } 2>&1 | tee --append "$LOG"
 
 if test xyes != "x$KEEP_COV"; then
     mv "$COV/build-log.txt" "$COV/.."

@@ -96,6 +96,7 @@ rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
 
 BASE="`basename "$SRPM" .src.rpm`"
 JS="$BASE.js"
+HTML="$BASE.html"
 RESULTS="$BASE.tar"
 
 if test xyes = "x$TAR_ONLY"; then
@@ -194,8 +195,14 @@ cmd_wrap csdiff "$RESULTS_DIR/run0/$JS" "$RESULTS_DIR/run1/$JS"       \
     | cslinker - "$INI" > "$JS_DIFF"                                  \
     || touch "$RESULTS_DIR/diff.FAILED"
 
+CSHTML_OPTS="--defect-url-template ${COV_IM_PUB_URL}/\
+sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
+
 cmd_wrap csgrep "$JS_DIFF" | tee "$RESULTS_DIR/defects-in-patches.err"
-cmd_wrap cshtml "$JS_DIFF" > "$RESULTS_DIR/defects-in-patches.html"
+cmd_wrap cshtml $CSHTML_OPTS "$JS_DIFF" > "$RESULTS_DIR/defects-in-patches.html"
+cmd_wrap cshtml $CSHTML_OPTS \
+    --diff-base "$RESULTS_DIR/run0/$JS" "$RESULTS_DIR/run1/$JS" \
+    > "$RESULTS_DIR/run1/$HTML"
 
 # finally write the results
 popd >/dev/null || die
