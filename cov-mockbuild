@@ -136,7 +136,7 @@ die() {
     else
         echo "$SELF: generic error" >&2
     fi
-    false; update_ec
+    update_ec 2
     exit 1
 }
 
@@ -585,7 +585,7 @@ sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
 else
     # just make sure we return non-zero exit code if we analyzed nothing
     touch "$ERR"
-    fail; update_ec "analyze"
+    update_ec 1 "analyze"
 fi
 
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
