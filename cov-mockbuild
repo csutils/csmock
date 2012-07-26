@@ -428,7 +428,7 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
 
 # invoke mock with given parameters
 mock_wrap(){
-    { cmd_wrap mock -r "$MOCK_PROFILE" "$@"; } 2>&1 \
+    { cmd_wrap mock-unbuffered -r "$MOCK_PROFILE" "$@"; } 2>&1 \
         | tee --append "$LOG"
 }
 
