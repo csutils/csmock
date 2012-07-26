@@ -571,7 +571,7 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
             | tee --append "$LOG"                                   \
                 || write_status_and_update_ec "commit"
 
-        PROJ_ID="`cov-query-project -p "$PROJ_NAME"`"
+        PROJ_ID="`cov-getprojkey -p "$PROJ_NAME"`"
         if test 0 -lt "$PROJ_ID"; then
             printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
             { cmd_wrap cov-query-defects "$PROJ_NAME" > "$MAP"; }   \
