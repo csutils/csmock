@@ -207,3 +207,8 @@ cmd_wrap cshtml $CSHTML_OPTS \
 # finally write the results
 popd >/dev/null || die
 cmd_wrap tar $TAR_OPTS -cvf "$TGZ" -C "$TMP" "$BASE"
+
+# return non-zero exit code in case run1 failed
+if test -f "$RESULTS_DIR/run1.FAILED"; then
+    exit 1
+fi
