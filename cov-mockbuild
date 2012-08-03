@@ -213,7 +213,7 @@ cov_version() {
 }
 
 self_version() {
-    rpm -q cov-mockbuild 2>&1
+    echo $(rpm -q cov-mockbuild csdiff) 2>&1
 }
 
 # extra options for cov-analyze

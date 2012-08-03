@@ -147,32 +147,18 @@ unpack_results(){
     cmd_wrap tar xf "$RESULTS" && rm -f "$RESULTS"
 }
 
-# FIXME: copy/pasted from cov-mockbuild
-cov_version() {
-    cov-analyze --ident \
-        | perl -i -p -e 's/\n/\\n/' \
-        | perl -i -p -e 's/(\\n)*$//'
-}
-
 self_version() {
     rpm -q cov-mockbuild 2>&1
 }
 
-# FIXME: copy/pasted from cov-mockbuild
 echo
 printf "[scan]
 tool = cov-diffbuild
 tool-version = %s
 tool-args = %s
-analyzer = coverity
-analyzer-version = %s
-analyzer-args = %s
-host = %s
-mock-config = %s
 time-created = %s
 title = %s - Defects in Patches\n" \
-    "`self_version`" "$ARGS" "`cov_version`" "$COV_OPTS" "`hostname`" \
-    "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" "$BASE" \
+    "`self_version`" "$ARGS" "`date '+%Y-%m-%d %H:%M:%S'`" "$BASE" \
     | tee "$INI"
 
 pushd "$TMP" >/dev/null || die
