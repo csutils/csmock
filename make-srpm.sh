@@ -118,7 +118,9 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %config(noreplace) %{_sysconfdir}/security/console.apps/mock-unbuffered
 EOF
 
-rpmbuild -bs "$SPEC"            \
-    --define "_sourcedir ."     \
-    --define "_specdir ."       \
-    --define "_srcrpmdir $DST"
+rpmbuild -bs "$SPEC"                            \
+    --define "_sourcedir ."                     \
+    --define "_specdir ."                       \
+    --define "_srcrpmdir $DST"                  \
+    --define "_source_filedigest_algorithm md5" \
+    --define "_binary_filedigest_algorithm md5"
