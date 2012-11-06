@@ -550,8 +550,8 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
     { cmd_wrap cov-format-errors --dir "$COV" --emacs-style \
         | perl -i -p -e 's/([0-9>]):\n/\1: /'               \
         | perl -i -p -e 's/^Error: /\nError: /'             \
-        | perl -i -p -e 's/^\/builddir\/build\/BUILD\///'   \
         | perl -i -p -e 's/^path://'                        \
+        | perl -i -p -e 's/^\/builddir\/build\/BUILD\///'   \
         | grep -v '^<unknown>'                              \
         > "$ERR"; } 2>&1 | tee --append "$LOG"              \
         || write_status_and_update_ec "analyze"
