@@ -591,6 +591,11 @@ fi
 
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
+# write analyse statistics to .ini
+LSTAT="`grep '^Total LoC input to cov-analyze' "$LOG"`"
+L_CNT="`printf '%s\n' "$LSTAT" | sed -r 's|^[^0-9]*||'`"
+printf "lines_processed = %d\n" "$L_CNT" | tee --append "$INI"
+
 test -r $MAP || MAP=
 { cmd_wrap cslinker "$ERR" "$INI" $MAP > "$JS"; } 2>&1 | tee --append "$LOG"
 
