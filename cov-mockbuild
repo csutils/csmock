@@ -525,10 +525,15 @@ fi
 
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
-# write analyse statistics to .ini
+# write the 'lines-processed' field to .ini
 LSTAT="`grep '^Total LoC input to cov-analyze' "$LOG"`"
 L_CNT="`printf '%s\n' "$LSTAT" | sed -r 's|^[^0-9]*||'`"
-printf "lines_processed = %d\n" "$L_CNT" | tee --append "$INI"
+printf "lines-processed = %d\n" "$L_CNT" | tee --append "$INI"
+
+# write the 'time-elapsed-analysis' field to to .ini
+TSTAT="`grep '^Time taken by Coverity analysis' "$LOG"`"
+ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
+printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
 
 test -r $MAP || MAP=
 { cmd_wrap cslinker "$ERR" "$INI" $MAP > "$JS"; } 2>&1 | tee --append "$LOG"
