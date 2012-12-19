@@ -219,7 +219,7 @@ self_version() {
 # extra options for cov-analyze
 shift
 shift
-COV_OPTS="--wait-for-license $*"
+COV_OPTS="--wait-for-license -co BAD_FREE:allow_first_field:true $*"
 
 echo
 printf "[scan]
