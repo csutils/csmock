@@ -509,8 +509,9 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         PROJ_ID="`cov-getprojkey -p "$PROJ_NAME"`"
         if test 0 -lt "$PROJ_ID"; then
             printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
-            { cmd_wrap cov-query-defects "$PROJ_NAME" > "$MAP"; }   \
-                2>&1 | tee --append "$LOG"                          \
+            { cmd_wrap cov-query-defects "$PROJ_NAME"               \
+                | perl -i -p -e 's/\/builddir\/build\/BUILD\///'    \
+                > "$MAP"; } 2>&1 | tee --append "$LOG"              \
                 || write_status_and_update_ec "commit"
 
             CSHTML_OPTS="--defect-url-template ${COV_IM_PUB_URL}/\
