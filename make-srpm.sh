@@ -55,6 +55,7 @@ Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project-update
 Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-defects
 Source7:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=covscan-stats/def-to-cwe.map
+Source8:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-dump-err
 
 Requires: cov-getprojkey
 Requires: cov-sa
@@ -84,7 +85,8 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT/usr/share/covscan"
 
 install -m0755 \\
-    %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE4} %{SOURCE5} %{SOURCE6} \\
+    %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE4} \\
+    %{SOURCE5} %{SOURCE6} %{SOURCE8} \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
 install -m0644 %{SOURCE3} %{SOURCE7} \\
@@ -106,6 +108,7 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %defattr(-,root,root,-)
 %{_bindir}/cov-commit-project
 %{_bindir}/cov-commit-project-update
+%{_bindir}/cov-dump-err
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
 %{_bindir}/cov-query-defects

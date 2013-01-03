@@ -1,0 +1,25 @@
+#!/bin/sh
+SELF="$0"
+
+die() {
+    printf "%s: %s\n" "$SELF" "$*" >&2
+    exit 1
+}
+
+test 1 = $# || usage
+
+usage() {
+    printf "Usage: %s COV_DIR\n" "$SELF"
+    exit 1
+}
+
+dir="$1"
+test -d "$dir"          || die "directory not found: $dir"
+test -d "${dir}/c/emit" || die "directory not found: ${dir}/c/emit"
+
+cov-format-errors --emacs-style --dir "$dir"            \
+    | perl -i -p -e 's/([0-9>]):\n/\1: /'               \
+    | perl -i -p -e 's/^Error: /\nError: /'             \
+    | perl -i -p -e 's/^path://'                        \
+    | perl -i -p -e 's/^\/builddir\/build\/BUILD\///'   \
+    | grep -v '^<unknown>'
