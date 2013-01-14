@@ -26,11 +26,15 @@ export LC_ALL=C
 
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
-OPTS="fimt"
+OPTS="cd:fimt"
 
 usage(){
     cat << EOF
 usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
+
+  -c  Run cppcheck on the sources after the build (before running cov-analyze).
+
+  -d  A space-separated list of manually added dependences needed for build.
 
   -f  Overwrite the file with results if it already exists.  By default, this
       would fail.
@@ -62,6 +66,14 @@ die(){
 
 while getopts $OPTS opt; do
     case "$opt" in
+        c)
+            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -c"
+            ;;
+
+        d)
+            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -d '$OPTARG'"
+            ;;
+
         f)  OVERWRITE_RESULTS=yes
             ;;
 
