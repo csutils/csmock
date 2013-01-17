@@ -57,6 +57,8 @@ Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 Source7:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=covscan-stats/def-to-cwe.map
 Source8:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-dump-err
 
+BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
 Requires: cov-getprojkey
 Requires: cov-sa
 Requires: csdiff
@@ -75,6 +77,9 @@ mkdir -p sbin etc
 printf '#!/bin/sh\\nstdbuf -o0 /usr/sbin/mock "\$@"\\n' > ./sbin/mock-unbuffered
 printf 'USER=root\\nPROGRAM=/usr/sbin/mock-unbuffered\\nSESSION=false
 FALLBACK=false\\nKEEP_ENV_VARS=COLUMNS,SSH_AUTH_SOCK\\n' > ./etc/mock-unbuffered
+
+%clean
+rm -rf "\$RPM_BUILD_ROOT"
 
 %install
 rm -rf "\$RPM_BUILD_ROOT"
