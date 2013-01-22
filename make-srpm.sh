@@ -59,6 +59,8 @@ Source8:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+BuildRequires: help2man
+
 Requires: cov-getprojkey
 Requires: cov-sa
 Requires: csdiff
@@ -73,7 +75,19 @@ This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
 SRPMs by Coverity Static Analysis in a fully automated way.
 
 %build
-mkdir -p sbin etc
+mkdir -p bin etc man sbin
+
+install -m0755 %{SOURCE0} %{SOURCE1} bin/
+sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
+
+help2man --no-info --section 1 --name \\
+    "run static analysis of the given SRPM using mock" \\
+    bin/cov-mockbuild | gzip -c > man/cov-mockbuild.1.gz
+
+help2man --no-info --section 1 --name \\
+    "run static analysis of the given the patches in the given SRPM using cov-mockbuild" \\
+    bin/cov-diffbuild | gzip -c > man/cov-diffbuild.1.gz
+
 printf '#!/bin/sh\\nstdbuf -o0 /usr/sbin/mock "\$@"\\n' > ./sbin/mock-unbuffered
 printf 'USER=root\\nPROGRAM=/usr/sbin/mock-unbuffered\\nSESSION=false
 FALLBACK=false\\nKEEP_ENV_VARS=COLUMNS,SSH_AUTH_SOCK\\n' > ./etc/mock-unbuffered
@@ -86,6 +100,7 @@ rm -rf "\$RPM_BUILD_ROOT"
 
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_bindir}" \\
+    "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
     "\$RPM_BUILD_ROOT%{_sbindir}" \\
     "\$RPM_BUILD_ROOT/usr/share/covscan"
 
@@ -93,6 +108,8 @@ install -m0755 \\
     %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE4} \\
     %{SOURCE5} %{SOURCE6} %{SOURCE8} \\
     "\$RPM_BUILD_ROOT%{_bindir}"
+
+install -m0644 man/cov-{diff,mock}build.1.gz "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
 install -m0644 %{SOURCE3} %{SOURCE7} \\
     "\$RPM_BUILD_ROOT/usr/share/covscan"
@@ -118,6 +135,8 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_bindir}/cov-mockbuild
 %{_bindir}/cov-query-defects
 %{_bindir}/rpmbuild-rawbuild
+%{_mandir}/man1/cov-diffbuild.1.gz
+%{_mandir}/man1/cov-mockbuild.1.gz
 /usr/share/covscan
 
 %{_bindir}/mock-unbuffered

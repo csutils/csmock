@@ -30,7 +30,7 @@ OPTS="cd:fimt"
 
 usage(){
     cat << EOF
-usage: $SELF [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
+usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
 
   -c  Run cppcheck on the sources after the build (before running cov-analyze).
 
@@ -63,6 +63,11 @@ die(){
     fi
     exit 1
 }
+
+if test "x--version" = "x$1"; then
+    rpm -qf $SELF
+    exit $?
+fi
 
 while getopts $OPTS opt; do
     case "$opt" in
