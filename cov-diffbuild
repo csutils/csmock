@@ -69,9 +69,12 @@ if test "x--version" = "x$1"; then
     exit $?
 fi
 
+CPPCHECK=
+
 while getopts $OPTS opt; do
     case "$opt" in
         c)
+            CPPCHECK=yes
             COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -c"
             ;;
 
@@ -206,6 +209,18 @@ cmd_wrap cshtml $CSHTML_OPTS "$JS_DIFF" > "$RESULTS_DIR/defects-in-patches.html"
 cmd_wrap cshtml $CSHTML_OPTS \
     --diff-base "$RESULTS_DIR/run0/$JS" "$RESULTS_DIR/run1/$JS" \
     > "$RESULTS_DIR/run1/$HTML"
+
+# diff cppcheck's results if enabled
+if test xyes = x$CPPCHECK; then
+    cmd_wrap csdiff \
+        "$RESULTS_DIR/run0/cppcheck.out" \
+        "$RESULTS_DIR/run1/cppcheck.out" \
+        > "$RESULTS_DIR/cppcheck-added.err"
+    cmd_wrap csdiff \
+        "$RESULTS_DIR/run1/cppcheck.out" \
+        "$RESULTS_DIR/run0/cppcheck.out" \
+        > "$RESULTS_DIR/cppcheck-fixed.err"
+fi
 
 # finally write the results
 popd >/dev/null || die
