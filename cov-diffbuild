@@ -212,14 +212,16 @@ cmd_wrap cshtml $CSHTML_OPTS \
 
 # diff cppcheck's results if enabled
 if test xyes = x$CPPCHECK; then
-    cmd_wrap csdiff \
-        "$RESULTS_DIR/run0/cppcheck.out" \
-        "$RESULTS_DIR/run1/cppcheck.out" \
-        > "$RESULTS_DIR/cppcheck-added.err"
-    cmd_wrap csdiff \
-        "$RESULTS_DIR/run1/cppcheck.out" \
-        "$RESULTS_DIR/run0/cppcheck.out" \
-        > "$RESULTS_DIR/cppcheck-fixed.err"
+    CPP0="$RESULTS_DIR/run0/cppcheck.out"
+    CPP1="$RESULTS_DIR/run1/cppcheck.out"
+    CPP_A="$RESULTS_DIR/cppcheck-added"
+    CPP_F="$RESULTS_DIR/cppcheck-fixed"
+
+    cmd_wrap csdiff "$CPP0" "$CPP1" > "${CPP_A}.err"
+    cmd_wrap csdiff "$CPP1" "$CPP0" > "${CPP_F}.err"
+
+    test -s "${CPP_A}.err" && cmd_wrap cshtml "${CPP_A}.err" > "${CPP_A}.html"
+    test -s "${CPP_F}.err" && cmd_wrap cshtml "${CPP_F}.err" > "${CPP_F}.html"
 fi
 
 # finally write the results
