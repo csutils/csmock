@@ -537,8 +537,15 @@ TSTAT="`grep '^Time taken by Coverity analysis' "$LOG"`"
 ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
 printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
 
-test -r $MAP || MAP=
-{ cmd_wrap cslinker "$ERR" "$INI" $MAP > "$JS"; } 2>&1 | tee --append "$LOG"
+# do we have a readable .map file?
+if test -r "$MAP"; then
+    MAP="--mapfile $MAP"
+else
+    MAP=
+fi
+
+{ cmd_wrap cslinker --inifile "$INI" $MAP "$ERR" > "$JS"; } 2>&1 \
+    | tee --append "$LOG"
 
 { cmd_wrap cshtml $CSHTML_OPTS "$JS" > "$HTML"; } 2>&1 | tee --append "$LOG"
 
