@@ -54,7 +54,10 @@ Source3:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project
 Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project-update
 Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-defects
-Source7:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=covscan-stats/def-to-cwe.map
+
+# http://git.engineering.redhat.com/?p=users/rdecarva/cov_checker_map.git;a=blob_plain;f=cov_checker_map.txt
+Source7:    cov_checker_map.txt
+
 Source8:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-dump-err
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -63,7 +66,7 @@ BuildRequires: help2man
 
 Requires: cov-getprojkey
 Requires: cov-sa
-Requires: csdiff >= 0.20130130
+Requires: csdiff >= 0.20130131
 Requires: mock
 Requires: rpm-build
 
@@ -111,8 +114,8 @@ install -m0755 \\
 
 install -m0644 man/cov-{diff,mock}build.1.gz "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -m0644 %{SOURCE3} %{SOURCE7} \\
-    "\$RPM_BUILD_ROOT/usr/share/covscan"
+install -m0644 %{SOURCE3} "\$RPM_BUILD_ROOT/usr/share/covscan"
+install -m0644 %{SOURCE7} "\$RPM_BUILD_ROOT/usr/share/covscan/cwe-map.csv"
 
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/" \\
