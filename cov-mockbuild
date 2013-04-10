@@ -546,6 +546,10 @@ fi
 
 mv -v "$COV/build-log.txt" "$COV/.." 2>&1 | tee --append "$LOG"
 
+cmd_wrap cov-format-errors --dir "$COV" 2>&1 | tee --append "$LOG"
+
+mv -v "$COV/c/output/errors" "$COV/../cov-html/" 2>&1 | tee --append "$LOG"
+
 if test xyes != "x$KEEP_COV"; then
     rm -rf "$COV"
 fi
