@@ -1,6 +1,8 @@
 #!/bin/sh
 SELF="$0"
 
+set -o pipefail
+
 die() {
     printf "%s: %s\n" "$SELF" "$*" >&2
     exit 1
@@ -22,4 +24,4 @@ cov-format-errors --emacs-style --dir "$dir"            \
     | perl -i -p -e 's/^Error: /\nError: /'             \
     | perl -i -p -e 's/^path://'                        \
     | perl -i -p -e 's/^\/builddir\/build\/BUILD\///'   \
-    | grep -v '^<unknown>'
+    | { grep -v '^<unknown>'; true; }
