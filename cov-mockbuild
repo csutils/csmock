@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2011-2012 Red Hat, Inc.
+# Copyright (C) 2011-2013 Red Hat, Inc.
 #
 # This file is part of csdiff.
 #
@@ -41,7 +41,7 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"
 
-OPTS=cd:fimtx
+OPTS=cd:fim::tx
 
 usage(){
     cat << EOF
@@ -58,6 +58,8 @@ Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
       only build-log.txt is kept.
 
   -m  Commit the results to Integrity Manager and obtain the project/defect IDs.
+      You can specify the target host/stream as an optional argument using the
+      following format: user:passwd@host:port/stream
 
   -t  Do not compress the resulting tarball.  Used to save time in case it is
       going to be extracted right away.
@@ -101,6 +103,7 @@ while getopts $OPTS opt; do
 
         m)
             COMMIT_TO_IM=yes
+            COMMIT_TO_IM_OPTS="$OPTARG"
             ;;
 
         t)  TAR_ONLY=yes
@@ -352,6 +355,25 @@ EOF
 --define '_with_vanilla 1'"
 fi
 
+match() {
+    grep "$@" > /dev/null
+}
+
+parse_im_opts() {
+    eval `python - << EOF
+import re
+m = re.match('^([^@:]+):([^@]+)(?:@([^:/]+)(?::([^/]+)(?:/(.+))?)?)?\$', '$*')
+print "export COV_IM_USER=%s" % m.group(1)
+print "export COV_IM_PASS=%s" % m.group(2)
+if m.group(3) is not None:
+    print "export COV_IM_HOST=%s" % m.group(3)
+if m.group(4) is not None:
+    print "export COV_IM_PORT=%s" % m.group(4)
+if m.group(5) is not None:
+    print "export PROJ_NAME=%s" % m.group(5)
+EOF`
+}
+
 # prepare .tar of all the files we need inside mock chroot
 TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
@@ -495,6 +517,7 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         || write_status_and_update_ec "analyze"
 
     if test xyes = "x$COMMIT_TO_IM"; then
+        test -n "$COMMIT_TO_IM_OPTS" && parse_im_opts "$COMMIT_TO_IM_OPTS"
         cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1        \
             | tee --append "$LOG"                                   \
                 || write_status_and_update_ec "commit"
