@@ -355,10 +355,6 @@ EOF
 --define '_with_vanilla 1'"
 fi
 
-match() {
-    grep "$@" > /dev/null
-}
-
 parse_im_opts() {
     eval `python - << EOF
 import re

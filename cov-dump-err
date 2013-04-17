@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 SELF="$0"
 
 set -o pipefail
@@ -8,12 +8,12 @@ die() {
     exit 1
 }
 
-test 1 = $# || usage
-
 usage() {
     printf "Usage: %s COV_DIR\n" "$SELF"
     exit 1
 }
+
+test 1 = $# || usage
 
 dir="$1"
 test -d "$dir"          || die "directory not found: $dir"
