@@ -510,7 +510,10 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         || write_status_and_update_ec "analyze"
 
     if test xyes = "x$COMMIT_TO_IM"; then
+        # initialize variables for IM configuration
         test -n "$COMMIT_TO_IM_OPTS" && parse_im_opts "$COMMIT_TO_IM_OPTS"
+        . /usr/share/covscan/cov-default-connect.sh
+
         cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1        \
             | tee --append "$LOG"                                   \
                 || write_status_and_update_ec "commit"
@@ -555,10 +558,13 @@ fi
 { cmd_wrap cslinker --cwelist /usr/share/covscan/cwe-map.csv --inifile "$INI" \
     $MAP "$ERR" > "$JS"; } 2>&1 | tee --append "$LOG"
 
-# regenerate .err from .js to get the CWE numbers in place
-{ cmd_wrap csgrep "$JS" > "$ERR"; } 2>&1 | tee --append "$LOG"
+# regenerate .err from .js to get the CWE numbers in place and drop trace events
+{ cmd_wrap csgrep --prune-events=1 "$JS" > "$ERR"; } 2>&1 | tee --append "$LOG"
 
-{ cmd_wrap cshtml $CSHTML_OPTS "$JS" > "$HTML"; } 2>&1 | tee --append "$LOG"
+# generate .html from .js without trace events
+{ cmd_wrap sh -c "csgrep --prune-events=1 --mode=json \"$JS\" \
+    | cshtml $CSHTML_OPTS - > \"$HTML\""; } 2>&1 \
+    | tee --append "$LOG"
 
 mv -v "$COV/build-log.txt" "$COV/.." 2>&1 | tee --append "$LOG"
 

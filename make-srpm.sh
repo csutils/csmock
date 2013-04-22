@@ -67,7 +67,7 @@ BuildRequires: help2man
 
 Requires: cov-getprojkey
 Requires: cov-sa
-Requires: csdiff >= 0.20130131
+Requires: csdiff >= 0.20130417
 Requires: mock
 Requires: rpm-build
 
