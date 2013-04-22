@@ -79,6 +79,48 @@ if test "x--version" = "x$1"; then
     exit $?
 fi
 
+EC=
+update_ec() {
+    last_ec=$?
+    test -z "$1" || last_ec="$1"
+    if test 128 -le "$last_ec" -a "$last_ec" -lt 192; then
+        echo "<<< $SELF: child signalled to die by $(($last_ec - 128))" >&2
+        exit $last_ec
+    fi
+
+    echo "--- $SELF: exit code was: $last_ec" >&2
+    test -n "$EC" || EC=$last_ec
+}
+
+die() {
+    if test -n "$1"; then
+        echo "$SELF: error: $1" >&2
+    else
+        echo "$SELF: generic error" >&2
+    fi
+    update_ec 2
+    exit 1
+}
+
+parse_im_opts() {
+    python - << EOF
+import re
+m = re.match('^([^@:]+):([^@]+)(?:@([^:/]+)(?::([^/]+)(?:/(.+))?)?)?\$', '$*')
+print "export COV_IM_USER=%s" % m.group(1)
+print "export COV_IM_PASS=%s" % m.group(2)
+if m.group(3) is not None:
+    print "export COV_IM_HOST=%s" % m.group(3)
+if m.group(4) is not None:
+    print "export COV_IM_PORT=%s" % m.group(4)
+if m.group(5) is not None:
+    print "export PROJ_NAME=%s" % m.group(5)
+EOF
+}
+
+load_im_opts() {
+    eval `parse_im_opts "$@"`
+}
+
 CPPCHECK=
 CPPCHECK_FILES=
 
@@ -104,6 +146,10 @@ while getopts $OPTS opt; do
         m)
             COMMIT_TO_IM=yes
             COMMIT_TO_IM_OPTS="$OPTARG"
+            if test -n "$COMMIT_TO_IM_OPTS"; then
+                parse_im_opts "$COMMIT_TO_IM_OPTS" >/dev/null 2>&1 \
+                    || die "invalid argument given to -m"
+            fi
             ;;
 
         t)  TAR_ONLY=yes
@@ -124,29 +170,6 @@ shift $(($OPTIND - 1))
 MOCK_PROFILE="$1"
 MOCK_CFG="/etc/mock/$MOCK_PROFILE.cfg"
 test -f "$MOCK_CFG" || usage
-
-EC=
-update_ec() {
-    last_ec=$?
-    test -z "$1" || last_ec="$1"
-    if test 128 -le "$last_ec" -a "$last_ec" -lt 192; then
-        echo "<<< $SELF: child signalled to die by $(($last_ec - 128))" >&2
-        exit $last_ec
-    fi
-
-    echo "--- $SELF: exit code was: $last_ec" >&2
-    test -n "$EC" || EC=$last_ec
-}
-
-die() {
-    if test -n "$1"; then
-        echo "$SELF: error: $1" >&2
-    else
-        echo "$SELF: generic error" >&2
-    fi
-    update_ec 2
-    exit 1
-}
 
 # $1 ... key in .ini
 write_status_and_update_ec() {
@@ -355,21 +378,6 @@ EOF
 --define '_with_vanilla 1'"
 fi
 
-parse_im_opts() {
-    eval `python - << EOF
-import re
-m = re.match('^([^@:]+):([^@]+)(?:@([^:/]+)(?::([^/]+)(?:/(.+))?)?)?\$', '$*')
-print "export COV_IM_USER=%s" % m.group(1)
-print "export COV_IM_PASS=%s" % m.group(2)
-if m.group(3) is not None:
-    print "export COV_IM_HOST=%s" % m.group(3)
-if m.group(4) is not None:
-    print "export COV_IM_PORT=%s" % m.group(4)
-if m.group(5) is not None:
-    print "export PROJ_NAME=%s" % m.group(5)
-EOF`
-}
-
 # prepare .tar of all the files we need inside mock chroot
 TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
@@ -511,7 +519,7 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
 
     if test xyes = "x$COMMIT_TO_IM"; then
         # initialize variables for IM configuration
-        test -n "$COMMIT_TO_IM_OPTS" && parse_im_opts "$COMMIT_TO_IM_OPTS"
+        test -n "$COMMIT_TO_IM_OPTS" && load_im_opts "$COMMIT_TO_IM_OPTS"
         . /usr/share/covscan/cov-default-connect.sh
 
         cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1        \
