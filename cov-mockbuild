@@ -392,18 +392,15 @@ mock_wrap(){
 # initialize mock chroot
 mock_wrap --init \
     || write_status_and_die "bootstrap" "mock --init failed"
-mock_wrap --install "xml-common" "yum-utils" \
-    || write_status_and_die "bootstrap" "mock --install failed"
-
-# downgrade all packages to the latest available version (we use mock cache)
-mock_wrap --chroot 'yum downgrade \* 2>/dev/null; yum update'
-
-# prepare all we need to build the package
 mock_wrap --copyin "$TPL" /tmp \
     || write_status_and_die "bootstrap" "mock --copyin failed"
 rm -f "$TPL"
+
+# prepare all we need to build the package
 mock_wrap --chroot "tar -C / -xf \"/tmp/$TPL_BASE\"" \
     || write_status_and_die "bootstrap" "bootstrap failed"
+mock_wrap --install "xml-common" "yum-utils" \
+    || write_status_and_die "bootstrap" "mock --install failed"
 
 if test -n "$EXTRA_DEPS"; then
     # install all dependences manually specified by the user
