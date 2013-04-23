@@ -484,6 +484,10 @@ if test -e "$COV/cppcheck.out"; then
     mv "$COV/cppcheck.out" "$COV/.."
 fi
 
+# capture compiler warnings
+{ cmd_wrap sh -c "csgrep --quiet --event=warning \"$LOG\" \
+    | cssort > \"$BASE_DIR/compiler-warnings.err\""; }
+
 # get the line stating count of successfully parsed compilation units
 PSTAT="`grep 'C/C++ compilation units (.*%) are ready for analysis$' \
     "$COV/build-log.txt"`"
