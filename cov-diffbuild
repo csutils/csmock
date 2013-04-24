@@ -18,7 +18,7 @@
 # along with csdiff.  If not, see <http://www.gnu.org/licenses/>.
 
 SELF="$0"
-ARGS="$@"
+ARGS="`for i in "$@"; do printf " '%s'" "$i"; done`"
 
 set -o pipefail
 
@@ -177,7 +177,7 @@ echo
 printf "[scan]
 tool = cov-diffbuild
 tool-version = %s
-tool-args = %s
+tool-args =%s
 time-created = %s
 title = %s - Defects in Patches\n" \
     "`self_version`" "$ARGS" "`date '+%Y-%m-%d %H:%M:%S'`" "$BASE" \
