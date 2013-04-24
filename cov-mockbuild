@@ -148,7 +148,7 @@ while getopts $OPTS opt; do
             COMMIT_TO_IM_OPTS="$OPTARG"
             if test -n "$COMMIT_TO_IM_OPTS"; then
                 parse_im_opts "$COMMIT_TO_IM_OPTS" >/dev/null 2>&1 \
-                    || die "invalid argument given to -m"
+                    || die "invalid argument given to -m: $COMMIT_TO_IM_OPTS"
             fi
             ;;
 
