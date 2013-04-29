@@ -41,7 +41,7 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="\$PATH:/usr/kerberos/bin"
 
-OPTS=cd:fim::tx
+OPTS=cd:fim::ntx
 
 usage(){
     cat << EOF
@@ -60,6 +60,8 @@ Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
   -m  Commit the results to Integrity Manager and obtain the project/defect IDs.
       You can specify the target host/stream as an optional argument using the
       following format: user:passwd@host:port/stream
+
+  -n  Do not clean mock root after the build.
 
   -t  Do not compress the resulting tarball.  Used to save time in case it is
       going to be extracted right away.
@@ -150,6 +152,9 @@ while getopts $OPTS opt; do
                 parse_im_opts "$COMMIT_TO_IM_OPTS" >/dev/null 2>&1 \
                     || die "invalid argument given to -m: $COMMIT_TO_IM_OPTS"
             fi
+            ;;
+
+        n)  NO_CLEAN=yes
             ;;
 
         t)  TAR_ONLY=yes
@@ -477,8 +482,9 @@ mock_wrap --copyout /builddir/cov "$COV" \
 
 # ###########################################################################
 # we do not need the chroot anymore
-mock_wrap --clean \
-    || write_status_and_update_ec "post"
+if test xyes != "x$NO_CLEAN"; then
+    mock_wrap --clean || write_status_and_update_ec "post"
+fi
 
 if test -e "$COV/cppcheck.out"; then
     mv "$COV/cppcheck.out" "$COV/.."
