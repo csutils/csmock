@@ -39,7 +39,7 @@ RPMM="\
 --without langpacks"
 
 # PATH set for cov-build/rpmbuild
-ENV_PATH="\$PATH:/usr/kerberos/bin"
+ENV_PATH="/usr/lib64/abscc:\\\$PATH"
 
 OPTS=cd:fim::ntx
 
@@ -394,6 +394,7 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
     /opt/coverity/dtd                           \
     /opt/coverity/bin/cov-*                     \
     /opt/coverity/bin/libcapture-*.so           \
+    /usr/{bin,lib64}/abscc                      \
     || write_status_and_die "bootstrap" "failed to create $TPL"
 
 # invoke mock with given parameters

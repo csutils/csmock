@@ -65,6 +65,7 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
 
+Requires: abscc
 Requires: cov-getprojkey
 Requires: cov-sa
 Requires: csdiff >= 0.20130423
