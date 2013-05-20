@@ -465,7 +465,7 @@ rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
 mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
 /opt/coverity/bin/cov-build --dir /builddir/cov rpmbuild -bc --nodeps \
 --short-circuit /builddir/build/SPECS/$SPEC $RPMM\"" \
-    || write_status_and_update_ec "build"
+    || { COMMIT_TO_IM=no; write_status_and_update_ec "build"; }
 
 if test -n "$CPPCHECK"; then
 mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
