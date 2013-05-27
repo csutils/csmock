@@ -463,8 +463,9 @@ rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
 
 # run the %build phase through cov-build
 mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
-/opt/coverity/bin/cov-build --dir /builddir/cov rpmbuild -bc --nodeps \
---short-circuit /builddir/build/SPECS/$SPEC $RPMM\"" \
+/opt/coverity/bin/cov-build --dir /builddir/cov sh -xc \
+'unset XML_CATALOG_FILES; rpmbuild -bc --nodeps --short-circuit \
+/builddir/build/SPECS/$SPEC $RPMM'\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
 if test -n "$CPPCHECK"; then
