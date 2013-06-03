@@ -457,15 +457,15 @@ mock_wrap --chroot "yum-builddep --nogpgcheck \
 mock_wrap --chroot "sh -x $FIXUPS"
 
 # run the %prep phase as usually (without cov-build)
-mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
 rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
     || write_status_and_update_ec "prep"
 
 # run the %build phase through cov-build
-mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
 /opt/coverity/bin/cov-build --dir /builddir/cov sh -xc \
-'unset XML_CATALOG_FILES; rpmbuild -bc --nodeps --short-circuit \
-/builddir/build/SPECS/$SPEC $RPMM'\"" \
+\\\"unset XML_CATALOG_FILES; rpmbuild -bc --nodeps --short-circuit \
+/builddir/build/SPECS/$SPEC $RPMM\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
 if test -n "$CPPCHECK"; then
