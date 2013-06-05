@@ -2,6 +2,12 @@
 
 use warnings;
 use strict;
+use Getopt::Std;
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+our $opt_s;
+getopts('s:')
+    or die "$0: invalid optionsn";
 
 sub fatal {
     my ($msg) = @_;
@@ -15,11 +21,16 @@ if ($#ARGV != 0) {
 }
 
 my $dir = $ARGV[0];
+my $srcdir = $opt_s || '/builddir/build/BUILD';
+$srcdir .= '/'
+    unless $srcdir =~ m,/$,;
 
 fatal("directory not found: $dir")
     unless -d $dir;
 fatal("directory not found: $dir/c/emit")
     unless -d "$dir/c/emit";
+print STDERR "warning: directory not found: $srcdir\n"
+    unless -d $srcdir;
 
 open(INPUT, '-|', 'cov-format-errors', '--emacs-style', '--dir', "$dir")
     or die;
@@ -28,7 +39,7 @@ while (<INPUT>) {
     s/([0-9>]):\n/$1: /;
     s/^Error: /\nError: /;
     s/^path://;
-    s/^\/builddir\/build\/BUILD\///;
+    s/^\Q$srcdir\E//;
     print $_;
 }
 
