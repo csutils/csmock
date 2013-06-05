@@ -1,27 +1,36 @@
-#!/bin/bash
-SELF="$0"
+#!/usr/bin/perl
 
-set -o pipefail
+use warnings;
+use strict;
 
-die() {
-    printf "%s: %s\n" "$SELF" "$*" >&2
-    exit 1
+sub fatal {
+    my ($msg) = @_;
+    print STDERR "$0: $msg\n";
+    exit(1);
 }
 
-usage() {
-    printf "Usage: %s COV_DIR\n" "$SELF"
-    exit 1
+if ($#ARGV != 0) {
+    print STDERR "Usage: $0 COV_DIR\n";
+    exit(1);
 }
 
-test 1 = $# || usage
+my $dir = $ARGV[0];
 
-dir="$1"
-test -d "$dir"          || die "directory not found: $dir"
-test -d "${dir}/c/emit" || die "directory not found: ${dir}/c/emit"
+fatal("directory not found: $dir")
+    unless -d $dir;
+fatal("directory not found: $dir/c/emit")
+    unless -d "$dir/c/emit";
 
-cov-format-errors --emacs-style --dir "$dir"            \
-    | perl -i -p -e 's/([0-9>]):\n/\1: /'               \
-    | perl -i -p -e 's/^Error: /\nError: /'             \
-    | perl -i -p -e 's/^path://'                        \
-    | perl -i -p -e 's/^\/builddir\/build\/BUILD\///'   \
-    | { grep -v '^<unknown>'; true; }
+open(INPUT, '-|', 'cov-format-errors', '--emacs-style', '--dir', "$dir")
+    or die;
+
+while (<INPUT>) {
+    s/([0-9>]):\n/$1: /;
+    s/^Error: /\nError: /;
+    s/^path://;
+    s/^\/builddir\/build\/BUILD\///;
+    print $_;
+}
+
+close(INPUT)
+    or die;
