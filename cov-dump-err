@@ -7,7 +7,7 @@ use Getopt::Std;
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
 our $opt_s;
 getopts('s:')
-    or die "$0: invalid optionsn";
+    or die "$0: invalid options";
 
 sub fatal {
     my ($msg) = @_;
@@ -16,7 +16,7 @@ sub fatal {
 }
 
 if ($#ARGV != 0) {
-    print STDERR "Usage: $0 COV_DIR\n";
+    print STDERR "Usage: $0 [-s SRC_PATH_PREFIX] COV_DIR\n";
     exit(1);
 }
 
