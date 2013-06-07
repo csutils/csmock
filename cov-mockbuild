@@ -278,54 +278,12 @@ SRPM_DUP="$TMP/$SRPM_BASE"
 cp -t "$TMP" "$SRPM" 2>&1 | tee --append "$LOG"
 test -f "$SRPM_DUP" || write_status_and_die "bootstrap"
 
-# prepare a hack to get cov-build working with up2date g++
+# various fixups that can be applied on the buildroot prior to build
 FIXUPS="$TMP/fixups.sh"
 cat > "$FIXUPS" << EOF
 #!/bin/sh
 
-# patch xmlto if installed
-if test -x /usr/bin/xmlto; then
-    patch /usr/bin/xmlto << XXX
---- xmlto
-+++ xmlto.coverity
-@@ -23,6 +23,8 @@
- BASH=bash     # GNU bash, for running the format scripts
- GETOPT=getopt # a getopt that supports --longoptions
- 
-+unset XML_CATALOG_FILES
-+
- version () {
-   echo "xmlto version 0.0.18"
- }
-XXX
-fi
-
-# patch gtkdoc-mkhtml if installed
-if test -x /usr/bin/gtkdoc-mkhtml; then
-    patch /usr/bin/gtkdoc-mkhtml << XXX
-3a4,5
-> unset XML_CATALOG_FILES
-> 
-XXX
-fi
-
-# patch asciidoc if installed
-if test -x /usr/bin/a2x; then
-    patch /usr/bin/a2x << XXX
---- a2x
-+++ a2x.coverity
-@@ -7,6 +7,8 @@
- # under the terms of the GNU General Public License (GPL).
- #
- 
-+unset XML_CATALOG_FILES
-+
- VERSION=1.0.0
- BASENAME=\\\$(basename "\\\$0")
- REALNAME="\\\$0"
-XXX
-fi
-
+echo fixups.sh contains no fixups at the moment, feel free to write new ones...
 EOF
 
 BASHRC="$TMP/bashrc"
