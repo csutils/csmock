@@ -427,7 +427,7 @@ mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
 if test -n "$CPPCHECK"; then
-mock_wrap --chroot "/bin/su mockbuild -lc \". \"$BASHRC\"; PATH=$ENV_PATH \
+mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; \
 $CPPCHECK -j9 --inline-suppr \
 --template '{file}:{line}: {severity}: {id}: {message}' \
 /builddir/build/BUILD 2>/builddir/cov/cppcheck.out\"" \
