@@ -28,7 +28,7 @@ test -z "$TMPDIR" && TMPDIR="/tmp"
 
 # rpm macros to use
 RPMM="\
---define '_smp_mflags -kj5' \
+--define '_smp_mflags -kj13' \
 --define '_without_testsuite 1' \
 --define 'cmake cmake' \
 --define 'libguestfs_runtests 0' \
