@@ -452,6 +452,8 @@ fi
 
 # capture compiler warnings
 { cmd_wrap sh -c "csgrep --quiet --event=warning \"$LOG\" \
+    --path  '^/builddir/build/BUILD/' \
+    | sed 's|^/builddir/build/BUILD/||' \
     | cssort > \"$BASE_DIR/compiler-warnings.err\""; }
 
 # get the line stating count of successfully parsed compilation units
