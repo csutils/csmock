@@ -41,7 +41,7 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="/usr/lib64/abscc:\\\$PATH"
 
-OPTS=cd:fim::ntx
+OPTS=cd:film::ntx
 
 usage(){
     cat << EOF
@@ -56,6 +56,9 @@ Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
 
   -i  Keep Coverity intermediate directory for further processing.  By default,
       only build-log.txt is kept.
+
+  -l  Enable clang analyzer.  It will use the clang-analyzer package from your
+      mock chroot, or fail if the package is not installable.  [EXPERIMENTAL]
 
   -m  Commit the results to Integrity Manager and obtain the project/defect IDs.
       You can specify the target host/stream as an optional argument using the
@@ -123,6 +126,7 @@ load_im_opts() {
     eval `parse_im_opts "$@"`
 }
 
+CLANG_WRAP=
 CPPCHECK=
 CPPCHECK_FILES=
 
@@ -143,6 +147,10 @@ while getopts $OPTS opt; do
 
         i)
             KEEP_COV=yes
+            ;;
+
+        l)
+            CLANG_WRAP="scan-build"
             ;;
 
         m)
@@ -283,7 +291,16 @@ FIXUPS="$TMP/fixups.sh"
 cat > "$FIXUPS" << EOF
 #!/bin/sh
 
-echo fixups.sh contains no fixups at the moment, feel free to write new ones...
+if test -x /usr/lib64/clang-analyzer/scan-build/scan-build; then
+    # allow scan-build to invoke clang through the abscc wrapper
+    patch /usr/lib64/clang-analyzer/scan-build/scan-build << XXX
+1533,1534c1533
+<       DieDiag("error: Cannot find an executable 'clang' relative to scan-build." .
+<    	          "  Consider using --use-analyzer to pick a version of 'clang' to use for static analysis.\\\\n");
+---
+>       \\\$Clang = "clang";
+XXX
+fi
 EOF
 
 BASHRC="$TMP/bashrc"
@@ -374,6 +391,11 @@ mock_wrap --chroot "tar -C / -xf \"/tmp/$TPL_BASE\"" \
 mock_wrap --install "xml-common" "yum-utils" \
     || write_status_and_die "bootstrap" "mock --install failed"
 
+if test -n "$CLANG_WRAP"; then
+    mock_wrap --install "clang-analyzer" \
+        || write_status_and_die "bootstrap" "failed to install clang-analyzer"
+fi
+
 if test -n "$EXTRA_DEPS"; then
     # install all dependences manually specified by the user
     mock_wrap -v --install $EXTRA_DEPS \
@@ -422,7 +444,7 @@ rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
 # run the %build phase through cov-build
 mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
 /opt/coverity/bin/cov-build --dir /builddir/cov sh -xc \
-\\\"unset XML_CATALOG_FILES; rpmbuild -bc --nodeps --short-circuit \
+\\\"unset XML_CATALOG_FILES; $CLANG_WRAP rpmbuild -bc --nodeps --short-circuit \
 /builddir/build/SPECS/$SPEC $RPMM\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
