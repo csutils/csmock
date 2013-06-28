@@ -41,11 +41,13 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="/usr/lib64/abscc:\\\$PATH"
 
-OPTS=cd:film::ntx
+OPTS="bcd:film::ntx"
 
 usage(){
     cat << EOF
 Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
+
+  -b  Do not use Coverity Static Analysis (will become default at some point).
 
   -c  Run cppcheck on the sources after the build (before running cov-analyze).
 
@@ -127,11 +129,17 @@ load_im_opts() {
 }
 
 CLANG_WRAP=
+COV_USED=yes
+COV_WRAP="/opt/coverity/bin/cov-build --dir /builddir/cov"
 CPPCHECK=
 CPPCHECK_FILES=
 
 while getopts $OPTS opt; do
     case "$opt" in
+        b)  COV_USED=no
+            COV_WRAP="; export PATH; mkdir -p /builddir/cov;"
+            ;;
+
         c)  CPPCHECK="/usr/bin/cppcheck"
             test -x "$CPPCHECK" || die "$CPPCHECK not found"
             TINYXML="/usr/lib64/libtinyxml.so.0"
@@ -191,7 +199,7 @@ write_status_and_update_ec() {
     test 0 -eq "$last_ec" || update_ec "$last_ec"
 }
 
-# $1 ... key in .ini, $2 ... error mesage
+# $1 ... key in .ini, $2 ... error message
 write_status_and_die() {
     last_ec=$?
     printf "status-$1 = %d\n" "$last_ec" >> "$INI"
@@ -443,7 +451,7 @@ rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
 
 # run the %build phase through cov-build
 mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
-/opt/coverity/bin/cov-build --dir /builddir/cov sh -xc \
+$COV_WRAP sh -xc \
 \\\"unset XML_CATALOG_FILES; $CLANG_WRAP rpmbuild -bc --nodeps --short-circuit \
 /builddir/build/SPECS/$SPEC $RPMM\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
@@ -478,21 +486,23 @@ fi
     | sed 's|^/builddir/build/BUILD/||' \
     | cssort > \"$BASE_DIR/compiler-warnings.err\""; }
 
-# get the line stating count of successfully parsed compilation units
-PSTAT="`grep 'C/C++ compilation units (.*%) are ready for analysis$' \
-    "$COV/build-log.txt"`"
+if test xyes = "x$COV_USED"; then
+    # get the line stating count of successfully parsed compilation units
+    PSTAT="`grep 'C/C++ compilation units (.*%) are ready for analysis$' \
+        "$COV/build-log.txt"`"
 
-# parse the absolute/relative count of successfully parsed compilation units
-U_COUNT="`printf '%s\n' "$PSTAT" | sed -r 's|^[^0-9]*([0-9]+) C/C\+\+ .*$|\1|'`"
-U_RATIO="`printf '%s\n' "$PSTAT" | sed -r 's|^.* \(([0-9]+)%\) .*$|\1|'`"
+    # parse the absolute/relative count of successfully parsed compilation units
+    U_COUNT="`printf '%s\n' "$PSTAT" | sed -r 's|^[^0-9]*([0-9]+) C/C\+\+ .*$|\1|'`"
+    U_RATIO="`printf '%s\n' "$PSTAT" | sed -r 's|^.* \(([0-9]+)%\) .*$|\1|'`"
 
-# assume zero successfully parsed compilation units unless proven otherwise
-test 0 -lt "$U_COUNT" 2>/dev/null || U_COUNT=0
-test 0 -lt "$U_RATIO" 2>/dev/null || U_RATIO=0
+    # assume zero successfully parsed compilation units unless proven otherwise
+    test 0 -lt "$U_COUNT" 2>/dev/null || U_COUNT=0
+    test 0 -lt "$U_RATIO" 2>/dev/null || U_RATIO=0
 
-# write the parsing statistics to .ini
-printf "compilation-unit-count = %d\ncompilation-unit-ratio = %d\n" \
-    "$U_COUNT" "$U_RATIO" | tee --append "$INI"
+    # write the parsing statistics to .ini
+    printf "compilation-unit-count = %d\ncompilation-unit-ratio = %d\n" \
+        "$U_COUNT" "$U_RATIO" | tee --append "$INI"
+fi
 
 PROJ_NAME="$BASE"
 test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
@@ -532,7 +542,7 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
 sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
         fi
     fi
-else
+elif test xyes = "x$COV_USED"; then
     # just make sure we return non-zero exit code if we analyzed nothing
     touch "$ERR"
     update_ec 1 "analyze"
@@ -540,15 +550,17 @@ fi
 
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
-# write the 'lines-processed' field to .ini
-LSTAT="`grep '^Total LoC input to cov-analyze' "$LOG"`"
-L_CNT="`printf '%s\n' "$LSTAT" | sed -r 's|^[^0-9]*||'`"
-printf "lines-processed = %d\n" "$L_CNT" | tee --append "$INI"
+if test xyes = "x$COV_USED"; then
+    # write the 'lines-processed' field to .ini
+    LSTAT="`grep '^Total LoC input to cov-analyze' "$LOG"`"
+    L_CNT="`printf '%s\n' "$LSTAT" | sed -r 's|^[^0-9]*||'`"
+    printf "lines-processed = %d\n" "$L_CNT" | tee --append "$INI"
 
-# write the 'time-elapsed-analysis' field to to .ini
-TSTAT="`grep '^Time taken by Coverity analysis' "$LOG"`"
-ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
-printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
+    # write the 'time-elapsed-analysis' field to to .ini
+    TSTAT="`grep '^Time taken by Coverity analysis' "$LOG"`"
+    ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
+    printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
+fi
 
 # do we have a readable .map file?
 if test -r "$MAP"; then
@@ -568,11 +580,11 @@ fi
     | cshtml $CSHTML_OPTS - > \"$HTML\""; } 2>&1 \
     | tee --append "$LOG"
 
-mv -v "$COV/build-log.txt" "$COV/.." 2>&1 | tee --append "$LOG"
-
-cmd_wrap cov-format-errors --dir "$COV" 2>&1 | tee --append "$LOG"
-
-mv -v "$COV/c/output/errors" "$COV/../cov-html/" 2>&1 | tee --append "$LOG"
+if test xyes = "x$COV_USED"; then
+    mv -v "$COV/build-log.txt" "$COV/.." 2>&1 | tee --append "$LOG"
+    cmd_wrap cov-format-errors --dir "$COV" 2>&1 | tee --append "$LOG"
+    mv -v "$COV/c/output/errors" "$COV/../cov-html/" 2>&1 | tee --append "$LOG"
+fi
 
 if test xyes != "x$KEEP_COV"; then
     rm -rf "$COV"
