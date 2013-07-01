@@ -41,7 +41,7 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="/usr/lib64/abscc:\\\$PATH"
 
-OPTS="bcd:film::ntx"
+OPTS="bcd:film::ntw:x"
 
 usage(){
     cat << EOF
@@ -70,6 +70,11 @@ Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
 
   -t  Do not compress the resulting tarball.  Used to save time in case it is
       going to be extracted right away.
+
+  -wN Adjust compiler warning level.  -w0 means default flags, -w1 appends -Wall
+      and -Wextra, -w2 enables some other useful warnings, and -w3 enables a lot
+      of warnings. -w2 and -w3 can cause build failures with older mock profiles
+      and/or non-default compilers (such as clang).
 
   -x  Skip patches not annotated by %{?_rawbuild}.  That is, do a vanilla build.
 
@@ -128,6 +133,39 @@ load_im_opts() {
     eval `parse_im_opts "$@"`
 }
 
+ABSCC_ADD_CFLAGS=
+ABSCC_DEL_CFLAGS=
+ABSCC_ADD_CXXFLAGS=
+ABSCC_DEL_CXXFLAGS=
+
+adjust_gcc_flags() {
+    level="$1"
+    test $level = 0 && return
+
+    # -W1 flags
+    ABSCC_DEL_CFLAGS="-Werror"
+    ABSCC_ADD_CFLAGS="-Wall:-Wextra"
+    ABSCC_DEL_CXXFLAGS="$ABSCC_DEL_CFLAGS"
+    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CFLAGS"
+    test $level = 1 && return
+
+    # -W2 flags
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS"
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wunreachable-code:-Wundef:-Wcast-align"
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wpointer-arith:-Wfloat-equal:-Wshadow"
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wstrict-prototypes:-Wwrite-strings"
+    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CFLAGS"
+    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Wctor-dtor-privacy"
+    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Woverloaded-virtual"
+    test $level = 2 && return
+
+    # -W3 flags
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wcast-qual:-Wconversion"
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wswitch-default:-Wswitch-enum"
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Waggregate-return:-Wstrict-overflow=5"
+    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Weffc++"
+}
+
 CLANG_WRAP=
 COV_USED=yes
 COV_WRAP="/opt/coverity/bin/cov-build --dir /builddir/cov"
@@ -174,6 +212,18 @@ while getopts $OPTS opt; do
             ;;
 
         t)  TAR_ONLY=yes
+            ;;
+
+        w)
+            case "$OPTARG" in
+                [0-3])
+                    adjust_gcc_flags "$OPTARG"
+                    ;;
+
+                *)
+                    usage
+                    ;;
+            esac
             ;;
 
         x)
@@ -451,8 +501,10 @@ rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
 
 # run the %build phase through cov-build
 mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
-$COV_WRAP sh -xc \
-\\\"unset XML_CATALOG_FILES; $CLANG_WRAP rpmbuild -bc --nodeps --short-circuit \
+$COV_WRAP sh -xc \\\"unset XML_CATALOG_FILES; \
+ABSCC_ADD_CFLAGS=$ABSCC_ADD_CFLAGS ABSCC_ADD_CXXFLAGS=$ABSCC_ADD_CXXFLAGS \
+ABSCC_DEL_CFLAGS=$ABSCC_DEL_CFLAGS ABSCC_DEL_CXXFLAGS=$ABSCC_DEL_CXXFLAGS \
+$CLANG_WRAP rpmbuild -bc --nodeps --short-circuit \
 /builddir/build/SPECS/$SPEC $RPMM\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
