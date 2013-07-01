@@ -290,6 +290,9 @@ cmd_wrap() {
     "$@"
 }
 
+# profile-level lock file
+LOCK="/tmp/.cov-mockbuild-${MOCK_PROFILE}.lock"
+
 # prepare $TMP directory
 TMP="`mktemp -d $TMPDIR/cov-mockbuild.XXXXXX`"
 BASE_DIR="$TMP/$BASE/$RUN"
@@ -297,6 +300,7 @@ mkdir -p "$BASE_DIR" || die "mktemp failed"
 
 # from now on, do the pack/cleanup on exit, no matter if we succeeded or not
 trap "test -z \"\$EC\" || touch \"${BASE_DIR}.FAILED\"
+    test $$ = \"\$(<$LOCK)\" && rm -fv '$LOCK'
     cmd_wrap tar $TAR_OPTS -cvf '$TGZ' -C '$TMP' '$BASE'
     echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 
@@ -435,6 +439,14 @@ mock_wrap(){
     { cmd_wrap mock-unbuffered -r "$MOCK_PROFILE" "$@"; } 2>&1 \
         | tee --append "$LOG"
 }
+
+# FIXME: use a safe locking algorithm instead
+while test -f "$LOCK"; do
+    printf ">>> %s\twaiting till %s (%s) disappears...\n" "`date`" "$LOCK" \
+        "$(<$LOCK)"
+    sleep 15
+done
+echo $$ > "$LOCK" || die "failed to create lock file"
 
 # initialize mock chroot
 mock_wrap --init \
