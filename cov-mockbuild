@@ -516,6 +516,7 @@ mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
 $COV_WRAP sh -xc \\\"unset XML_CATALOG_FILES; \
 ABSCC_ADD_CFLAGS=$ABSCC_ADD_CFLAGS ABSCC_ADD_CXXFLAGS=$ABSCC_ADD_CXXFLAGS \
 ABSCC_DEL_CFLAGS=$ABSCC_DEL_CFLAGS ABSCC_DEL_CXXFLAGS=$ABSCC_DEL_CXXFLAGS \
+ABSCC_CAP_FILE=/builddir/cov/compiler-warnings.err \
 $CLANG_WRAP rpmbuild -bc --nodeps --short-circuit \
 /builddir/build/SPECS/$SPEC $RPMM\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
@@ -544,11 +545,15 @@ if test -e "$COV/cppcheck.out"; then
     mv "$COV/cppcheck.out" "$COV/.."
 fi
 
-# capture compiler warnings
-{ cmd_wrap sh -c "csgrep --quiet --event=warning \"$LOG\" \
-    --path  '^/builddir/build/BUILD/' \
-    | sed 's|^/builddir/build/BUILD/||' \
-    | cssort > \"$BASE_DIR/compiler-warnings.err\""; }
+# capture compiler warnings (#TODO: ignore more auto-generated files)
+if test -e "$COV/compiler-warnings.err"; then
+    { cmd_wrap sh -c "csgrep --quiet --path '^/builddir/build/BUILD/' \
+        --event=warning \"$COV/compiler-warnings.err\" \
+        | csgrep --invert-match --path conftest.c \
+        | sed 's|^/builddir/build/BUILD/||' \
+        > \"$BASE_DIR/compiler-warnings.err\""; } 2>&1 \
+        | tee --append "$LOG"
+fi
 
 if test xyes = "x$COV_USED"; then
     # get the line stating count of successfully parsed compilation units
