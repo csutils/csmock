@@ -71,10 +71,10 @@ Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
   -t  Do not compress the resulting tarball.  Used to save time in case it is
       going to be extracted right away.
 
-  -wN Adjust compiler warning level.  -w0 means default flags, -w1 appends -Wall
-      and -Wextra, -w2 enables some other useful warnings, and -w3 enables a lot
-      of warnings. -w2 and -w3 can cause build failures with older mock profiles
-      and/or non-default compilers (such as clang).
+  -wN  Adjust compiler warning level.  -w0 means default flags, -w1 appends
+       -Wall and -Wextra, -w2 enables some other useful warnings, and -w3
+       enables a lot of warnings. -w2 and -w3 can cause build failures with
+       older mock profiles and/or non-default compilers (such as clang).
 
   -x  Skip patches not annotated by %{?_rawbuild}.  That is, do a vanilla build.
 
@@ -442,7 +442,7 @@ mock_wrap(){
 
 # FIXME: use a safe locking algorithm instead
 while test -f "$LOCK"; do
-    printf ">>> %s\twaiting till %s (%s) disappears...\n" "`date`" "$LOCK" \
+    printf ">>> %s\twaiting till %s (PID %s) disappears...\n" "`date`" "$LOCK" \
         "$(<$LOCK)"
     sleep 15
 done
