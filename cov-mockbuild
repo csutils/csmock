@@ -541,6 +541,9 @@ if test xyes != "x$NO_CLEAN"; then
     mock_wrap --clean || write_status_and_update_ec "post"
 fi
 
+# release the lock
+test $$ = "$(<$LOCK)" && rm -fv "$LOCK"
+
 if test -e "$COV/cppcheck.out"; then
     mv "$COV/cppcheck.out" "$COV/.."
 fi
