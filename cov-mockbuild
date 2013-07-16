@@ -342,6 +342,9 @@ time-created = %s\n" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
 
+cmd_wrap rpm -qa | sort -V > "$BASE_DIR/rpm-list-host.txt" \
+    2>&1 | tee --append "$LOG"
+
 # copy the SRPM to our temp
 SRPM_BASE="`basename "$SRPM"`"
 SRPM_DUP="$TMP/$SRPM_BASE"
@@ -505,6 +508,15 @@ mock_wrap --chroot "yum-builddep --nogpgcheck \
 
 # TODO: branch by RHEL version
 mock_wrap --chroot "sh -x $FIXUPS"
+
+# obtain the list of packages installed in mock chroot
+mkdir -p "$TMP/var/lib"
+TMP_RPM="$TMP/var/lib/rpm"
+mock_wrap --copyout "/var/lib/rpm" "$TMP_RPM"
+chmod -w "$TMP_RPM"
+cmd_wrap rpm -qa --root "$TMP" | sort -V > "$BASE_DIR/rpm-list-mock.txt" \
+    2>&1 | tee --append "$LOG"
+chmod u+w "$TMP_RPM"
 
 # run the %prep phase as usually (without cov-build)
 mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
