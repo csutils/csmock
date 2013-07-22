@@ -378,6 +378,23 @@ if test -w /usr/include/c++/4.8.1/bits/random.h; then
 > 	{ return static_cast<_Tp>((__x + __c) % __m); }
 XXX
 fi
+
+if test -w /usr/include/c++/4.8.1/ext/concurrence.h; then
+    patch /usr/include/c++/4.8.1/ext/concurrence.h << XXX
+121c121
+< #if __GTHREADS && defined __GTHREAD_MUTEX_INIT
+---
+> #if 0
+176c176
+< #if __GTHREADS && defined __GTHREAD_RECURSIVE_MUTEX_INIT
+---
+> #if 0
+254c254
+< #if __GTHREADS && defined __GTHREAD_COND_INIT
+---
+> #if 0
+XXX
+fi
 EOF
 
 BASHRC="$TMP/bashrc"
