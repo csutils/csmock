@@ -68,7 +68,7 @@ BuildRequires: help2man
 Requires: abscc >= 0.20130702
 Requires: cov-getprojkey
 Requires: cov-sa
-Requires: csdiff >= 0.20130423
+Requires: csdiff >= 0.20130820
 Requires: mock
 Requires: rpm-build
 
