@@ -26,11 +26,13 @@ export LC_ALL=C
 
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
-OPTS="cd:fim::t"
+OPTS="bcd:film::ntw:"
 
 usage(){
     cat << EOF
 usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
+
+  -b  Do not use Coverity Static Analysis (will become default at some point).
 
   -c  Run cppcheck on the sources after the build (before running cov-analyze).
 
@@ -42,12 +44,22 @@ usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
   -i  Keep Coverity intermediate directory for further processing.  By default,
       only build-log.txt is kept.
 
+  -l  Enable clang analyzer.  It will use the clang-analyzer package from your
+      mock chroot, or fail if the package is not installable.  [EXPERIMENTAL]
+
   -m  Commit the results to Integrity Manager and obtain the project/defect IDs.
       You can specify the target host/stream as an optional argument using the
       following format: user:passwd@host:port/stream
 
+  -n  Do not clean mock root after the build.
+
   -t  Do not compress the resulting tarball.  Used to save time in case it is
       going to be extracted right away.
+
+  -wN  Adjust compiler warning level.  -w0 means default flags, -w1 appends
+       -Wall and -Wextra, -w2 enables some other useful warnings, and -w3
+       enables a lot of warnings. -w2 and -w3 can cause build failures with
+       older mock profiles and/or non-default compilers (such as clang).
 
   MOCK_PROFILE  Only name of the mock profile, without the path and without
                 the .cfg suffix.
@@ -80,19 +92,15 @@ while getopts $OPTS opt; do
             COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -c"
             ;;
 
-        d)
-            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -d '$OPTARG'"
+        b|i|l|n)
+            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -$opt"
+            ;;
+
+        d|m|w)
+            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -$opt $OPTARG"
             ;;
 
         f)  OVERWRITE_RESULTS=yes
-            ;;
-
-        i)
-            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -i"
-            ;;
-
-        m)
-            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -m $OPTARG"
             ;;
 
         t)  TAR_ONLY=yes
