@@ -83,16 +83,9 @@ if test "x--version" = "x$1"; then
     exit $?
 fi
 
-CPPCHECK=
-
 while getopts $OPTS opt; do
     case "$opt" in
-        c)
-            CPPCHECK=yes
-            COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -c"
-            ;;
-
-        b|i|l|n)
+        b|c|i|l|n)
             COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -$opt"
             ;;
 
@@ -207,32 +200,21 @@ printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 # compare both defect lists
 JS_DIFF="$RESULTS_DIR/defects-in-patches.js"
-cmd_wrap csdiff "$RESULTS_DIR/run0/$JS" "$RESULTS_DIR/run1/$JS"      \
+cmd_wrap csdiff                                                      \
+    "$RESULTS_DIR/run0/results.js"                                   \
+    "$RESULTS_DIR/run1/results.js"                                   \
     | cslinker --inifile "$INI" - > "$JS_DIFF"                       \
     || touch "$RESULTS_DIR/diff.FAILED"
 
 CSHTML_OPTS="--defect-url-template ${COV_IM_PUB_URL}/\
 sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
 
-cmd_wrap csgrep "$JS_DIFF" | tee "$RESULTS_DIR/defects-in-patches.err"
-cmd_wrap cshtml $CSHTML_OPTS "$JS_DIFF" > "$RESULTS_DIR/defects-in-patches.html"
-cmd_wrap cshtml $CSHTML_OPTS \
-    --diff-base "$RESULTS_DIR/run0/$JS" "$RESULTS_DIR/run1/$JS" \
-    > "$RESULTS_DIR/run1/$HTML"
+cmd_wrap csgrep --prune-events=1 "$JS_DIFF" \
+    | tee "$RESULTS_DIR/defects-in-patches.err"
 
-# diff cppcheck's results if enabled
-if test xyes = x$CPPCHECK; then
-    CPP0="$RESULTS_DIR/run0/cppcheck.out"
-    CPP1="$RESULTS_DIR/run1/cppcheck.out"
-    CPP_A="$RESULTS_DIR/cppcheck-added"
-    CPP_F="$RESULTS_DIR/cppcheck-fixed"
-
-    cmd_wrap csdiff "$CPP0" "$CPP1" > "${CPP_A}.err"
-    cmd_wrap csdiff "$CPP1" "$CPP0" > "${CPP_F}.err"
-
-    test -s "${CPP_A}.err" && cmd_wrap cshtml "${CPP_A}.err" > "${CPP_A}.html"
-    test -s "${CPP_F}.err" && cmd_wrap cshtml "${CPP_F}.err" > "${CPP_F}.html"
-fi
+{ cmd_wrap sh -c "csgrep --mode=json --prune-events=1 \"$JS_DIFF\" \
+    | cshtml $CSHTML_OPTS - > \"$RESULTS_DIR/defects-in-patches.html\""; } \
+    2>&1 | tee --append "$LOG"
 
 # finally write the results
 popd >/dev/null || die

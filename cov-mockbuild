@@ -682,6 +682,9 @@ if test xyes = "x$COV_USED"; then
     TSTAT="`grep '^Time taken by Coverity analysis' "$LOG"`"
     ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
     printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
+else
+    # create *.err a placeholder to make cslinker succeed
+    touch "$ERR"
 fi
 
 # do we have a readable .map file?
@@ -711,6 +714,24 @@ fi
 if test xyes != "x$KEEP_COV"; then
     rm -rf "$COV"
 fi
+
+function print_if_readable() {
+    if test -r "$1"; then
+        echo "$1"
+    fi
+}
+
+{ cmd_wrap csgrep --mode=json "$JS" \
+    `print_if_readable "$BASE_DIR/cppcheck.err"` \
+    `print_if_readable "$BASE_DIR/compiler-warnings.err"` \
+    > "$BASE_DIR/results.js"; } 2>&1 | tee --append "$LOG"
+
+{ cmd_wrap csgrep --mode=grep --prune-events=1 "$BASE_DIR/results.js" \
+    > "$BASE_DIR/results.err"; } 2>&1 | tee --append "$LOG"
+
+{ cmd_wrap sh -c "csgrep --mode=json --prune-events=1 \"$BASE_DIR/results.js\" \
+    | cshtml $CSHTML_OPTS - > \"$BASE_DIR/results.html\""; } 2>&1 \
+    | tee --append "$LOG"
 
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"  \
     | tee --append "$LOG"
