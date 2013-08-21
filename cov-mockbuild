@@ -613,6 +613,9 @@ if test xyes = "x$COV_USED"; then
     PSTAT="`grep 'C/C++ compilation units (.*%) are ready for analysis$' \
         "$COV/build-log.txt"`"
 
+    # deal with the build-log.txt format introduced in CSA 6.6.x
+    PSTAT="`echo "$PSTAT" | sed -r 's/^[^>]+> //'`"
+
     # parse the absolute/relative count of successfully parsed compilation units
     U_COUNT="`printf '%s\n' "$PSTAT" | sed -r 's|^[^0-9]*([0-9]+) C/C\+\+ .*$|\1|'`"
     U_RATIO="`printf '%s\n' "$PSTAT" | sed -r 's|^.* \(([0-9]+)%\) .*$|\1|'`"
