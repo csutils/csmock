@@ -724,7 +724,7 @@ function print_if_readable() {
     fi
 }
 
-{ cmd_wrap csgrep --mode=json "$JS" \
+{ cmd_wrap csgrep --mode=json --invert-match --path '^/usr/include' "$JS" \
     `print_if_readable "$BASE_DIR/cppcheck.err"` \
     `print_if_readable "$BASE_DIR/compiler-warnings.err"` \
     > "$BASE_DIR/results.js"; } 2>&1 | tee --append "$LOG"
