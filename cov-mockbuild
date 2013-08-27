@@ -682,7 +682,7 @@ if test xyes = "x$COV_USED"; then
     printf "lines-processed = %d\n" "$L_CNT" | tee --append "$INI"
 
     # write the 'time-elapsed-analysis' field to to .ini
-    TSTAT="`grep '^Time taken by Coverity analysis' "$LOG"`"
+    TSTAT="`grep '^Time taken by .*analysis' "$LOG"`"
     ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
     printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
 else
