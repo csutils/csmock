@@ -530,7 +530,8 @@ mock_wrap --chroot "/bin/bash -c 'cd /builddir/build/SRPMS && \
 eval mv -v *.src.rpm $SRPM_BASE || :'"
 
 # 'mock --installdeps' is not always sufficient, neither yum-builddep is
-mock_wrap --copyout "/builddir/build/SRPMS/$SRPM_BASE" "$SRPM_DUP"
+mock_wrap --disable-plugin=selinux --copyout \
+    "/builddir/build/SRPMS/$SRPM_BASE" "$SRPM_DUP"
 mock_wrap --installdeps "$SRPM_DUP"
 mock_wrap --chroot "yum-builddep --nogpgcheck \
 /builddir/build/SRPMS/$SRPM_BASE"
@@ -541,7 +542,7 @@ mock_wrap --chroot "sh -x $FIXUPS"
 # obtain the list of packages installed in mock chroot
 mkdir -p "$TMP/var/lib"
 TMP_RPM="$TMP/var/lib/rpm"
-mock_wrap --copyout "/var/lib/rpm" "$TMP_RPM"
+mock_wrap --disable-plugin=selinux --copyout "/var/lib/rpm" "$TMP_RPM"
 chmod -w "$TMP_RPM"
 cmd_wrap rpm -qa --root "$TMP" | sort -V > "$BASE_DIR/rpm-list-mock.txt" \
     2>&1 | tee --append "$LOG"
@@ -573,7 +574,7 @@ fi
 # get the intermediate directory out of the chroot and store it to $COV
 mock_wrap --chroot "chmod -R +r /builddir/cov" \
     || write_status_and_update_ec "post"
-mock_wrap --copyout /builddir/cov "$COV" \
+mock_wrap --disable-plugin=selinux --copyout /builddir/cov "$COV" \
     || write_status_and_update_ec "post"
 
 # ###########################################################################
