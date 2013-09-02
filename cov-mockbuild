@@ -168,7 +168,9 @@ adjust_gcc_flags() {
 
 CLANG_WRAP=
 COV_USED=yes
-COV_WRAP="/opt/coverity/bin/cov-build --dir /builddir/cov"
+COV_BIN_DIR="$(dirname "`which cov-analyze`")"
+COV_WRAP="$COV_BIN_DIR/cov-build --dir /builddir/cov"
+COV_DIR="`dirname "$COV_BIN_DIR"`"
 CPPCHECK=
 CPPCHECK_FILES=
 
@@ -458,11 +460,8 @@ TPL="$TMP/$TPL_BASE"
 { printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL" | tee --append "$LOG"; } >&2
 tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
     /etc/resolv.conf                            \
-    /opt/coverity/VERSION.xml                   \
-    /opt/coverity/config                        \
-    /opt/coverity/dtd                           \
-    /opt/coverity/bin/cov-*                     \
-    /opt/coverity/bin/libcapture-*.so           \
+    "$COV_DIR"/{VERSION.xml,config,dtd}         \
+    "$COV_BIN_DIR"/{cov-*,libcapture-*.so}      \
     /usr/{bin,lib64}/abscc                      \
     || write_status_and_die "bootstrap" "failed to create $TPL"
 
