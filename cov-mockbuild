@@ -473,13 +473,11 @@ mock_wrap(){
 }
 
 # acquire the profile-level lock
-flock -w15 "$MLOCK" -c \
-    "while test -f '$LOCK'; do
-        printf '>>> %s\twaiting till %s (PID %s) disappears...\n' \
-            \"\`date\`\" '$LOCK' \"\$(<$LOCK)\"
-        sleep 15
-    done
-    echo $$ > '$LOCK'"
+until flock -w15 "$MLOCK" -c "test ! -f '$LOCK' && echo $$ > '$LOCK'"; do
+    printf '>>> %s\twaiting till %s (PID %s) disappears...\n' \
+        "`date`" "$LOCK" "$(<$LOCK)"
+    sleep 15 || break
+done
 test $$ = "$(<$LOCK)" || die "failed to create lock file"
 
 # initialize mock chroot
