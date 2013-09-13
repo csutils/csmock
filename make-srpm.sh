@@ -37,6 +37,17 @@ SRC="${PKG}.tar.xz"
 TMP="`mktemp -d`"
 trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 test -d "$TMP" || die "mktemp failed"
+cp -t "$TMP"                        \
+    ./bashrc                        \
+    ./cov_checker_map.txt           \
+    ./cov-dump-err                  \
+    ./cov-{mock,diff}build          \
+    ../aux/rpmbuild-rawbuild        \
+    ../im/cov-default-connect.sh    \
+    ../im/cov-query-defects         \
+    ../im/cov-commit-project-update \
+    ../im/cov-commit-project
+
 SPEC="$TMP/$PKG.spec"
 cat > "$SPEC" << EOF
 Name:       $PKG
@@ -153,8 +164,8 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 EOF
 
 rpmbuild -bs "$SPEC"                            \
-    --define "_sourcedir ."                     \
-    --define "_specdir ."                       \
+    --define "_sourcedir $TMP"                  \
+    --define "_specdir $TMP"                    \
     --define "_srcrpmdir $DST"                  \
     --define "_source_filedigest_algorithm md5" \
     --define "_binary_filedigest_algorithm md5"
