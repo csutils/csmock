@@ -41,7 +41,9 @@ RPMM="\
 # PATH set for cov-build/rpmbuild
 ENV_PATH="/usr/lib64/abscc:\\\$PATH"
 
-OPTS="bcd:film::ntw:x"
+QUICK_BUILD_CMD="./configure; make -kj13"
+
+OPTS="bcd:film::nq:rtw:x"
 
 usage(){
     cat << EOF
@@ -67,6 +69,10 @@ Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
       following format: user:passwd@host:port/stream
 
   -n  Do not clean mock root after the build.
+
+  -q  A shell comand used to build the given tarball.
+
+  -r  Expect a tarball with sources instead of source RPM.
 
   -t  Do not compress the resulting tarball.  Used to save time in case it is
       going to be extracted right away.
@@ -213,6 +219,14 @@ while getopts $OPTS opt; do
         n)  NO_CLEAN=yes
             ;;
 
+        q)
+            QUICK_BUILD_CMD="$OPTARG"
+            ;;
+
+        r)
+            USE_TARBALL=yes
+            ;;
+
         t)  TAR_ONLY=yes
             ;;
 
@@ -261,13 +275,17 @@ write_status_and_die() {
 
 # the second operand is the SRPM to build/analyze
 SRPM="`readlink -f "$2"`"
-test -n "$SRPM" || usage
-test -r "$SRPM" || die "failed to open $SRPM"
-rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
-rpm -lpq "$SRPM" 2>/dev/null | grep '\.spec$' \
-    || die "no specfile found in $SRPM"
+if test xyes = "x$USE_TARBALL"; then
+    BASE="`basename "$SRPM" | sed -e 's|\.[^.]*$||' -e 's|\.tar$||'`"
+else
+    BASE="`basename "$SRPM" .src.rpm`"
+    test -n "$SRPM" || usage
+    test -r "$SRPM" || die "failed to open $SRPM"
+    rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
+    rpm -lpq "$SRPM" 2>/dev/null | grep '\.spec$' \
+        || die "no specfile found in $SRPM"
+fi
 
-BASE="`basename "$SRPM" .src.rpm`"
 if test xyes = "x$TAR_ONLY"; then
     TGZ="$PWD/$BASE.tar"
 else
@@ -348,11 +366,19 @@ time-created = %s\n" \
 cmd_wrap rpm -qa | sort -V > "$BASE_DIR/rpm-list-host.txt" \
     2>&1 | tee --append "$LOG"
 
-# copy the SRPM to our temp
+# copy the SRPM (or tarball) to our temp
 SRPM_BASE="`basename "$SRPM"`"
 SRPM_DUP="$TMP/$SRPM_BASE"
 cp -t "$TMP" "$SRPM" 2>&1 | tee --append "$LOG"
 test -f "$SRPM_DUP" || write_status_and_die "bootstrap"
+
+# prepare a build script if building a source tarball instead of SRPM
+if test xyes = "x$USE_TARBALL"; then
+    BUILD_SCRIPT="$TMP/build.sh"
+    { printf "#!/bin/sh\ncd /builddir/build/BUILD || exit \$?\ncd %s*/\n%s\n" \
+        "$BASE" "$QUICK_BUILD_CMD" | tee "$BUILD_SCRIPT" ;} 2>&1 \
+        | tee --append "$LOG" || write_status_and_update_ec "prep"
+fi
 
 # various fixups that can be applied on the buildroot prior to build
 FIXUPS="$TMP/fixups.sh"
@@ -460,6 +486,7 @@ TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
 { printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL" | tee --append "$LOG"; } >&2
 tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
+    $BUILD_SCRIPT                               \
     /etc/resolv.conf                            \
     "$COV_DIR"/{VERSION.xml,config,dtd}         \
     "$COV_BIN_DIR"/{cov-*,libcapture-*.so}      \
@@ -504,37 +531,44 @@ if test -n "$EXTRA_DEPS"; then
         || write_status_and_update_ec installdeps
 fi
 
-# yet another desperate attempt to install missing deps; without the following
-# hack it was impossible to install lm_sensors-devel as a dependency
-# of net-snmp-5.5-31.el6.src.rpm
-eval mock_wrap -v --install "`rpm -pq "$SRPM_DUP" --requires | while read dep
-    do printf " '%s'" "$dep"
-done`"
+if test xyes = "x$USE_TARBALL"; then
+    mock_wrap --chroot "/bin/su mockbuild -lc \
+\"tar -xvf \\\"$SRPM_DUP\\\" -C /builddir/build/BUILD\""
+else
+    # yet another desperate attempt to install missing deps; without the
+    # following hack it was impossible to install lm_sensors-devel as a
+    # dependency of net-snmp-5.5-31.el6.src.rpm
+    eval mock_wrap -v --install "`rpm -pq "$SRPM_DUP" --requires | while read dep
+        do printf " '%s'" "$dep"
+    done`"
 
-# 'mock --installdeps' is not always sufficient, neither yum-builddep is
-mock_wrap --installdeps "$SRPM_DUP"
+    # 'mock --installdeps' is not always sufficient, neither yum-builddep is
+    mock_wrap --installdeps "$SRPM_DUP"
 
-# install the SRPM within the mock chroot
-SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
-mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\"" \
-    || write_status_and_die "bootstrap" "failed to install SRPM"
+    # install the SRPM within the mock chroot
+    SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
+    mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\"" \
+        || write_status_and_die "bootstrap" "failed to install SRPM"
+fi
 
 # make the unpacked contents of the SRPM accessible (if the maintainer did not)
 mock_wrap --chroot "chmod -R +r /builddir/build"
 
-# rebuild the SRPM to avoid RPM incompatibilities when resolving deps
-mock_wrap --chroot "rpmbuild -bs --nodeps /builddir/build/SPECS/$SPEC $RPMM"
+if test xyes != "x$USE_TARBALL"; then
+    # rebuild the SRPM to avoid RPM incompatibilities when resolving deps
+    mock_wrap --chroot "rpmbuild -bs --nodeps /builddir/build/SPECS/$SPEC $RPMM"
 
-# ensure the just built SRPM has the same name as the original one
-mock_wrap --chroot "/bin/bash -c 'cd /builddir/build/SRPMS && \
+    # ensure the just built SRPM has the same name as the original one
+    mock_wrap --chroot "/bin/bash -c 'cd /builddir/build/SRPMS && \
 eval mv -v *.src.rpm $SRPM_BASE || :'"
 
-# 'mock --installdeps' is not always sufficient, neither yum-builddep is
-mock_wrap --disable-plugin=selinux --copyout \
-    "/builddir/build/SRPMS/$SRPM_BASE" "$SRPM_DUP"
-mock_wrap --installdeps "$SRPM_DUP"
-mock_wrap --chroot "yum-builddep --nogpgcheck \
+    # 'mock --installdeps' is not always sufficient, neither yum-builddep is
+    mock_wrap --disable-plugin=selinux --copyout \
+        "/builddir/build/SRPMS/$SRPM_BASE" "$SRPM_DUP"
+    mock_wrap --installdeps "$SRPM_DUP"
+    mock_wrap --chroot "yum-builddep --nogpgcheck \
 /builddir/build/SRPMS/$SRPM_BASE"
+fi
 
 # TODO: branch by RHEL version
 mock_wrap --chroot "sh -x $FIXUPS"
@@ -548,10 +582,17 @@ cmd_wrap rpm -qa --root "$TMP" | sort -V > "$BASE_DIR/rpm-list-mock.txt" \
     2>&1 | tee --append "$LOG"
 chmod u+w "$TMP_RPM"
 
-# run the %prep phase as usually (without cov-build)
-mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
+if test xyes = "x$USE_TARBALL"; then
+    BUILD_CMD="sh -x \"$BUILD_SCRIPT\""
+else
+    BUILD_CMD="rpmbuild -bc --nodeps --short-circuit \
+/builddir/build/SPECS/$SPEC $RPMM"
+
+    # run the %prep phase as usually (without cov-build)
+    mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
 rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
-    || write_status_and_update_ec "prep"
+        || write_status_and_update_ec "prep"
+fi
 
 # run the %build phase through cov-build
 mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
@@ -559,8 +600,7 @@ $COV_WRAP sh -xc \\\"unset XML_CATALOG_FILES; \
 ABSCC_ADD_CFLAGS=$ABSCC_ADD_CFLAGS ABSCC_ADD_CXXFLAGS=$ABSCC_ADD_CXXFLAGS \
 ABSCC_DEL_CFLAGS=$ABSCC_DEL_CFLAGS ABSCC_DEL_CXXFLAGS=$ABSCC_DEL_CXXFLAGS \
 ABSCC_CAP_FILE=/builddir/cov/compiler-warnings.err \
-$CLANG_WRAP rpmbuild -bc --nodeps --short-circuit \
-/builddir/build/SPECS/$SPEC $RPMM\\\"\"" \
+$CLANG_WRAP $BUILD_CMD\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
 if test -n "$CPPCHECK"; then
