@@ -641,7 +641,8 @@ fi
 
 if test -e "$COV/cppcheck.out"; then
     { cmd_wrap csgrep --remove-duplicates --event "error|warning" \
-        "$COV/cppcheck.out" > "$BASE_DIR/cppcheck.err"; } 2>&1 \
+        "$COV/cppcheck.out" | csgrep --invert-match --event "syntaxError" \
+        > "$BASE_DIR/cppcheck.err"; } 2>&1 \
         | tee --append "$LOG"
     { cmd_wrap cshtml "$BASE_DIR/cppcheck.err" \
         > "$BASE_DIR/cppcheck.html"; } 2>&1 \
