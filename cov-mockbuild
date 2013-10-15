@@ -427,12 +427,7 @@ fi
 EOF
 
 BASHRC="$TMP/bashrc"
-BASHRC_TPL="/usr/share/covscan/bashrc"
-if test -r "$BASHRC_TPL"; then
-    cp "$BASHRC_TPL" "$BASHRC"
-else
-    touch "$BASHRC"
-fi
+cp -R "/usr/share/covscan/bashrc" "$BASHRC"
 
 # prepare a dummy patcher
 if test xyes = "x$RAWBUILD"; then
@@ -589,13 +584,13 @@ else
 /builddir/build/SPECS/$SPEC $RPMM"
 
     # run the %prep phase as usually (without cov-build)
-    mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
+    mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/prep; PATH=$ENV_PATH \
 rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
         || write_status_and_update_ec "prep"
 fi
 
 # run the %build phase through cov-build
-mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; PATH=$ENV_PATH \
+mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/build; PATH=$ENV_PATH \
 $COV_WRAP sh -xc \\\"unset XML_CATALOG_FILES; \
 ABSCC_ADD_CFLAGS=$ABSCC_ADD_CFLAGS ABSCC_ADD_CXXFLAGS=$ABSCC_ADD_CXXFLAGS \
 ABSCC_DEL_CFLAGS=$ABSCC_DEL_CFLAGS ABSCC_DEL_CXXFLAGS=$ABSCC_DEL_CXXFLAGS \
@@ -604,7 +599,7 @@ $CLANG_WRAP $BUILD_CMD\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
 if test -n "$CPPCHECK"; then
-mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC; \
+mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/cppcheck; \
 $CPPCHECK -j9 --inline-suppr \
 --template '{file}:{line}: {severity}: {id}: {message}' \
 /builddir/build/BUILD 2>/builddir/cov/cppcheck.out\"" \

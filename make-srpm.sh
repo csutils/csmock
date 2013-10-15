@@ -38,7 +38,7 @@ TMP="`mktemp -d`"
 trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 test -d "$TMP" || die "mktemp failed"
 cp -t "$TMP"                        \
-    ./bashrc                        \
+    ./*.bashrc                      \
     ./cov_checker_map.txt           \
     ./cov-dump-err                  \
     ./cov-{mock,diff}build          \
@@ -61,10 +61,12 @@ URL:        https://engineering.redhat.com/trac/CoverityScan
 Source0:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-mockbuild
 Source1:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-diffbuild
 Source2:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=aux/rpmbuild-rawbuild
-Source3:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/bashrc
 Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project
 Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project-update
 Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-defects
+Source10:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/build.bashrc
+Source11:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cppcheck.bashrc
+Source12:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/prep.bashrc
 
 # http://git.engineering.redhat.com/?p=users/rdecarva/cov_checker_map.git;a=blob_plain;f=cov_checker_map.txt
 Source7:    cov_checker_map.txt
@@ -118,7 +120,8 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_bindir}" \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
     "\$RPM_BUILD_ROOT%{_sbindir}" \\
-    "\$RPM_BUILD_ROOT/usr/share/covscan"
+    "\$RPM_BUILD_ROOT/usr/share/covscan" \\
+    "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc"
 
 install -m0755 \\
     %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE4} \\
@@ -127,10 +130,13 @@ install -m0755 \\
 
 install -m0644 man/cov-{diff,mock}build.1.gz "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -m0644 %{SOURCE3} "\$RPM_BUILD_ROOT/usr/share/covscan"
 install -m0644 %{SOURCE7} "\$RPM_BUILD_ROOT/usr/share/covscan/cwe-map.csv"
 install -m0644 %{SOURCE9} \\
     "\$RPM_BUILD_ROOT/usr/share/covscan/cov-default-connect.sh"
+
+install -m0644 %{SOURCE10} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/build"
+install -m0644 %{SOURCE11} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/cppcheck"
+install -m0644 %{SOURCE12} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/prep"
 
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/" \\
