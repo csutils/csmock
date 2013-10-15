@@ -140,18 +140,16 @@ load_im_opts() {
 }
 
 ABSCC_ADD_CFLAGS=
-ABSCC_DEL_CFLAGS=
+ABSCC_DEL_CFLAGS="-Werror"
 ABSCC_ADD_CXXFLAGS=
-ABSCC_DEL_CXXFLAGS=
+ABSCC_DEL_CXXFLAGS="-Werror"
 
 adjust_gcc_flags() {
     level="$1"
     test $level = 0 && return
 
     # -W1 flags
-    ABSCC_DEL_CFLAGS="-Werror"
     ABSCC_ADD_CFLAGS="-Wall:-Wextra"
-    ABSCC_DEL_CXXFLAGS="$ABSCC_DEL_CFLAGS"
     ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CFLAGS"
     test $level = 1 && return
 
