@@ -26,7 +26,7 @@ export LC_ALL=C
 
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
-OPTS="bcd:film::ntw:"
+OPTS="bcd:fhilm::ntw:"
 
 usage(){
     cat << EOF
@@ -41,8 +41,10 @@ usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
   -f  Overwrite the file with results if it already exists.  By default, this
       would fail.
 
+  -h  Provide HTML output of cov-format-errors.  [Coverity only]
+
   -i  Keep Coverity intermediate directory for further processing.  By default,
-      only build-log.txt is kept.
+      only build-log.txt is kept.  [Coverity only]
 
   -l  Enable clang analyzer.  It will use the clang-analyzer package from your
       mock chroot, or fail if the package is not installable.  [EXPERIMENTAL]
@@ -85,7 +87,7 @@ fi
 
 while getopts $OPTS opt; do
     case "$opt" in
-        b|c|i|l|n)
+        b|c|h|i|l|n)
             COV_MOCKBUILD_OPTS="$COV_MOCKBUILD_OPTS -$opt"
             ;;
 

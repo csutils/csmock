@@ -43,7 +43,7 @@ ENV_PATH="/usr/lib64/abscc:\\\$PATH"
 
 QUICK_BUILD_CMD="./configure; make -kj13"
 
-OPTS="bcd:film::nq:rtw:x"
+OPTS="bcd:fhilm::nq:rtw:x"
 
 usage(){
     cat << EOF
@@ -58,8 +58,10 @@ Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
   -f  Overwrite the file with results if it already exists.  By default, this
       would fail.
 
+  -h  Provide HTML output of cov-format-errors.  [Coverity only]
+
   -i  Keep Coverity intermediate directory for further processing.  By default,
-      only build-log.txt is kept.
+      only build-log.txt is kept.  [Coverity only]
 
   -l  Enable clang analyzer.  It will use the clang-analyzer package from your
       mock chroot, or fail if the package is not installable.  [EXPERIMENTAL]
@@ -172,6 +174,7 @@ adjust_gcc_flags() {
 
 CLANG_WRAP=
 COV_USED=yes
+COV_HTML=no
 COV_BIN_DIR="$(dirname "`which cov-analyze`")"
 COV_WRAP="$COV_BIN_DIR/cov-build --dir /builddir/cov"
 COV_DIR="`dirname "$COV_BIN_DIR"`"
@@ -195,6 +198,9 @@ while getopts $OPTS opt; do
             ;;
 
         f)  OVERWRITE_RESULTS=yes
+            ;;
+
+        h)  COV_HTML=yes
             ;;
 
         i)
@@ -746,8 +752,11 @@ fi
 
 if test xyes = "x$COV_USED"; then
     mv -v "$COV/build-log.txt" "$COV/.." 2>&1 | tee --append "$LOG"
-    cmd_wrap cov-format-errors --dir "$COV" 2>&1 | tee --append "$LOG"
-    mv -v "$COV/c/output/errors" "$COV/../cov-html/" 2>&1 | tee --append "$LOG"
+    if test xyes = "x$COV_HTML"; then
+        cmd_wrap cov-format-errors --dir "$COV" 2>&1 | tee --append "$LOG"
+        mv -v "$COV/c/output/errors" "$COV/../cov-html/" 2>&1 \
+            | tee --append "$LOG"
+    fi
 fi
 
 if test xyes != "x$KEEP_COV"; then
