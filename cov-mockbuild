@@ -769,10 +769,12 @@ function print_if_readable() {
     fi
 }
 
-{ cmd_wrap csgrep --mode=json --invert-match --path '^/usr/include' "$JS" \
-    `print_if_readable "$BASE_DIR/cppcheck.err"` \
-    `print_if_readable "$BASE_DIR/compiler-warnings.err"` \
-    > "$BASE_DIR/results.js"; } 2>&1 | tee --append "$LOG"
+{ cmd_wrap sh -c "csgrep --mode=json --invert-match --path ^/usr/include \
+    \"$JS\" \
+    `print_if_readable $BASE_DIR/cppcheck.err` \
+    `print_if_readable $BASE_DIR/compiler-warnings.err` \
+    | cssort --key=path > \"$BASE_DIR/results.js\""; } 2>&1 \
+    | tee --append "$LOG"
 
 { cmd_wrap csgrep --mode=grep --prune-events=1 "$BASE_DIR/results.js" \
     > "$BASE_DIR/results.err"; } 2>&1 | tee --append "$LOG"
