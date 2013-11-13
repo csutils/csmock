@@ -626,7 +626,7 @@ fi
 # release the lock
 test $$ = "$(<$LOCK)" && rm -fv "$LOCK"
 
-# capture compiler warnings (#TODO: ignore more auto-generated files)
+# capture compiler/clang warnings (#TODO: ignore more auto-generated files)
 if test -e "$COV/compiler-warnings.err"; then
     { cmd_wrap sh -c "csgrep --quiet --path '^/builddir/build/BUILD/' \
         --event=warning \"$COV/compiler-warnings.err\" --remove-duplicates \
@@ -636,9 +636,6 @@ if test -e "$COV/compiler-warnings.err"; then
         | tee --append "$LOG"
 
     mv -v "$COV/compiler-warnings.err" "$DEBUG_DIR" 2>&1 | tee --append "$LOG"
-    { cmd_wrap cshtml "$BASE_DIR/compiler-warnings.err" \
-        > "$BASE_DIR/compiler-warnings.html"; } 2>&1 \
-        | tee --append "$LOG"
 fi
 
 if test -e "$COV/cppcheck.out"; then
@@ -782,6 +779,14 @@ function print_if_readable() {
 
 { cmd_wrap sh -c "csgrep --mode=json --prune-events=1 \"$BASE_DIR/results.js\" \
     | cshtml $CSHTML_OPTS - > \"$BASE_DIR/results.html\""; } 2>&1 \
+    | tee --append "$LOG"
+
+# filter out compiler warnings
+{ cmd_wrap csgrep --checker "COMPILER_WARNING" "$BASE_DIR/results.js" \
+    > "$BASE_DIR/compiler-warnings.err"; } 2>&1 \
+    | tee --append "$LOG"
+{ cmd_wrap cshtml "$BASE_DIR/compiler-warnings.err" \
+    > "$BASE_DIR/compiler-warnings.html"; } 2>&1 \
     | tee --append "$LOG"
 
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"  \
