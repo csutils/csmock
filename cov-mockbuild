@@ -789,6 +789,14 @@ function print_if_readable() {
     > "$BASE_DIR/compiler-warnings.html"; } 2>&1 \
     | tee --append "$LOG"
 
+# filter out clang warnings
+{ cmd_wrap csgrep --checker "CLANG_WARNING" "$BASE_DIR/results.js" \
+    > "$BASE_DIR/clang-warnings.err"; } 2>&1 \
+    | tee --append "$LOG"
+{ cmd_wrap cshtml "$BASE_DIR/clang-warnings.err" \
+    > "$BASE_DIR/clang-warnings.html"; } 2>&1 \
+    | tee --append "$LOG"
+
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"  \
     | tee --append "$LOG"
 
