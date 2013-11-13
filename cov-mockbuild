@@ -321,7 +321,8 @@ MLOCK="/tmp/.cov-mockbuild-${MOCK_PROFILE}.metalock"
 # prepare $TMP directory
 TMP="`mktemp -d $TMPDIR/cov-mockbuild.XXXXXX`"
 BASE_DIR="$TMP/$BASE/$RUN"
-mkdir -p "$BASE_DIR" || die "mktemp failed"
+DEBUG_DIR="$BASE_DIR/debug"
+mkdir -p "$DEBUG_DIR" || die "mktemp failed"
 
 # from now on, do the pack/cleanup on exit, no matter if we succeeded or not
 trap "test -z \"\$EC\" || touch \"${BASE_DIR}.FAILED\"
@@ -367,7 +368,7 @@ time-created = %s\n" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
 
-cmd_wrap rpm -qa | sort -V > "$BASE_DIR/rpm-list-host.txt" \
+cmd_wrap rpm -qa | sort -V > "$DEBUG_DIR/rpm-list-host.txt" \
     2>&1 | tee --append "$LOG"
 
 # copy the SRPM (or tarball) to our temp
@@ -577,7 +578,7 @@ mkdir -p "$TMP/var/lib"
 TMP_RPM="$TMP/var/lib/rpm"
 mock_wrap --disable-plugin=selinux --copyout "/var/lib/rpm" "$TMP_RPM"
 chmod -w "$TMP_RPM"
-cmd_wrap rpm -qa --root "$TMP" | sort -V > "$BASE_DIR/rpm-list-mock.txt" \
+cmd_wrap rpm -qa --root "$TMP" | sort -V > "$DEBUG_DIR/rpm-list-mock.txt" \
     2>&1 | tee --append "$LOG"
 chmod u+w "$TMP_RPM"
 
@@ -633,6 +634,8 @@ if test -e "$COV/compiler-warnings.err"; then
         | sed 's|^/builddir/build/BUILD/||' \
         > \"$BASE_DIR/compiler-warnings.err\""; } 2>&1 \
         | tee --append "$LOG"
+
+    mv -v "$COV/compiler-warnings.err" "$DEBUG_DIR" 2>&1 | tee --append "$LOG"
     { cmd_wrap cshtml "$BASE_DIR/compiler-warnings.err" \
         > "$BASE_DIR/compiler-warnings.html"; } 2>&1 \
         | tee --append "$LOG"
@@ -751,7 +754,7 @@ fi
     | tee --append "$LOG"
 
 if test xyes = "x$COV_USED"; then
-    mv -v "$COV/build-log.txt" "$COV/.." 2>&1 | tee --append "$LOG"
+    mv -v "$COV/build-log.txt" "$DEBUG_DIR" 2>&1 | tee --append "$LOG"
     if test xyes = "x$COV_HTML"; then
         cmd_wrap cov-format-errors --dir "$COV" 2>&1 | tee --append "$LOG"
         mv -v "$COV/c/output/errors" "$COV/../cov-html/" 2>&1 \
