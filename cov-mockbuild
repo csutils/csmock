@@ -606,7 +606,7 @@ $CLANG_WRAP $BUILD_CMD\\\"\"" \
 
 if test -n "$CPPCHECK"; then
 mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/cppcheck; \
-$CPPCHECK -j9 --inline-suppr \
+$CPPCHECK -j13 --inline-suppr \
 --template '{file}:{line}: {severity}: {id}: {message}' \
 /builddir/build/BUILD 2>/builddir/cov/cppcheck.out\"" \
     || write_status_and_update_ec "cppcheck"
