@@ -774,6 +774,7 @@ function print_if_readable() {
     \"$JS\" \
     `print_if_readable $BASE_DIR/cppcheck.err` \
     `print_if_readable $BASE_DIR/compiler-warnings.err` \
+    | csgrep --invert-match --path='^ksh-.*[0-9]+\.c$' \
     | cssort --key=path > \"$BASE_DIR/results.js\""; } 2>&1 \
     | tee --append "$LOG"
 
