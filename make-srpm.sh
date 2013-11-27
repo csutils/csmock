@@ -65,7 +65,6 @@ Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;
 Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project-update
 Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-defects
 Source10:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/build.bashrc
-Source11:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cppcheck.bashrc
 Source12:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/prep.bashrc
 
 # http://git.engineering.redhat.com/?p=users/rdecarva/cov_checker_map.git;a=blob_plain;f=cov_checker_map.txt
@@ -81,6 +80,7 @@ BuildRequires: help2man
 Requires: abscc >= 0.20130702
 Requires: cov-getprojkey
 Requires: cov-sa
+Requires: cppcheck-gcc
 Requires: csdiff >= 0.20130820
 Requires: mock
 Requires: rpm-build
@@ -135,7 +135,6 @@ install -m0644 %{SOURCE9} \\
     "\$RPM_BUILD_ROOT/usr/share/covscan/cov-default-connect.sh"
 
 install -m0644 %{SOURCE10} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/build"
-install -m0644 %{SOURCE11} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/cppcheck"
 install -m0644 %{SOURCE12} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/prep"
 
 install -m0755 -d \\

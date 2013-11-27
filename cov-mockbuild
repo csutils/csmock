@@ -189,9 +189,10 @@ while getopts $OPTS opt; do
 
         c)  CPPCHECK="/usr/bin/cppcheck"
             test -x "$CPPCHECK" || die "$CPPCHECK not found"
-            TINYXML="/usr/lib64/libtinyxml.so.0"
-            test -e "$TINYXML" || die "$TINYXML not found"
-            CPPCHECK_FILES="$CPPCHECK $TINYXML $(readlink -f $TINYXML)"
+            CPPCHECK_GCC="/usr/bin/cppcheck-gcc"
+            test -e "$CPPCHECK_GCC" || die "$CPPCHECK_GCC not found"
+            CPPCHECK_FILES="$CPPCHECK $CPPCHECK_GCC /usr/lib64/cppcheck-gcc"
+            ENV_PATH="/usr/lib64/cppcheck-gcc:$ENV_PATH"
             ;;
 
         d)  EXTRA_DEPS="$OPTARG"
@@ -604,14 +605,6 @@ ABSCC_TIMEOUT=900 \
 $CLANG_WRAP $BUILD_CMD\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
-if test -n "$CPPCHECK"; then
-mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/cppcheck; \
-$CPPCHECK -j13 --inline-suppr \
---template '{file}:{line}: {severity}: {id}: {message}' \
-/builddir/build/BUILD 2>/builddir/cov/cppcheck.out\"" \
-    || write_status_and_update_ec "cppcheck"
-fi
-
 # get the intermediate directory out of the chroot and store it to $COV
 mock_wrap --chroot "chmod -R +r /builddir/cov" \
     || write_status_and_update_ec "post"
@@ -630,25 +623,13 @@ test $$ = "$(<$LOCK)" && rm -fv "$LOCK"
 # capture compiler/clang warnings (#TODO: ignore more auto-generated files)
 if test -e "$COV/compiler-warnings.err"; then
     { cmd_wrap sh -c "csgrep --quiet --path '^/builddir/build/BUILD/' \
-        --event=warning \"$COV/compiler-warnings.err\" --remove-duplicates \
-        | csgrep --invert-match --path conftest.c \
+        --event='error|warning' \"$COV/compiler-warnings.err\" \
+        --remove-duplicates | csgrep --invert-match --path conftest.c \
         | sed 's|^/builddir/build/BUILD/||' \
         > \"$BASE_DIR/compiler-warnings.err\""; } 2>&1 \
         | tee --append "$LOG"
 
     mv -v "$COV/compiler-warnings.err" "$DEBUG_DIR" 2>&1 | tee --append "$LOG"
-fi
-
-if test -e "$COV/cppcheck.out"; then
-    { cmd_wrap sh -c "csgrep --remove-duplicates --event 'error|warning' \
-        '$COV/cppcheck.out' | sed 's|^/builddir/build/BUILD/||' \
-        | csgrep --invert-match --event 'syntaxError'" \
-        > "$BASE_DIR/cppcheck.err"; } 2>&1 \
-        | tee --append "$LOG"
-    { cmd_wrap cshtml "$BASE_DIR/cppcheck.err" \
-        > "$BASE_DIR/cppcheck.html"; } 2>&1 \
-        | tee --append "$LOG"
-    rm -v "$COV/cppcheck.out"
 fi
 
 if test xyes = "x$COV_USED"; then
@@ -800,6 +781,16 @@ if test -n "$CLANG_WRAP"; then
         | tee --append "$LOG"
     { cmd_wrap cshtml "$BASE_DIR/clang-warnings.err" \
         > "$BASE_DIR/clang-warnings.html"; } 2>&1 \
+        | tee --append "$LOG"
+fi
+
+if test -n "$CPPCHECK"; then
+    # filter out cppcheck warnings
+    { cmd_wrap csgrep --checker "CPPCHECK_WARNING" "$BASE_DIR/results.js" \
+        > "$BASE_DIR/cppcheck-warnings.err"; } 2>&1 \
+        | tee --append "$LOG"
+    { cmd_wrap cshtml "$BASE_DIR/cppcheck-warnings.err" \
+        > "$BASE_DIR/cppcheck-warnings.html"; } 2>&1 \
         | tee --append "$LOG"
 fi
 
