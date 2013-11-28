@@ -625,6 +625,7 @@ if test -e "$COV/compiler-warnings.err"; then
     { cmd_wrap sh -c "csgrep --quiet --path '^/builddir/build/BUILD/' \
         --event='error|warning' \"$COV/compiler-warnings.err\" \
         --remove-duplicates | csgrep --invert-match --path conftest.c \
+        | csgrep --invert-match --event 'syntaxError|preprocessorErrorDirective' \
         | sed 's|^/builddir/build/BUILD/||' \
         > \"$BASE_DIR/compiler-warnings.err\""; } 2>&1 \
         | tee --append "$LOG"
