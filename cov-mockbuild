@@ -209,7 +209,7 @@ while getopts $OPTS opt; do
             ;;
 
         l)
-            CLANG_WRAP="scan-build -o plist"
+            CLANG_WRAP="scan-build -plist"
             ;;
 
         m)
