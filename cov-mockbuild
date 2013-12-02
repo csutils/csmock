@@ -627,6 +627,7 @@ if test -e "$COV/compiler-warnings.err"; then
         --remove-duplicates \
         | csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c' \
         | csgrep --invert-match --event 'syntaxError|preprocessorErrorDirective' \
+        | csgrep --invert-match --checker 'COMPILER_WARNING' --event 'error' \
         | sed 's|^/builddir/build/BUILD/||' \
         > \"$BASE_DIR/compiler-warnings.err\""; } 2>&1 \
         | tee --append "$LOG"
