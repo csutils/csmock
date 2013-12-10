@@ -141,7 +141,7 @@ load_im_opts() {
     eval `parse_im_opts "$@"`
 }
 
-ABSCC_ADD_CFLAGS=
+ABSCC_ADD_CFLAGS="-Wno-unknown-pragmas"
 ABSCC_DEL_CFLAGS="-Werror"
 ABSCC_ADD_CXXFLAGS=
 ABSCC_DEL_CXXFLAGS="-Werror"
@@ -156,7 +156,6 @@ adjust_gcc_flags() {
     test $level = 1 && return
 
     # -W2 flags
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS"
     ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wunreachable-code:-Wundef:-Wcast-align"
     ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wpointer-arith:-Wfloat-equal:-Wshadow"
     ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wstrict-prototypes:-Wwrite-strings"
