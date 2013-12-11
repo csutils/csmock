@@ -158,10 +158,11 @@ adjust_gcc_flags() {
     # -W2 flags
     ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wunreachable-code:-Wundef:-Wcast-align"
     ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wpointer-arith:-Wfloat-equal:-Wshadow"
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wstrict-prototypes:-Wwrite-strings"
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wwrite-strings"
     ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CFLAGS"
     ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Wctor-dtor-privacy"
     ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Woverloaded-virtual"
+    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wstrict-prototypes"
     test $level = 2 && return
 
     # -W3 flags
