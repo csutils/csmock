@@ -362,6 +362,7 @@ print_if_readable() {
     fi
 }
 
+do_scan() {
 # extra options for cov-analyze
 shift
 shift
@@ -382,21 +383,20 @@ time-created = %s\n" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
 
-cmd_wrap rpm -qa | sort -V > "$DEBUG_DIR/rpm-list-host.txt" \
-    2>&1 | tee --append "$LOG"
+cmd_wrap rpm -qa | sort -V > "$DEBUG_DIR/rpm-list-host.txt"
 
 # copy the SRPM (or tarball) to our temp
 SRPM_BASE="`basename "$SRPM"`"
 SRPM_DUP="$TMP/$SRPM_BASE"
-cp -t "$TMP" "$SRPM" 2>&1 | tee --append "$LOG"
+cp -t "$TMP" "$SRPM"
 test -f "$SRPM_DUP" || write_status_and_die "bootstrap"
 
 # prepare a build script if building a source tarball instead of SRPM
 if test xyes = "x$USE_TARBALL"; then
     BUILD_SCRIPT="$TMP/build.sh"
     { printf "#!/bin/sh\ncd /builddir/build/BUILD || exit \$?\ncd %s*/\n%s\n" \
-        "$BASE" "$QUICK_BUILD_CMD" | tee "$BUILD_SCRIPT" ;} 2>&1 \
-        | tee --append "$LOG" || write_status_and_update_ec "prep"
+        "$BASE" "$QUICK_BUILD_CMD" | tee "$BUILD_SCRIPT" ;} \
+        || write_status_and_update_ec "prep"
 fi
 
 # various fixups that can be applied on the buildroot prior to build
@@ -498,7 +498,7 @@ fi
 # prepare .tar of all the files we need inside mock chroot
 TPL_BASE="bootstrap.tar"
 TPL="$TMP/$TPL_BASE"
-{ printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL" | tee --append "$LOG"; } >&2
+printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL"
 tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
     $BUILD_SCRIPT                               \
     /etc/resolv.conf                            \
@@ -586,8 +586,7 @@ mkdir -p "$TMP/var/lib"
 TMP_RPM="$TMP/var/lib/rpm"
 mock_wrap --disable-plugin=selinux --copyout "/var/lib/rpm" "$TMP_RPM"
 chmod -w "$TMP_RPM"
-cmd_wrap rpm -qa --root "$TMP" | sort -V > "$DEBUG_DIR/rpm-list-mock.txt" \
-    2>&1 | tee --append "$LOG"
+cmd_wrap rpm -qa --root "$TMP" | sort -V > "$DEBUG_DIR/rpm-list-mock.txt"
 chmod u+w "$TMP_RPM"
 
 if test xyes = "x$USE_TARBALL"; then
@@ -629,17 +628,16 @@ test $$ = "$(<$LOCK)" && rm -fv "$LOCK"
 
 # capture compiler/clang warnings (#TODO: ignore more auto-generated files)
 if test -e "$COV/compiler-warnings.err"; then
-    { cmd_wrap sh -c "csgrep --quiet --path '^/builddir/build/BUILD/' \
+    cmd_wrap sh -c "csgrep --quiet --path '^/builddir/build/BUILD/' \
         --event='error|warning' \"$COV/compiler-warnings.err\" \
         --remove-duplicates \
         | csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c' \
         | csgrep --invert-match --event 'syntaxError|preprocessorErrorDirective' \
         | csgrep --invert-match --checker 'COMPILER_WARNING' --event 'error' \
         | sed 's|^/builddir/build/BUILD/||' \
-        > \"$BASE_DIR/compiler-warnings.err\""; } 2>&1 \
-        | tee --append "$LOG"
+        > \"$BASE_DIR/compiler-warnings.err\""
 
-    mv -v "$COV/compiler-warnings.err" "$DEBUG_DIR" 2>&1 | tee --append "$LOG"
+    mv -v "$COV/compiler-warnings.err" "$DEBUG_DIR"
 fi
 
 if test xyes = "x$COV_USED"; then
@@ -671,13 +669,11 @@ printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
 if test -f "$COV"/c/emit/*/emit-db.write-lock; then
 
     # run the analysis
-    cmd_wrap cov-analyze --dir "$COV" $COV_OPTS 2>&1        \
-        | tee --append "$LOG"                               \
+    cmd_wrap cov-analyze --dir "$COV" $COV_OPTS             \
         || write_status_and_update_ec "analyze"
 
     # store the list of defects to $ERR
-    { cmd_wrap cov-dump-err "$COV" > "$ERR"; } 2>&1         \
-        | tee --append "$LOG"                               \
+    cmd_wrap cov-dump-err "$COV" > "$ERR"                   \
         || write_status_and_update_ec "analyze"
 
     if test xyes = "x$COMMIT_TO_IM"; then
@@ -685,16 +681,15 @@ if test -f "$COV"/c/emit/*/emit-db.write-lock; then
         test -n "$COMMIT_TO_IM_OPTS" && load_im_opts "$COMMIT_TO_IM_OPTS"
         . /usr/share/covscan/cov-default-connect.sh
 
-        cmd_wrap cov-commit-project "$COV" "$PROJ_NAME" 2>&1        \
-            | tee --append "$LOG"                                   \
-                || write_status_and_update_ec "commit"
+        cmd_wrap cov-commit-project "$COV" "$PROJ_NAME"             \
+            || write_status_and_update_ec "commit"
 
         PROJ_ID="`cov-getprojkey -p "$PROJ_NAME"`"
         if test 0 -lt "$PROJ_ID"; then
             printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
-            { cmd_wrap cov-query-defects "$PROJ_NAME"               \
+            cmd_wrap cov-query-defects "$PROJ_NAME"                 \
                 | perl -i -p -e 's/\/builddir\/build\/BUILD\///'    \
-                > "$MAP"; } 2>&1 | tee --append "$LOG"              \
+                > "$MAP"                                            \
                 || write_status_and_update_ec "commit"
 
             CSHTML_OPTS="--defect-url-template ${COV_IM_PUB_URL}/\
@@ -731,23 +726,21 @@ else
     MAP=
 fi
 
-{ cmd_wrap cslinker --cwelist /usr/share/covscan/cwe-map.csv --inifile "$INI" \
-    $MAP "$ERR" > "$JS"; } 2>&1 | tee --append "$LOG"
+cmd_wrap cslinker --cwelist /usr/share/covscan/cwe-map.csv --inifile "$INI" \
+    $MAP "$ERR" > "$JS"
 
 # regenerate .err from .js to get the CWE numbers in place and drop trace events
-{ cmd_wrap csgrep --prune-events=1 "$JS" > "$ERR"; } 2>&1 | tee --append "$LOG"
+cmd_wrap csgrep --prune-events=1 "$JS" > "$ERR"
 
 # generate .html from .js without trace events
-{ cmd_wrap sh -c "csgrep --prune-events=1 --mode=json \"$JS\" \
-    | cshtml $CSHTML_OPTS - > \"$HTML\""; } 2>&1 \
-    | tee --append "$LOG"
+cmd_wrap sh -c "csgrep --prune-events=1 --mode=json \"$JS\" \
+    | cshtml $CSHTML_OPTS - > \"$HTML\""
 
 if test xyes = "x$COV_USED"; then
-    mv -v "$COV/build-log.txt" "$DEBUG_DIR" 2>&1 | tee --append "$LOG"
+    mv -v "$COV/build-log.txt" "$DEBUG_DIR"
     if test xyes = "x$COV_HTML"; then
-        cmd_wrap cov-format-errors --dir "$COV" 2>&1 | tee --append "$LOG"
-        mv -v "$COV/c/output/errors" "$COV/../cov-html/" 2>&1 \
-            | tee --append "$LOG"
+        cmd_wrap cov-format-errors --dir "$COV"
+        mv -v "$COV/c/output/errors" "$COV/../cov-html/"
     fi
 fi
 
@@ -755,50 +748,45 @@ if test xyes != "x$KEEP_COV"; then
     rm -rf "$COV"
 fi
 
-{ cmd_wrap sh -c "csgrep --mode=json --invert-match --path ^/usr/include \
+cmd_wrap sh -c "csgrep --mode=json --invert-match --path ^/usr/include \
     \"$JS\" \
     `print_if_readable $BASE_DIR/cppcheck.err` \
     `print_if_readable $BASE_DIR/compiler-warnings.err` \
     | csgrep --mode=json --invert-match --path=\"^ksh-.*[0-9]+\.c\$\" \
-    | cssort --key=path > \"$BASE_DIR/results.js\""; } 2>&1 \
-    | tee --append "$LOG"
+    | cssort --key=path > \"$BASE_DIR/results.js\""
 
-{ cmd_wrap csgrep --mode=grep --prune-events=1 "$BASE_DIR/results.js" \
-    > "$BASE_DIR/results.err"; } 2>&1 | tee --append "$LOG"
+cmd_wrap csgrep --mode=grep --prune-events=1 "$BASE_DIR/results.js" \
+    > "$BASE_DIR/results.err"
 
-{ cmd_wrap sh -c "csgrep --mode=json --prune-events=1 \"$BASE_DIR/results.js\" \
-    | cshtml $CSHTML_OPTS - > \"$BASE_DIR/results.html\""; } 2>&1 \
-    | tee --append "$LOG"
+cmd_wrap sh -c "csgrep --mode=json --prune-events=1 \"$BASE_DIR/results.js\" \
+    | cshtml $CSHTML_OPTS - > \"$BASE_DIR/results.html\""
 
 # filter out compiler warnings
-{ cmd_wrap csgrep --checker "COMPILER_WARNING" "$BASE_DIR/results.js" \
-    > "$BASE_DIR/compiler-warnings.err"; } 2>&1 \
-    | tee --append "$LOG"
-{ cmd_wrap cshtml "$BASE_DIR/compiler-warnings.err" \
-    > "$BASE_DIR/compiler-warnings.html"; } 2>&1 \
-    | tee --append "$LOG"
+cmd_wrap csgrep --checker "COMPILER_WARNING" "$BASE_DIR/results.js" \
+    > "$BASE_DIR/compiler-warnings.err"
+cmd_wrap cshtml "$BASE_DIR/compiler-warnings.err" \
+    > "$BASE_DIR/compiler-warnings.html"
 
 if test -n "$CLANG_WRAP"; then
     # filter out clang warnings
-    { cmd_wrap csgrep --checker "CLANG_WARNING" "$BASE_DIR/results.js" \
-        > "$BASE_DIR/clang-warnings.err"; } 2>&1 \
-        | tee --append "$LOG"
-    { cmd_wrap cshtml "$BASE_DIR/clang-warnings.err" \
-        > "$BASE_DIR/clang-warnings.html"; } 2>&1 \
-        | tee --append "$LOG"
+    cmd_wrap csgrep --checker "CLANG_WARNING" "$BASE_DIR/results.js" \
+        > "$BASE_DIR/clang-warnings.err"
+    md_wrap cshtml "$BASE_DIR/clang-warnings.err" \
+        > "$BASE_DIR/clang-warnings.html"
 fi
 
 if test -n "$CPPCHECK"; then
     # filter out cppcheck warnings
-    { cmd_wrap csgrep --checker "CPPCHECK_WARNING" "$BASE_DIR/results.js" \
-        > "$BASE_DIR/cppcheck-warnings.err"; } 2>&1 \
-        | tee --append "$LOG"
-    { cmd_wrap cshtml "$BASE_DIR/cppcheck-warnings.err" \
-        > "$BASE_DIR/cppcheck-warnings.html"; } 2>&1 \
-        | tee --append "$LOG"
+    cmd_wrap csgrep --checker "CPPCHECK_WARNING" "$BASE_DIR/results.js" \
+        > "$BASE_DIR/cppcheck-warnings.err"
+    cmd_wrap cshtml "$BASE_DIR/cppcheck-warnings.err" \
+        > "$BASE_DIR/cppcheck-warnings.html"
 fi
 
-printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"  \
-    | tee --append "$LOG"
+printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"
+
+} # do_scan()
+
+do_scan 2>&1 | tee "$LOG"
 
 exit $EC
