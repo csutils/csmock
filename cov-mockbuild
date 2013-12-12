@@ -316,6 +316,12 @@ cmd_wrap() {
     "$@"
 }
 
+# invoke mock with given parameters
+mock_wrap(){
+    { cmd_wrap mock-unbuffered -r "$MOCK_PROFILE" "$@"; } 2>&1 \
+        | tee --append "$LOG"
+}
+
 # profile-level lock file
 LOCK="/tmp/.cov-mockbuild-${MOCK_PROFILE}.lock"
 MLOCK="/tmp/.cov-mockbuild-${MOCK_PROFILE}.metalock"
@@ -348,6 +354,12 @@ cov_version() {
 
 self_version() {
     echo $(rpm -q cov-mockbuild csdiff) 2>&1
+}
+
+print_if_readable() {
+    if test -r "$1"; then
+        echo "$1"
+    fi
 }
 
 # extra options for cov-analyze
@@ -494,12 +506,6 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
     "$COV_BIN_DIR"/{cov-*,libcapture-*.so}      \
     /usr/{bin,lib64}/abscc                      \
     || write_status_and_die "bootstrap" "failed to create $TPL"
-
-# invoke mock with given parameters
-mock_wrap(){
-    { cmd_wrap mock-unbuffered -r "$MOCK_PROFILE" "$@"; } 2>&1 \
-        | tee --append "$LOG"
-}
 
 # acquire the profile-level lock
 until flock -w15 "$MLOCK" -c "test ! -f '$LOCK' && echo $$ > '$LOCK'"; do
@@ -748,12 +754,6 @@ fi
 if test xyes != "x$KEEP_COV"; then
     rm -rf "$COV"
 fi
-
-function print_if_readable() {
-    if test -r "$1"; then
-        echo "$1"
-    fi
-}
 
 { cmd_wrap sh -c "csgrep --mode=json --invert-match --path ^/usr/include \
     \"$JS\" \
