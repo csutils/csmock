@@ -784,6 +784,9 @@ if test -n "$CPPCHECK"; then
         > "$BASE_DIR/cppcheck-warnings.html"
 fi
 
+# print a brief summary of the defects found
+cmd_wrap csgrep --mode=stat "$BASE_DIR/results.err"
+
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"
 
 } # do_scan()
