@@ -362,6 +362,69 @@ print_if_readable() {
     fi
 }
 
+write_link_if_exists() {
+    test -r "$2" || return
+    printf "    <li><a href='%s'>%s</a></li>\n" "$2" "$1"
+}
+
+write_links_if_exist() {
+    file="$2"
+    file_js="${file}.js"
+    file_err="${file}.err"
+    file_html="${file}.html"
+    test -r "$file_html" || return
+
+    cnt_def="?"
+    style=
+    if test -r "$file_err"; then
+        cnt_def="$(grep "^Error: " "$file_err" | wc -l)"
+        test 0 -lt "$cnt_def" && style=" style='font-weight: bold;'"
+    fi
+
+    printf "  <li><a%s href='%s'>%s (%d)</a><ul>\n" \
+        "$style" "$file_html" "$1" "$cnt_def"
+
+    write_link_if_exists "Download as TXT"      "$file_err"
+    write_link_if_exists "Download as JSON"     "$file_js"
+
+    printf "</ul><br/></li>\n"
+}
+
+write_contents_if_exists() {
+    test -r "$1" || return
+    printf "<pre>\n%s</pre>\n" "$(<$1)"
+}
+
+write_index() {
+    title="Scan of $BASE"
+    printf "<?xml version='1.0' encoding='utf-8'?>\n"
+    printf "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.1//EN' \
+'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'>\n"
+    printf "<html xmlns='http://www.w3.org/1999/xhtml'>\n"
+    printf "<head><title>%s</title></head>\n" "$title"
+    printf "<body>\n<h1>%s</h1>\n" "$title"
+
+    printf "<h2>All Results</h2>\n<ul>\n"
+    write_links_if_exist "All Defects"                 "results"
+
+    printf "</ul>\n<h2>Per Tool Results</h2>\n<ul>\n"
+    write_links_if_exist "Compiler Warnings"           "compiler-warnings"
+    write_links_if_exist "Defects Found by Cppcheck"   "cppcheck-warnings"
+    write_links_if_exist "Defects Found by CLang"      "clang-warnings"
+    write_links_if_exist "Defects Found by Coverity"   "$BASE"
+
+    printf "</ul>\n<h2>Debugging Information</h2>\n<ul>\n"
+    write_link_if_exists "Scan Log"                    "$BASE.log"
+    write_link_if_exists "Scan Properties"             "$BASE.ini"
+    write_link_if_exists "RPMs on the host"            "debug/rpm-list-host.txt"
+    write_link_if_exists "RPMs in the chroot"          "debug/rpm-list-mock.txt"
+    write_link_if_exists "Coverity build log"          "debug/build-log.txt"
+    printf "</ul>\n"
+    write_contents_if_exists                           "$BASE.ini"
+
+    printf "</body>\n</html>\n"
+}
+
 do_scan() {
 # extra options for cov-analyze
 shift
@@ -772,7 +835,7 @@ if test -n "$CLANG_WRAP"; then
     # filter out clang warnings
     cmd_wrap csgrep --checker "CLANG_WARNING" "$BASE_DIR/results.js" \
         > "$BASE_DIR/clang-warnings.err"
-    md_wrap cshtml "$BASE_DIR/clang-warnings.err" \
+    cmd_wrap cshtml "$BASE_DIR/clang-warnings.err" \
         > "$BASE_DIR/clang-warnings.html"
 fi
 
@@ -783,6 +846,8 @@ if test -n "$CPPCHECK"; then
     cmd_wrap cshtml "$BASE_DIR/cppcheck-warnings.err" \
         > "$BASE_DIR/cppcheck-warnings.html"
 fi
+
+(cd "$BASE_DIR" && { write_index > "index.html"; }) 
 
 # print a brief summary of the defects found
 cmd_wrap csgrep --mode=stat "$BASE_DIR/results.err"
