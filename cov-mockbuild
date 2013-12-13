@@ -368,7 +368,6 @@ shift
 shift
 COV_OPTS="--wait-for-license -co BAD_FREE:allow_first_field:true $*"
 
-echo
 printf "[scan]
 tool = cov-mockbuild
 tool-version = %s
@@ -705,13 +704,15 @@ fi
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 if test xyes = "x$COV_USED"; then
+    ALOG="$COV/c/output/analysis-log.txt"
+
     # write the 'lines-processed' field to .ini
-    LSTAT="`grep '^Total LoC input to cov-analyze' "$LOG"`"
+    LSTAT="`grep 'Total LoC input to cov-analyze' "$ALOG"`"
     L_CNT="`printf '%s\n' "$LSTAT" | sed -r 's|^[^0-9]*||'`"
     printf "lines-processed = %d\n" "$L_CNT" | tee --append "$INI"
 
     # write the 'time-elapsed-analysis' field to to .ini
-    TSTAT="`grep '^Time taken by .*analysis' "$LOG"`"
+    TSTAT="`grep 'Time taken by .*analysis' "$ALOG"`"
     ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
     printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
 else
