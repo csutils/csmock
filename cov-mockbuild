@@ -287,8 +287,9 @@ else
     BASE="`basename "$SRPM" .src.rpm`"
     test -n "$SRPM" || usage
     test -r "$SRPM" || die "failed to open $SRPM"
-    rpm -pq "$SRPM" || die "failed to open an RPM package: $SRPM"
-    rpm -lpq "$SRPM" 2>/dev/null | grep '\.spec$' \
+    rpm -pq "$SRPM" >/dev/null 2>&1 \
+        || die "failed to open an RPM package: $SRPM"
+    rpm -lpq "$SRPM" 2>/dev/null | grep '\.spec$' >/dev/null \
         || die "no specfile found in $SRPM"
 fi
 
