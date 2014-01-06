@@ -384,8 +384,8 @@ write_links_if_exist() {
     printf "  <li><a%s href='%s'>%s (%d)</a><ul>\n" \
         "$style" "$file_html" "$1" "$cnt_def"
 
-    write_link_if_exists "Download as TXT"      "$file_err"
-    write_link_if_exists "Download as JSON"     "$file_js"
+    write_link_if_exists "as TXT"               "$file_err"
+    write_link_if_exists "as JSON"              "$file_js"
 
     printf "</ul><br/></li>\n"
 }
@@ -413,7 +413,10 @@ write_index() {
     write_links_if_exist "Defects Found by CLang"      "clang-warnings"
     write_links_if_exist "Defects Found by Coverity"   "$BASE"
 
-    printf "</ul>\n<h2>Debugging Information</h2>\n<ul>\n"
+    printf "</ul>\n<h2>Results Summary</h2>\n"
+    write_contents_if_exists                           "results-summary.txt"
+
+    printf "<h2>Debugging Information</h2>\n<ul>\n"
     write_link_if_exists "Scan Log"                    "$BASE.log"
     write_link_if_exists "Scan Properties"             "$BASE.ini"
     write_link_if_exists "RPMs on the host"            "debug/rpm-list-host.txt"
@@ -847,10 +850,11 @@ if test -n "$CPPCHECK"; then
         > "$BASE_DIR/cppcheck-warnings.html"
 fi
 
-(cd "$BASE_DIR" && { write_index > "index.html"; }) 
-
 # print a brief summary of the defects found
-cmd_wrap csgrep --mode=stat "$BASE_DIR/results.err"
+cmd_wrap csgrep --mode=stat "$BASE_DIR/results.err" \
+    | tee "$BASE_DIR/results-summary.txt"
+
+(cd "$BASE_DIR" && { write_index > "index.html"; }) 
 
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"
 
