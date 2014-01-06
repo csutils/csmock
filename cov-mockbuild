@@ -858,8 +858,11 @@ cmd_wrap csgrep --mode=stat "$BASE_DIR/results.err" \
 
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"
 
+exit $EC
+
 } # do_scan()
 
 do_scan 2>&1 | tee "$LOG"
 
+EC="$?"
 exit $EC
