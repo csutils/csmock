@@ -28,7 +28,7 @@ $srcdir .= '/'
 fatal("directory not found: $dir")
     unless -d $dir;
 fatal("directory not found: $dir/c/emit")
-    unless -d "$dir/c/emit";
+    unless -d "$dir/c/emit" or -d "$dir/emit";
 print STDERR "warning: directory not found: $srcdir\n"
     unless -d $srcdir;
 

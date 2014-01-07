@@ -731,8 +731,17 @@ PROJ_NAME="$BASE"
 test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
 printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
 
+# branch by Coverity version
+if test -d "$COV/c"; then
+    # CSA <  7.0.0
+    COV_C="$COV/c"
+else
+    # CSA >= 7.0.0
+    COV_C="$COV"
+fi
+
 # check whether it makes sense to wait for the license to become available
-if test -f "$COV"/c/emit/*/emit-db.write-lock; then
+if test -f "$COV_C"/emit/*/emit-db.write-lock; then
 
     # run the analysis
     cmd_wrap cov-analyze --dir "$COV" $COV_OPTS             \
@@ -771,7 +780,7 @@ fi
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 if test xyes = "x$COV_USED"; then
-    ALOG="$COV/c/output/analysis-log.txt"
+    ALOG="$COV_C/output/analysis-log.txt"
 
     # write the 'lines-processed' field to .ini
     LSTAT="`grep 'Total LoC input to cov-analyze' "$ALOG"`"
@@ -808,7 +817,7 @@ if test xyes = "x$COV_USED"; then
     mv -v "$COV/build-log.txt" "$DEBUG_DIR"
     if test xyes = "x$COV_HTML"; then
         cmd_wrap cov-format-errors --dir "$COV"
-        mv -v "$COV/c/output/errors" "$COV/../cov-html/"
+        mv -v "$COV_C/output/errors" "$COV/../cov-html/"
     fi
 fi
 
