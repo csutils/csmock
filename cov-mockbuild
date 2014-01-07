@@ -99,7 +99,7 @@ if test "x--version" = "x$1"; then
     exit $?
 fi
 
-EC=
+EC=0
 update_ec() {
     last_ec=$?
     test -z "$1" || last_ec="$1"
@@ -109,7 +109,7 @@ update_ec() {
     fi
 
     echo "--- $SELF: exit code was: $last_ec" >&2
-    test -n "$EC" || EC=$last_ec
+    test 0 -ne "$EC" || EC=$last_ec
 }
 
 die() {
@@ -334,7 +334,7 @@ DEBUG_DIR="$BASE_DIR/debug"
 mkdir -p "$DEBUG_DIR" || die "mktemp failed"
 
 # from now on, do the pack/cleanup on exit, no matter if we succeeded or not
-trap "test -z \"\$EC\" || touch \"${BASE_DIR}.FAILED\"
+trap "test 0 -eq \"\$EC\" || touch \"${BASE_DIR}.FAILED\"
     test -r \"$LOCK\" && test $$ = \"\$(<$LOCK)\" && rm -fv '$LOCK'
     cmd_wrap tar $TAR_OPTS -cvf '$TGZ' -C '$TMP' '$BASE'
     echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
