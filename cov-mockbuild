@@ -192,7 +192,7 @@ while getopts $OPTS opt; do
             CPPCHECK_GCC="/usr/bin/cppcheck-gcc"
             test -e "$CPPCHECK_GCC" || die "$CPPCHECK_GCC not found"
             CPPCHECK_FILES="$CPPCHECK $CPPCHECK_GCC /usr/lib64/cppcheck-gcc"
-            CPPCHECK_FILES="$CPPCHECK_FILES /usr/share/cppcheck-gcc/default.supp"
+            CPPCHECK_FILES="$CPPCHECK_FILES /usr/share/cppcheck*"
             ENV_PATH="/usr/lib64/cppcheck-gcc:$ENV_PATH"
             ;;
 
