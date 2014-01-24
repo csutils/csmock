@@ -1,7 +1,7 @@
 #/bin/bash
 SELF="$0"
 
-PKG="cov-mockbuild"
+PKG="csmock"
 
 die(){
     echo "$SELF: error: $1" >&2
@@ -77,16 +77,19 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
 
-Requires: abscc >= 0.20130702
 Requires: cov-getprojkey
 Requires: cov-sa
-Requires: cppcheck-gcc
+Requires: cscppc
 Requires: csdiff >= 0.20130820
+Requires: cswrap
 Requires: mock
 Requires: rpm-build
 
-BuildArch:  noarch
-Obsoletes:  cov-mockbuild.x86_64 < %{version}-%{release}
+BuildArch: noarch
+
+Provides: cov-mockbuild
+Obsoletes: cov-mockbuild
+
 
 %description
 This package contains cov-mockbuild and cov-diffbuild tools that allow to scan

@@ -39,7 +39,7 @@ RPMM="\
 --without langpacks"
 
 # PATH set for cov-build/rpmbuild
-ENV_PATH="/usr/lib64/abscc:\\\$PATH"
+ENV_PATH="/usr/lib64/cswrap:\\\$PATH"
 
 QUICK_BUILD_CMD="./configure; make -kj13"
 
@@ -141,35 +141,35 @@ load_im_opts() {
     eval `parse_im_opts "$@"`
 }
 
-ABSCC_ADD_CFLAGS="-Wno-unknown-pragmas"
-ABSCC_DEL_CFLAGS="-Werror"
-ABSCC_ADD_CXXFLAGS=
-ABSCC_DEL_CXXFLAGS="-Werror"
+CSWRAP_ADD_CFLAGS="-Wno-unknown-pragmas"
+CSWRAP_DEL_CFLAGS="-Werror"
+CSWRAP_ADD_CXXFLAGS=
+CSWRAP_DEL_CXXFLAGS="-Werror"
 
 adjust_gcc_flags() {
     level="$1"
     test $level = 0 && return
 
     # -W1 flags
-    ABSCC_ADD_CFLAGS="-Wall:-Wextra"
-    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CFLAGS"
+    CSWRAP_ADD_CFLAGS="-Wall:-Wextra"
+    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CFLAGS"
     test $level = 1 && return
 
     # -W2 flags
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wunreachable-code:-Wundef:-Wcast-align"
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wpointer-arith:-Wfloat-equal:-Wshadow"
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wwrite-strings"
-    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CFLAGS"
-    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Wctor-dtor-privacy"
-    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Woverloaded-virtual"
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wstrict-prototypes"
+    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wunreachable-code:-Wundef:-Wcast-align"
+    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wpointer-arith:-Wfloat-equal:-Wshadow"
+    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wwrite-strings"
+    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CFLAGS"
+    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CXXFLAGS:-Wctor-dtor-privacy"
+    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CXXFLAGS:-Woverloaded-virtual"
+    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wstrict-prototypes"
     test $level = 2 && return
 
     # -W3 flags
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wcast-qual:-Wconversion"
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Wswitch-default:-Wswitch-enum"
-    ABSCC_ADD_CFLAGS="$ABSCC_ADD_CFLAGS:-Waggregate-return:-Wstrict-overflow=5"
-    ABSCC_ADD_CXXFLAGS="$ABSCC_ADD_CXXFLAGS:-Weffc++"
+    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wcast-qual:-Wconversion"
+    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wswitch-default:-Wswitch-enum"
+    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Waggregate-return:-Wstrict-overflow=5"
+    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CXXFLAGS:-Weffc++"
 }
 
 CLANG_WRAP=
@@ -189,11 +189,12 @@ while getopts $OPTS opt; do
 
         c)  CPPCHECK="/usr/bin/cppcheck"
             test -x "$CPPCHECK" || die "$CPPCHECK not found"
-            CPPCHECK_GCC="/usr/bin/cppcheck-gcc"
+            CPPCHECK_GCC="/usr/bin/cscppc"
             test -e "$CPPCHECK_GCC" || die "$CPPCHECK_GCC not found"
-            CPPCHECK_FILES="$CPPCHECK $CPPCHECK_GCC /usr/lib64/cppcheck-gcc"
+            CPPCHECK_FILES="$CPPCHECK $CPPCHECK_GCC /usr/lib64/cscppc"
             CPPCHECK_FILES="$CPPCHECK_FILES /usr/share/cppcheck*"
-            ENV_PATH="/usr/lib64/cppcheck-gcc:$ENV_PATH"
+            CPPCHECK_FILES="$CPPCHECK_FILES /usr/share/cscppc"
+            ENV_PATH="/usr/lib64/cscppc:$ENV_PATH"
             ;;
 
         d)  EXTRA_DEPS="$OPTARG"
@@ -470,7 +471,7 @@ cat > "$FIXUPS" << EOF
 #!/bin/sh
 
 if test -x /usr/lib64/clang-analyzer/scan-build/scan-build; then
-    # allow scan-build to invoke clang through the abscc wrapper
+    # allow scan-build to invoke clang through the cswrap wrapper
     patch /usr/lib64/clang-analyzer/scan-build/scan-build << XXX
 1533,1534c1533
 <       DieDiag("error: Cannot find an executable 'clang' relative to scan-build." .
@@ -569,7 +570,7 @@ tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
     /etc/resolv.conf                            \
     "$COV_DIR"/{VERSION.xml,config,dtd}         \
     "$COV_BIN_DIR"/{cov-*,libcapture-*.so}      \
-    /usr/{bin,lib64}/abscc                      \
+    /usr/{bin,lib64}/cswrap                     \
     || write_status_and_die "bootstrap" "failed to create $TPL"
 
 # acquire the profile-level lock
@@ -669,10 +670,10 @@ fi
 # run the %build phase through cov-build
 mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/build; PATH=$ENV_PATH \
 $COV_WRAP sh -xc \\\"unset XML_CATALOG_FILES; \
-ABSCC_ADD_CFLAGS=$ABSCC_ADD_CFLAGS ABSCC_ADD_CXXFLAGS=$ABSCC_ADD_CXXFLAGS \
-ABSCC_DEL_CFLAGS=$ABSCC_DEL_CFLAGS ABSCC_DEL_CXXFLAGS=$ABSCC_DEL_CXXFLAGS \
-ABSCC_CAP_FILE=/builddir/cov/compiler-warnings.err \
-ABSCC_TIMEOUT=300 \
+CSWRAP_ADD_CFLAGS=$CSWRAP_ADD_CFLAGS CSWRAP_ADD_CXXFLAGS=$CSWRAP_ADD_CXXFLAGS \
+CSWRAP_DEL_CFLAGS=$CSWRAP_DEL_CFLAGS CSWRAP_DEL_CXXFLAGS=$CSWRAP_DEL_CXXFLAGS \
+CSWRAP_CAP_FILE=/builddir/cov/compiler-warnings.err \
+CSWRAP_TIMEOUT=300 \
 $CLANG_WRAP $BUILD_CMD\\\"\"" \
     || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
 
