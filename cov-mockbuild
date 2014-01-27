@@ -30,6 +30,7 @@ test -z "$TMPDIR" && TMPDIR="/tmp"
 RPMM="\
 --define '_smp_mflags -kj13' \
 --define '_without_testsuite 1' \
+--define 'apidocs 0' \
 --define 'cmake cmake' \
 --define 'libguestfs_runtests 0' \
 --define 'runselftest 0' \
