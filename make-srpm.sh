@@ -42,11 +42,7 @@ cp -t "$TMP"                        \
     ./cov_checker_map.txt           \
     ./cov-dump-err                  \
     ./cov-{mock,diff}build          \
-    ../aux/rpmbuild-rawbuild        \
-    ../im/cov-default-connect.sh    \
-    ../im/cov-query-defects         \
-    ../im/cov-commit-project-update \
-    ../im/cov-commit-project
+    ./rpmbuild-rawbuild
 
 SPEC="$TMP/$PKG.spec"
 cat > "$SPEC" << EOF
@@ -60,35 +56,23 @@ License:    GPLv3+
 URL:        https://engineering.redhat.com/trac/CoverityScan
 Source0:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-mockbuild
 Source1:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-diffbuild
-Source2:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=aux/rpmbuild-rawbuild
-Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project
-Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-commit-project-update
-Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-query-defects
-Source10:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/build.bashrc
-Source12:   http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/prep.bashrc
-
-# http://git.engineering.redhat.com/?p=users/rdecarva/cov_checker_map.git;a=blob_plain;f=cov_checker_map.txt
-Source7:    cov_checker_map.txt
-
-Source8:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-dump-err
-Source9:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=im/cov-default-connect.sh
+Source2:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-dump-err
+Source3:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/rpmbuild-rawbuild
+Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/build.bashrc
+Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/prep.bashrc
+Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov_checker_map.txt
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
 
-Requires: cov-getprojkey
-Requires: cov-sa
 Requires: cscppc
-Requires: csdiff >= 0.20130820
+Requires: csdiff
 Requires: cswrap
 Requires: mock
 Requires: rpm-build
 
 BuildArch: noarch
-
-Provides: cov-mockbuild
-Obsoletes: cov-mockbuild
 
 
 %description
@@ -123,22 +107,18 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_bindir}" \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
     "\$RPM_BUILD_ROOT%{_sbindir}" \\
-    "\$RPM_BUILD_ROOT/usr/share/covscan" \\
-    "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc"
+    "\$RPM_BUILD_ROOT%{_datadir}/covscan" \\
+    "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc"
 
 install -m0755 \\
-    %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE4} \\
-    %{SOURCE5} %{SOURCE6} %{SOURCE8} \\
+    %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
 install -m0644 man/cov-{diff,mock}build.1.gz "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -m0644 %{SOURCE7} "\$RPM_BUILD_ROOT/usr/share/covscan/cwe-map.csv"
-install -m0644 %{SOURCE9} \\
-    "\$RPM_BUILD_ROOT/usr/share/covscan/cov-default-connect.sh"
-
-install -m0644 %{SOURCE10} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/build"
-install -m0644 %{SOURCE12} "\$RPM_BUILD_ROOT/usr/share/covscan/bashrc/prep"
+install -m0644 %{SOURCE4} "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/build"
+install -m0644 %{SOURCE5} "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/prep"
+install -m0644 %{SOURCE6} "\$RPM_BUILD_ROOT%{_datadir}/covscan/cwe-map.csv"
 
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/" \\
@@ -154,16 +134,13 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 
 %files
 %defattr(-,root,root,-)
-%{_bindir}/cov-commit-project
-%{_bindir}/cov-commit-project-update
 %{_bindir}/cov-dump-err
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
-%{_bindir}/cov-query-defects
 %{_bindir}/rpmbuild-rawbuild
 %{_mandir}/man1/cov-diffbuild.1.gz
 %{_mandir}/man1/cov-mockbuild.1.gz
-/usr/share/covscan
+%{_datadir}/covscan
 
 %{_bindir}/mock-unbuffered
 %{_sbindir}/mock-unbuffered
