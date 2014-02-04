@@ -32,7 +32,6 @@ VER="0.`git log --pretty="%cd_%h" --date=short -1 . | tr -d -`" \
     || die "git log failed"
 
 NV="${PKG}-$VER"
-SRC="${PKG}.tar.xz"
 
 TMP="`mktemp -d`"
 trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
@@ -49,18 +48,18 @@ cat > "$SPEC" << EOF
 Name:       $PKG
 Version:    $VER
 Release:    1%{?dist}
-Summary:    A mock wrapper for Coverity Static Analysis tools
+Summary:    A mock wrapper for Static Analysis tools
 
-Group:      CoverityScan
+Group:      Development/Tools
 License:    GPLv3+
-URL:        https://engineering.redhat.com/trac/CoverityScan
-Source0:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-mockbuild
-Source1:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-diffbuild
-Source2:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov-dump-err
-Source3:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/rpmbuild-rawbuild
-Source4:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/build.bashrc
-Source5:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/prep.bashrc
-Source6:    http://git.engineering.redhat.com/?p=users/kdudka/coverity-scan.git;a=blob_plain;f=mock/cov_checker_map.txt
+URL:        http://git.fedorahosted.org/cgit/csmock.git
+Source0:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov-mockbuild
+Source1:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov-diffbuild
+Source2:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov-dump-err
+Source3:    http://git.fedorahosted.org/cgit/csmock.git/plain/rpmbuild-rawbuild
+Source4:    http://git.fedorahosted.org/cgit/csmock.git/plain/build.bashrc
+Source5:    http://git.fedorahosted.org/cgit/csmock.git/plain/prep.bashrc
+Source6:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov_checker_map.txt
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -77,7 +76,7 @@ BuildArch: noarch
 
 %description
 This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
-SRPMs by Coverity Static Analysis in a fully automated way.
+SRPMs by Static Analysis tools in a fully automated way.
 
 %build
 mkdir -p bin etc man sbin
