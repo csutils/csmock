@@ -1,4 +1,22 @@
 #/bin/bash
+
+# Copyright (C) 2012-2014 Red Hat, Inc.
+#
+# This file is part of csmock.
+#
+# csmock is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# csmock is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with csmock.  If not, see <http://www.gnu.org/licenses/>.
+
 SELF="$0"
 
 PKG="csmock"
@@ -41,7 +59,8 @@ cp -t "$TMP"                        \
     ./cov_checker_map.txt           \
     ./cov-dump-err                  \
     ./cov-{mock,diff}build          \
-    ./rpmbuild-rawbuild
+    ./rpmbuild-rawbuild             \
+    ./COPYING
 
 SPEC="$TMP/$PKG.spec"
 cat > "$SPEC" << EOF
@@ -60,6 +79,7 @@ Source3:    http://git.fedorahosted.org/cgit/csmock.git/plain/rpmbuild-rawbuild
 Source4:    http://git.fedorahosted.org/cgit/csmock.git/plain/build.bashrc
 Source5:    http://git.fedorahosted.org/cgit/csmock.git/plain/prep.bashrc
 Source6:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov_checker_map.txt
+Source7:    http://git.fedorahosted.org/cgit/csmock.git/plain/COPYING
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -95,6 +115,8 @@ help2man --no-info --section 1 --name \\
 printf '#!/bin/sh\\nstdbuf -o0 /usr/sbin/mock "\$@"\\n' > ./sbin/mock-unbuffered
 printf 'USER=root\\nPROGRAM=/usr/sbin/mock-unbuffered\\nSESSION=false
 FALLBACK=false\\nKEEP_ENV_VARS=COLUMNS,SSH_AUTH_SOCK\\n' > ./etc/mock-unbuffered
+
+install -m0644 %{SOURCE7} COPYING
 
 %clean
 rm -rf "\$RPM_BUILD_ROOT"
@@ -145,6 +167,8 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_sbindir}/mock-unbuffered
 %{_sysconfdir}/pam.d/mock-unbuffered
 %config(noreplace) %{_sysconfdir}/security/console.apps/mock-unbuffered
+
+%doc COPYING
 EOF
 
 rpmbuild -bs "$SPEC"                            \
