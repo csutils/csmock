@@ -54,13 +54,12 @@ NV="${PKG}-$VER"
 TMP="`mktemp -d`"
 trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 test -d "$TMP" || die "mktemp failed"
-cp -t "$TMP"                        \
-    ./*.bashrc                      \
-    ./cov_checker_map.txt           \
-    ./cov-dump-err                  \
-    ./cov-{mock,diff}build          \
-    ./rpmbuild-rawbuild             \
-    ./COPYING
+
+SRC_TAR="${PKG}.tar"
+SRC="${SRC_TAR}.xz"
+git archive --prefix="$NV/" --format="tar" HEAD -- . > "${TMP}/${SRC_TAR}"
+cd "$TMP" >/dev/null                    || die "mktemp failed"
+xz -c "$SRC_TAR" > "$SRC"               || die "failed to compress sources"
 
 SPEC="$TMP/$PKG.spec"
 cat > "$SPEC" << EOF
@@ -72,15 +71,7 @@ Summary:    A mock wrapper for Static Analysis tools
 Group:      Development/Tools
 License:    GPLv3+
 URL:        http://git.fedorahosted.org/cgit/csmock.git
-Source0:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov-mockbuild
-Source1:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov-diffbuild
-Source2:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov-dump-err
-Source3:    http://git.fedorahosted.org/cgit/csmock.git/plain/rpmbuild-rawbuild
-Source4:    http://git.fedorahosted.org/cgit/csmock.git/plain/build.bashrc
-Source5:    http://git.fedorahosted.org/cgit/csmock.git/plain/prep.bashrc
-Source6:    http://git.fedorahosted.org/cgit/csmock.git/plain/cov_checker_map.txt
-Source7:    http://git.fedorahosted.org/cgit/csmock.git/plain/COPYING
-
+Source0:    $SRC
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
@@ -98,10 +89,13 @@ BuildArch: noarch
 This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
 SRPMs by Static Analysis tools in a fully automated way.
 
+%prep
+%setup -q
+
 %build
 mkdir -p bin etc man sbin
 
-install -m0755 %{SOURCE0} %{SOURCE1} bin/
+install -m0755 cov-{diff,mock}build bin/
 sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
 
 help2man --no-info --section 1 --name \\
@@ -115,8 +109,6 @@ help2man --no-info --section 1 --name \\
 printf '#!/bin/sh\\nstdbuf -o0 /usr/sbin/mock "\$@"\\n' > ./sbin/mock-unbuffered
 printf 'USER=root\\nPROGRAM=/usr/sbin/mock-unbuffered\\nSESSION=false
 FALLBACK=false\\nKEEP_ENV_VARS=COLUMNS,SSH_AUTH_SOCK\\n' > ./etc/mock-unbuffered
-
-install -m0644 %{SOURCE7} COPYING
 
 %clean
 rm -rf "\$RPM_BUILD_ROOT"
@@ -132,14 +124,14 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc"
 
 install -m0755 \\
-    %{SOURCE0} %{SOURCE1} %{SOURCE2} %{SOURCE3} \\
+    cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
 install -m0644 man/cov-{diff,mock}build.1.gz "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -m0644 %{SOURCE4} "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/build"
-install -m0644 %{SOURCE5} "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/prep"
-install -m0644 %{SOURCE6} "\$RPM_BUILD_ROOT%{_datadir}/covscan/cwe-map.csv"
+install -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/build"
+install -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/prep"
+install -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/covscan/cwe-map.csv"
 
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/" \\
