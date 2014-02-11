@@ -21,43 +21,51 @@ SELF="$0"
 
 PKG="csmock"
 
-die(){
+die() {
     echo "$SELF: error: $1" >&2
     exit 1
 }
 
+match() {
+    grep "$@" > /dev/null
+}
+
 DST="`readlink -f "$PWD"`"
 
-REPO="`git rev-parse --show-toplevel`" \
-    || die "not in a git repo"
+REPO="`git rev-parse --show-toplevel`"
+test -d "$REPO" || die "not in a git repo"
 
-printf "%s: considering release of %s using %s...\n" \
-    "$SELF" "$PKG" "$REPO"
+NV="`git describe --tags`"
+echo "$NV" | match "^$PKG-" || die "release tag not found"
 
-branch="`git status | head -1 | sed 's/^#.* //'`" \
-    || die "unable to read git branch"
+VER="`echo "$NV" | sed "s/^$PKG-//"`"
 
-test xmaster = "x$branch" \
-    || die "not in master branch"
+TIMESTAMP="`git log --pretty="%cd" --date=iso -1 \
+    | tr -d ':-' | tr ' ' . | cut -d. -f 1,2`"
 
-test -z "`git diff HEAD`" \
-    || die "HEAD dirty"
+VER="`echo "$VER" | sed "s/-.*-/.$TIMESTAMP./"`"
 
-test -z "`git diff origin/master`" \
-    || die "not synced with origin/master"
+BRANCH="`git rev-parse --abbrev-ref HEAD`"
+test -n "$BRANCH" || die "failed to get current branch name"
+test master = "${BRANCH}" || VER="${VER}.${BRANCH}"
 
-VER="0.`git log --pretty="%cd_%h" --date=short -1 . | tr -d -`" \
-    || die "git log failed"
+TBRANCH="`git rev-parse --abbrev-ref --symbolic-full-name @{u}`"
+if test -z "$TBRANCH" || test @ == "${TBRANCH:0:1}"; then
+    die "failed to get tracking branch name"
+fi
+test -z "`git diff $TBRANCH`" || VER="${VER}.dirty"
 
-NV="${PKG}-$VER"
+NV="${PKG}-${VER}"
+printf "%s: preparing a release of \033[1;32m%s\033[0m\n" "$SELF" "$NV"
 
 TMP="`mktemp -d`"
 trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 test -d "$TMP" || die "mktemp failed"
 
-SRC_TAR="${PKG}.tar"
+SRC_TAR="${NV}.tar"
 SRC="${SRC_TAR}.xz"
-git archive --prefix="$NV/" --format="tar" HEAD -- . > "${TMP}/${SRC_TAR}"
+git archive --prefix="$NV/" --format="tar" HEAD -- . > "${TMP}/${SRC_TAR}" \
+                                        || die "failed to export sources"
 cd "$TMP" >/dev/null                    || die "mktemp failed"
 xz -c "$SRC_TAR" > "$SRC"               || die "failed to compress sources"
 
@@ -70,8 +78,8 @@ Summary:    A mock wrapper for Static Analysis tools
 
 Group:      Development/Tools
 License:    GPLv3+
-URL:        http://git.fedorahosted.org/cgit/csmock.git
-Source0:    $SRC
+URL:        https://git.fedorahosted.org/cgit/csmock.git
+Source0:    https://git.fedorahosted.org/cgit/csmock.git/snapshot/$SRC
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
