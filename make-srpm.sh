@@ -48,12 +48,7 @@ VER="`echo "$VER" | sed "s/-.*-/.$TIMESTAMP./"`"
 BRANCH="`git rev-parse --abbrev-ref HEAD`"
 test -n "$BRANCH" || die "failed to get current branch name"
 test master = "${BRANCH}" || VER="${VER}.${BRANCH}"
-
-TBRANCH="`git rev-parse --abbrev-ref --symbolic-full-name @{u}`"
-if test -z "$TBRANCH" || test @ == "${TBRANCH:0:1}"; then
-    die "failed to get tracking branch name"
-fi
-test -z "`git diff $TBRANCH`" || VER="${VER}.dirty"
+test -z "`git diff HEAD`" || VER="${VER}.dirty"
 
 NV="${PKG}-${VER}"
 printf "%s: preparing a release of \033[1;32m%s\033[0m\n" "$SELF" "$NV"
@@ -108,11 +103,11 @@ sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
 
 help2man --no-info --section 1 --name \\
     "run static analysis of the given SRPM using mock" \\
-    bin/cov-mockbuild | gzip -c > man/cov-mockbuild.1.gz
+    bin/cov-mockbuild > man/cov-mockbuild.1
 
 help2man --no-info --section 1 --name \\
     "run static analysis of the given the patches in the given SRPM using cov-mockbuild" \\
-    bin/cov-diffbuild | gzip -c > man/cov-diffbuild.1.gz
+    bin/cov-diffbuild > man/cov-diffbuild.1
 
 printf '#!/bin/sh\\nstdbuf -o0 /usr/sbin/mock "\$@"\\n' > ./sbin/mock-unbuffered
 printf 'USER=root\\nPROGRAM=/usr/sbin/mock-unbuffered\\nSESSION=false
@@ -135,7 +130,7 @@ install -m0755 \\
     cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
-install -m0644 man/cov-{diff,mock}build.1.gz "\$RPM_BUILD_ROOT%{_mandir}/man1/"
+install -m0644 man/cov-{diff,mock}build.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
 install -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/build"
 install -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/prep"
@@ -159,8 +154,8 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
 %{_bindir}/rpmbuild-rawbuild
-%{_mandir}/man1/cov-diffbuild.1.gz
-%{_mandir}/man1/cov-mockbuild.1.gz
+%{_mandir}/man1/cov-diffbuild.1*
+%{_mandir}/man1/cov-mockbuild.1*
 %{_datadir}/covscan
 
 %{_bindir}/mock-unbuffered
