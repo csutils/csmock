@@ -123,8 +123,8 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_bindir}" \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
     "\$RPM_BUILD_ROOT%{_sbindir}" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/covscan" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc"
+    "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
+    "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc"
 
 install -m0755 \\
     cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild \\
@@ -132,9 +132,9 @@ install -m0755 \\
 
 install -m0644 man/cov-{diff,mock}build.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/build"
-install -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/covscan/bashrc/prep"
-install -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/covscan/cwe-map.csv"
+install -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/build"
+install -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/prep"
+install -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
 
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/" \\
@@ -156,7 +156,7 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_bindir}/rpmbuild-rawbuild
 %{_mandir}/man1/cov-diffbuild.1*
 %{_mandir}/man1/cov-mockbuild.1*
-%{_datadir}/covscan
+%{_datadir}/csmock
 
 %{_bindir}/mock-unbuffered
 %{_sbindir}/mock-unbuffered

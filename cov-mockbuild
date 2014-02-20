@@ -513,7 +513,7 @@ fi
 EOF
 
 BASHRC="$TMP/bashrc"
-cp -R "/usr/share/covscan/bashrc" "$BASHRC"
+cp -R "/usr/share/csmock/bashrc" "$BASHRC"
 
 # prepare a dummy patcher
 if test xyes = "x$RAWBUILD"; then
@@ -804,7 +804,7 @@ else
     MAP=
 fi
 
-cmd_wrap cslinker --cwelist /usr/share/covscan/cwe-map.csv --inifile "$INI" \
+cmd_wrap cslinker --cwelist /usr/share/csmock/cwe-map.csv --inifile "$INI" \
     $MAP "$ERR" > "$JS"
 
 # regenerate .err from .js to get the CWE numbers in place and drop trace events
