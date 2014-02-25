@@ -95,11 +95,14 @@ SRPMs by Static Analysis tools in a fully automated way.
 %prep
 %setup -q
 
+# ebmed RPM version into the scripts
+sed -i cov-{diff,mock}build                 \\
+    -e 's/rpm -qf .SELF/echo %{version}/'
+
 %build
 mkdir -p bin etc man sbin
 
-install -m0755 cov-{diff,mock}build bin/
-sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
+install -p -m0755 cov-{diff,mock}build bin/
 
 help2man --no-info --section 1 --name \\
     "run static analysis of the given SRPM using mock" \\
@@ -126,23 +129,23 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc"
 
-install -m0755 \\
+install -p -m0755 \\
     cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
-install -m0644 man/cov-{diff,mock}build.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
+install -p -m0644 man/cov-{diff,mock}build.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/build"
-install -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/prep"
-install -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
+install -p -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/build"
+install -p -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/prep"
+install -p -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
 
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/" \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/pam.d/"
 
-install -m0755 sbin/mock-unbuffered "\$RPM_BUILD_ROOT%{_sbindir}"
+install -p -m0755 sbin/mock-unbuffered "\$RPM_BUILD_ROOT%{_sbindir}"
 
-install -m0644 etc/mock-unbuffered \\
+install -p -m0644 etc/mock-unbuffered \\
     "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/"
 
 ln -s mock "\$RPM_BUILD_ROOT%{_sysconfdir}/pam.d/mock-unbuffered"
