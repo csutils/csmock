@@ -95,14 +95,12 @@ SRPMs by Static Analysis tools in a fully automated way.
 %prep
 %setup -q
 
-# ebmed RPM version into the scripts
-sed -i cov-{diff,mock}build                 \\
-    -e 's/rpm -qf .SELF/echo %{version}/'
-
 %build
 mkdir -p bin etc man sbin
 
+# ebmed RPM version into the scripts and remove uses of mock-unbuffered
 install -p -m0755 cov-{diff,mock}build bin/
+sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
 
 help2man --no-info --section 1 --name \\
     "run static analysis of the given SRPM using mock" \\
