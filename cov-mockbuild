@@ -481,35 +481,6 @@ if test -x /usr/lib64/clang-analyzer/scan-build/scan-build; then
 >       \\\$Clang = "clang";
 XXX
 fi
-
-if test -w /usr/include/c++/4.8.1/bits/random.h; then
-    patch /usr/include/c++/4.8.1/bits/random.h << XXX
-116,117d115
-< 	typedef typename _Select_uint_least_t<std::__lg(__a)
-< 					      + std::__lg(__m) + 2>::type _Tp2;
-120c118
-< 	{ return static_cast<_Tp>((_Tp2(__a) * __x + __c) % __m); }
----
-> 	{ return static_cast<_Tp>((__x + __c) % __m); }
-XXX
-fi
-
-if test -w /usr/include/c++/4.8.1/ext/concurrence.h; then
-    patch /usr/include/c++/4.8.1/ext/concurrence.h << XXX
-121c121
-< #if __GTHREADS && defined __GTHREAD_MUTEX_INIT
----
-> #if 0
-176c176
-< #if __GTHREADS && defined __GTHREAD_RECURSIVE_MUTEX_INIT
----
-> #if 0
-254c254
-< #if __GTHREADS && defined __GTHREAD_COND_INIT
----
-> #if 0
-XXX
-fi
 EOF
 
 BASHRC="$TMP/bashrc"
