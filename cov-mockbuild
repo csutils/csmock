@@ -481,6 +481,14 @@ if test -x /usr/lib64/clang-analyzer/scan-build/scan-build; then
 >       \\\$Clang = "clang";
 XXX
 fi
+
+if test -r /usr/lib64/gobject-introspection/giscanner/dumper.py; then
+    # pretend we use GCC even if we run through scan-build; g-ir-scanner would
+    # otherwise think we use MS compiler and insert compilation flags that GCC
+    # does not understand
+    sed -i "s/^\\( *\\)self._compiler_cmd =.*\\\$/\1self._compiler_cmd = 'gcc'/" \\
+        /usr/lib64/gobject-introspection/giscanner/dumper.py
+fi
 EOF
 
 BASHRC="$TMP/bashrc"
