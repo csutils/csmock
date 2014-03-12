@@ -142,9 +142,9 @@ load_im_opts() {
 }
 
 CSWRAP_ADD_CFLAGS="-Wno-unknown-pragmas"
-CSWRAP_DEL_CFLAGS="-Werror"
+CSWRAP_DEL_CFLAGS="-Werror:-fdiagnostics-color:-fdiagnostics-color=always"
 CSWRAP_ADD_CXXFLAGS=
-CSWRAP_DEL_CXXFLAGS="-Werror"
+CSWRAP_DEL_CXXFLAGS="$CSWRAP_DEL_CFLAGS"
 
 adjust_gcc_flags() {
     level="$1"
