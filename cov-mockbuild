@@ -482,6 +482,12 @@ if test -x /usr/lib64/clang-analyzer/scan-build/scan-build; then
 XXX
 fi
 
+if test -x /usr/lib64/clang-analyzer/scan-build/ccc-analyzer; then
+    # avoid failing with "could not find clang line" on mozjs17-17.0.0-9.el7
+    sed -e 's/(!defined \\\$Clang)/("\\\$Clang" eq "")/' \\
+        -i /usr/lib64/clang-analyzer/scan-build/ccc-analyzer
+fi
+
 if test -r /usr/lib64/gobject-introspection/giscanner/dumper.py; then
     # pretend we use GCC even if we run through scan-build; g-ir-scanner would
     # otherwise think we use MS compiler and insert compilation flags that GCC
