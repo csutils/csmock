@@ -321,7 +321,7 @@ cmd_wrap() {
 
 # invoke mock with given parameters
 mock_wrap() {
-    cmd_wrap mock-unbuffered -r "$MOCK_PROFILE" "$@"
+    cmd_wrap mock-unbuffered --disable-plugin=package_state -r "$MOCK_PROFILE" "$@"
 }
 
 # profile-level lock file
