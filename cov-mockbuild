@@ -325,11 +325,11 @@ mock_wrap() {
 }
 
 # profile-level lock file
-LOCK="/tmp/.cov-mockbuild-${MOCK_PROFILE}.lock"
-MLOCK="/tmp/.cov-mockbuild-${MOCK_PROFILE}.metalock"
+LOCK="/tmp/.csmock-${MOCK_PROFILE}.lock"
+MLOCK="/tmp/.csmock-${MOCK_PROFILE}.metalock"
 
 # prepare $TMP directory
-TMP="`mktemp -d $TMPDIR/cov-mockbuild.XXXXXX`"
+TMP="`mktemp -d $TMPDIR/csmock.XXXXXX`"
 BASE_DIR="$TMP/$BASE/$RUN"
 DEBUG_DIR="$BASE_DIR/debug"
 mkdir -p "$DEBUG_DIR" || die "mktemp failed"
@@ -355,7 +355,7 @@ cov_version() {
 }
 
 self_version() {
-    echo $(rpm -q cov-mockbuild csdiff) 2>&1
+    echo $(rpm -q csmock csdiff) 2>&1
 }
 
 print_if_readable() {
@@ -437,7 +437,7 @@ shift
 COV_OPTS="--wait-for-license -co BAD_FREE:allow_first_field:true $*"
 
 printf "[scan]
-tool = cov-mockbuild
+tool = csmock
 tool-version = %s
 tool-args =%s
 analyzer = coverity
