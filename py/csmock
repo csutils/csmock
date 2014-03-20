@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2014 Red Hat, Inc.
+#
+# This file is part of csmock.
+#
+# csmock is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# csmock is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with csmock.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import os.path
+import sys
+
+# argparse._VersionAction would write to stderr, which breaks help2man
+class VersionPrinter(argparse.Action):
+    def __init__(self, option_strings, dest=None, default=None, help=None):
+        super(VersionPrinter, self).__init__(option_strings=option_strings,
+                dest=dest, default=default, nargs=0, help=help)
+    def __call__(self, parser, namespace, values, option_string=None):
+        print("@VERSION@")
+        sys.exit(0)
+
+def require_file(parser, name):
+    """Print an error and exit unsuccessfully if 'name' is not a file"""
+    if not os.path.isfile(name):
+        parser.error("'" + name + "' is not a file")
+
+# initialize argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument("SRPM",
+        help="source RPM package to be scanned by static analyzers")
+
+# TODO: register plug-ins
+
+# define optional arguments
+parser.add_argument("-r", "--root", dest="MOCK_PROFILE",
+        help="mock profile to use (defaults to mock's default)")
+
+# TODO: provide the actual list of choices
+parser.add_argument("-t", "--tool", action="append", default=[],
+        help="enable the selected tool (may be used more than once)")
+
+parser.add_argument("-c", "--shell-cmd",
+        help="use shell command to build the given tarball (instead of SRPM)")
+
+parser.add_argument("--install", dest="LIST_OF_PKGS",
+        help="space-separated list of packages to install into the chroot")
+
+parser.add_argument("-o", "--output",
+        help="name of the tarball or directory to put the results to")
+
+parser.add_argument("-f", "--force",
+        help="overwrite the resulting file or directory if it exists already")
+
+parser.add_argument("--no-clean", action="store_true",
+        help="do not clean chroot when it becomes unused")
+
+# --skip-patches and --diff-patches are mutually exclusive
+group = parser.add_mutually_exclusive_group()
+group.add_argument("--skip-patches", action="store_true",
+        help="skip patches not annotated by %%{?_rawbuild} (vanilla build)")
+group.add_argument("--diff-patches", action="store_true",
+        help="scan with/without patches and diff the lists of defects")
+
+# needed for help2man
+parser.add_argument("--version", action=VersionPrinter,
+        help="print the version of csmock and exit")
+
+# parse command-line arguments
+args = parser.parse_args()
+
+# make sure that 'srpm' is a file (note it can be a tar archive instead of SRPM)
+srpm = args.SRPM
+require_file(parser, srpm)
+
+mock_profile = args.MOCK_PROFILE
+if mock_profile is not None:
+    # make sure that we have a configuration for the selected mock profile
+    mock_profile_cfg = "/etc/mock/" + mock_profile + ".cfg"
+    require_file(parser, mock_profile_cfg)
