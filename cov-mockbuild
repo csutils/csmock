@@ -597,7 +597,7 @@ mock_wrap --install "xml-common" "yum-utils" \
     || write_status_and_die "bootstrap" "mock --install failed"
 
 if test -n "$CLANG_WRAP"; then
-    mock_wrap --install "clang-analyzer" \
+    mock_wrap --install "clang-analyzer" "imake" \
         || write_status_and_die "bootstrap" "failed to install clang-analyzer"
 fi
 
