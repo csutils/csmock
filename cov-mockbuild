@@ -497,6 +497,12 @@ if test -x /usr/libexec/clang-analyzer/scan-build/ccc-analyzer; then
     # avoid failing with "could not find clang line" on mozjs17-17.0.0-9.el7
     sed -e 's/(!defined \\\$Clang)/("\\\$Clang" eq "")/' \\
         -i /usr/libexec/clang-analyzer/scan-build/ccc-analyzer
+
+    if test -w /usr/bin/libtool; then
+      # avoid failing on "unable to infer tagged configuration"
+      sed -e 's/^available_tags=".*"\$/available_tags=/' \\
+          -i /usr/bin/libtool
+    fi
 fi
 
 if readlink /usr/libexec/clang-analyzer/scan-build/clang; then
