@@ -19,7 +19,45 @@
 
 import argparse
 import os.path
+import re
+import shutil
 import sys
+import tempfile
+
+class ScanResults:
+    def __init__(self, output):
+        self.output = output
+        self.use_xz = False
+        self.use_tar = False
+        self.dirname = os.path.basename(output)
+
+        m = re.match("^(.*)\\.xz$", self.dirname)
+        if m is not None:
+            self.use_xz = True
+            self.dirname = m.group(1)
+
+        m = re.match("^(.*)\\.tar$", self.dirname)
+        if m is not None:
+            self.use_tar = True
+            self.dirname = m.group(1)
+
+    def __enter__(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="csmock")
+        self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
+        os.mkdir(self.resdir)
+
+    def __exit__(self, type, value, bt):
+        if self.use_tar:
+            tar_opts = "-c"
+            if self.use_xz:
+                tar_opts += "J"
+            tar_cmd = "tar %s -f '%s' -C '%s' '%s'" % (tar_opts,
+                    self.output, self.tmpdir, self.dirname)
+            if os.system(tar_cmd) == 0:
+                sys.stderr.write("Wrote: %s\n" % self.output)
+                shutil.rmtree(self.tmpdir)
+        else:
+            os.system("mv -fvT '%s' '%s'" % (self.resdir, self.output))
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -34,6 +72,9 @@ def require_file(parser, name):
     """Print an error and exit unsuccessfully if 'name' is not a file"""
     if not os.path.isfile(name):
         parser.error("'%s' is not a file" % name)
+
+def nvr_from_srpm(srpm):
+    return re.sub('\.src\.rpm$', '', os.path.basename(srpm))
 
 # initialize argument parser
 parser = argparse.ArgumentParser()
@@ -94,13 +135,23 @@ if args.shell_cmd is not None:
     parser.error("option -c is not implemented yet")
 if args.list_of_pkgs is not None:
     parser.error("option --install is not implemented yet")
-if args.output is not None:
-    parser.error("option -o is not implemented yet")
-if args.force:
-    parser.error("option -f is not implemented yet")
 if args.no_clean:
     parser.error("option --no-clean is not implemented yet")
 if args.skip_patches:
     parser.error("option --skip-patches is not implemented yet")
 if args.diff_patches:
     parser.error("option --diff-patches is not implemented yet")
+
+# resolve name of the file/dir we are going to store the results to
+output = args.output
+if args.output is None:
+    output = nvr_from_srpm(srpm) + ".tar.xz"
+output = os.path.realpath(output)
+
+# FIXME: TOCTOU race
+if os.path.exists(output) and not args.force:
+    parser.error("'%s' already exists, use --force to proceed" % output)
+
+with ScanResults(output) as results:
+    # TODO
+    pass
