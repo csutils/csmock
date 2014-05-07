@@ -33,7 +33,7 @@ class VersionPrinter(argparse.Action):
 def require_file(parser, name):
     """Print an error and exit unsuccessfully if 'name' is not a file"""
     if not os.path.isfile(name):
-        parser.error("'" + name + "' is not a file")
+        parser.error("'%s' is not a file" % name)
 
 # initialize argument parser
 parser = argparse.ArgumentParser()
@@ -43,7 +43,7 @@ parser.add_argument("SRPM",
 # TODO: register plug-ins
 
 # define optional arguments
-parser.add_argument("-r", "--root", dest="mock_profile",
+parser.add_argument("-r", "--root", dest="mock_profile", default="default",
         help="mock profile to use (defaults to mock's default)")
 
 # TODO: provide the actual list of choices
@@ -83,11 +83,9 @@ args = parser.parse_args()
 srpm = args.SRPM
 require_file(parser, srpm)
 
+# make sure that we have a configuration for the selected mock profile
 mock_profile = args.mock_profile
-if mock_profile is not None:
-    # make sure that we have a configuration for the selected mock profile
-    mock_profile_cfg = "/etc/mock/" + mock_profile + ".cfg"
-    require_file(parser, mock_profile_cfg)
+require_file(parser, "/etc/mock/%s.cfg" % mock_profile)
 
 # fail if a not yet implemented option is given
 if args.tool != []:
