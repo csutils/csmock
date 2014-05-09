@@ -18,9 +18,12 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import codecs
+import datetime
 import os.path
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -45,8 +48,19 @@ class ScanResults:
         self.tmpdir = tempfile.mkdtemp(prefix="csmock")
         self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
         os.mkdir(self.resdir)
+        tee = ["tee", "%s/scan.log" % self.resdir]
+        self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE)
+
+        # the following hack is needed to support both Python 2 and 3
+        codec = codecs.lookup('utf8')
+        self.log_fd = codecs.StreamReaderWriter(self.log_pid.stdin,
+                codec.streamreader,
+                codec.streamwriter)
+
+        return self
 
     def __exit__(self, type, value, bt):
+        self.log_fd.close()
         if self.use_tar:
             tar_opts = "-c"
             if self.use_xz:
@@ -54,10 +68,20 @@ class ScanResults:
             tar_cmd = "tar %s -f '%s' -C '%s' '%s'" % (tar_opts,
                     self.output, self.tmpdir, self.dirname)
             if os.system(tar_cmd) == 0:
-                sys.stderr.write("Wrote: %s\n" % self.output)
+                sys.stderr.write("Wrote: %s\n\n" % self.output)
                 shutil.rmtree(self.tmpdir)
         else:
             os.system("mv -fvT '%s' '%s'" % (self.resdir, self.output))
+
+    def print_with_ts(self, msg):
+        ts = datetime.datetime.now().isoformat()
+        self.log_fd.write("<<< %s\t%s\n" % (ts, msg))
+
+    def exec_cmd(self, cmd):
+        self.print_with_ts(str(cmd))
+        p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd)
+        rv = p.communicate()
+        self.log_fd.write("\n")
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
