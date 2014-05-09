@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 class ScanResults:
     def __init__(self, output):
@@ -82,6 +83,38 @@ class ScanResults:
         p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd)
         rv = p.communicate()
         self.log_fd.write("\n")
+
+class MockWrapper:
+    def __init__(self, results, mock_profile):
+        self.results = results
+        self.mock_profile = mock_profile
+        self.lock_file = "/tmp/.csmock-%s.lock" % mock_profile
+        self.meta_lock_file = "/tmp/.csmock-%s.metalock" % mock_profile
+        self.pid = os.getpid()
+
+    def __enter__(self):
+        cmd = "flock -w15 '%s' -c \"test ! -f '%s' && echo %d > '%s'\"" % (
+                self.meta_lock_file, self.lock_file, self.pid, self.lock_file)
+        while (os.system(cmd) != 0):
+            f = open(self.lock_file)
+            other_pid = ""
+            if f is not None:
+                other_pid = f.readline().rstrip()
+                f.close()
+            msg = "waiting till %s (PID %s) disappears..."
+            self.results.print_with_ts(msg % (self.lock_file, other_pid))
+            time.sleep(15)
+
+        return self
+
+    def __exit__(self, type, value, bt):
+        cmd = "test -r '%s' && test %d = \"$(<%s)\" && rm -f '%s'" % (
+                self.lock_file, self.pid, self.lock_file, self.lock_file)
+        os.system(cmd)
+
+    def exec_mock_cmd(self, args):
+        cmd = ["mock", "-r", self.mock_profile] + args
+        return self.results.exec_cmd(cmd)
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -159,8 +192,6 @@ if args.shell_cmd is not None:
     parser.error("option -c is not implemented yet")
 if args.list_of_pkgs is not None:
     parser.error("option --install is not implemented yet")
-if args.no_clean:
-    parser.error("option --no-clean is not implemented yet")
 if args.skip_patches:
     parser.error("option --skip-patches is not implemented yet")
 if args.diff_patches:
@@ -178,4 +209,13 @@ if os.path.exists(output) and not args.force:
 
 with ScanResults(output) as results:
     # TODO
-    pass
+
+    with MockWrapper(results, mock_profile) as mock:
+        mock.exec_mock_cmd(["--init"])
+
+        # TODO
+
+        if not args.no_clean:
+            mock.exec_mock_cmd(["--clean"])
+
+    # TODO
