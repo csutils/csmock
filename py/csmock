@@ -34,6 +34,7 @@ class ScanResults:
         self.use_xz = False
         self.use_tar = False
         self.dirname = os.path.basename(output)
+        self.ec = 0
 
         m = re.match("^(.*)\\.xz$", self.dirname)
         if m is not None:
@@ -61,6 +62,7 @@ class ScanResults:
         return self
 
     def __exit__(self, type, value, bt):
+        self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix=">>> ")
         self.log_fd.close()
         if self.use_tar:
             tar_opts = "-c"
@@ -73,16 +75,33 @@ class ScanResults:
                 shutil.rmtree(self.tmpdir)
         else:
             os.system("mv -fvT '%s' '%s'" % (self.resdir, self.output))
+        sys.exit(self.ec)
 
-    def print_with_ts(self, msg):
+    def print_with_ts(self, msg, prefix="<<< "):
         ts = datetime.datetime.now().isoformat()
-        self.log_fd.write("<<< %s\t%s\n" % (ts, msg))
+        self.log_fd.write("%s%s\t%s\n" % (prefix, ts, msg))
+
+    def error(self, msg, ec=1, err_prefix=""):
+        self.print_with_ts("%serror: %s\n" % (err_prefix, msg), prefix="!!! ")
+        if (self.ec < ec):
+            self.ec = ec
+
+    def fatal_error(self, msg):
+        self.error(msg, err_prefix="fatal ")
+        sys.exit(1)
 
     def exec_cmd(self, cmd):
         self.print_with_ts(str(cmd))
         p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd)
-        rv = p.communicate()
+        rv = p.wait()
         self.log_fd.write("\n")
+        return rv
+
+    def get_cmd_output(self, cmd, input=None):
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=self.log_fd,
+                shell=True)
+        (out, _) = p.communicate()
+        return (p.returncode, out)
 
 class MockWrapper:
     def __init__(self, results, mock_profile):
@@ -208,14 +227,20 @@ if os.path.exists(output) and not args.force:
     parser.error("'%s' already exists, use --force to proceed" % output)
 
 with ScanResults(output) as results:
+    if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
+        results.fatal_error("failed to open SRPM: %s" % srpm)
+
     # TODO
 
     with MockWrapper(results, mock_profile) as mock:
-        mock.exec_mock_cmd(["--init"])
+        if (mock.exec_mock_cmd(["--init"]) != 0):
+            results.fatal_error("failed to init mock profile: %s"
+                    % mock_profile)
 
         # TODO
 
         if not args.no_clean:
-            mock.exec_mock_cmd(["--clean"])
+            if (mock.exec_mock_cmd(["--clean"]) != 0):
+                results.error("failed to clean mock profile", ec=0)
 
     # TODO
