@@ -39,7 +39,7 @@ RPMM="\
 --without langpacks"
 
 # PATH set for cov-build/rpmbuild
-ENV_PATH="/usr/lib64/cswrap:\\\$PATH"
+ENV_PATH="/usr/lib64/cswrap:\\\$PATH:/"
 
 QUICK_BUILD_CMD="./configure; make -kj13"
 
