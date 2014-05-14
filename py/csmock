@@ -22,6 +22,7 @@ import codecs
 import datetime
 import os.path
 import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -51,7 +52,8 @@ class ScanResults:
         self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
         os.mkdir(self.resdir)
         tee = ["tee", "%s/scan.log" % self.resdir]
-        self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE)
+        self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE,
+                preexec_fn=os.setsid)
 
         # the following hack is needed to support both Python 2 and 3
         codec = codecs.lookup('utf8')
@@ -59,9 +61,18 @@ class ScanResults:
                 codec.streamreader,
                 codec.streamwriter)
 
+        def signal_handler(signal, frame):
+            # FIXME: we should use Async-signal-safe functions only
+            self.fatal_error("caught signal %d" % signal, ec=(0x80 + signal))
+        for i in [signal.SIGINT, signal.SIGTERM]:
+            signal.signal(i, signal_handler)
+
         return self
 
     def __exit__(self, type, value, bt):
+        if self.p.returncode is None:
+            # FIXME: TOCTOU race
+            os.kill(self.p.pid, signal.SIGTERM)
         self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix=">>> ")
         self.log_fd.close()
         if self.use_tar:
@@ -86,22 +97,22 @@ class ScanResults:
         if (self.ec < ec):
             self.ec = ec
 
-    def fatal_error(self, msg):
-        self.error(msg, err_prefix="fatal ")
-        sys.exit(1)
+    def fatal_error(self, msg, ec=1):
+        self.error(msg, err_prefix="fatal ", ec=ec)
+        sys.exit(ec)
 
     def exec_cmd(self, cmd):
         self.print_with_ts(str(cmd))
-        p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd)
-        rv = p.wait()
+        self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd)
+        rv = self.p.wait()
         self.log_fd.write("\n")
         return rv
 
     def get_cmd_output(self, cmd, input=None):
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=self.log_fd,
-                shell=True)
-        (out, _) = p.communicate()
-        return (p.returncode, out)
+        self.p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                stderr=self.log_fd, shell=True)
+        (out, _) = self.p.communicate()
+        return (self.p.returncode, out)
 
 class MockWrapper:
     def __init__(self, results, mock_profile):
