@@ -355,8 +355,8 @@ LOG="$BASE_DIR/$BASE.log"
 
 cov_version() {
     cov-analyze --ident \
-        | perl -i -p -e 's/\n/\\n/' \
-        | perl -i -p -e 's/(\\n)*$//'
+        | perl -p -e 's/\n/\\n/' \
+        | perl -p -e 's/(\\n)*$//'
 }
 
 self_version() {
@@ -771,7 +771,7 @@ if test -f "$COV_C"/emit/*/emit-db.write-lock; then
         if test 0 -lt "$PROJ_ID"; then
             printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
             cmd_wrap cov-query-defects "$PROJ_NAME"                 \
-                | perl -i -p -e 's/\/builddir\/build\/BUILD\///'    \
+                | perl -p -e 's/\/builddir\/build\/BUILD\///'       \
                 > "$MAP"                                            \
                 || write_status_and_update_ec "commit"
 
