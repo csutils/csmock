@@ -23,11 +23,15 @@ import datetime
 import os.path
 import re
 import signal
+import socket
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
+
+def current_iso_date():
+    return datetime.datetime.now().isoformat()
 
 class ScanResults:
     def __init__(self, output):
@@ -35,6 +39,7 @@ class ScanResults:
         self.use_xz = False
         self.use_tar = False
         self.dirname = os.path.basename(output)
+        self.codec = codecs.lookup('utf8')
         self.ec = 0
 
         m = re.match("^(.*)\\.xz$", self.dirname)
@@ -47,6 +52,12 @@ class ScanResults:
             self.use_tar = True
             self.dirname = m.group(1)
 
+    def utf8_wrap(self, fd):
+        # the following hack is needed to support both Python 2 and 3
+        return codecs.StreamReaderWriter(fd,
+                self.codec.streamreader,
+                self.codec.streamwriter)
+
     def __enter__(self):
         self.tmpdir = tempfile.mkdtemp(prefix="csmock")
         self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
@@ -54,12 +65,7 @@ class ScanResults:
         tee = ["tee", "%s/scan.log" % self.resdir]
         self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE,
                 preexec_fn=os.setsid)
-
-        # the following hack is needed to support both Python 2 and 3
-        codec = codecs.lookup('utf8')
-        self.log_fd = codecs.StreamReaderWriter(self.log_pid.stdin,
-                codec.streamreader,
-                codec.streamwriter)
+        self.log_fd = self.utf8_wrap(self.log_pid.stdin)
 
         def signal_handler(signal, frame):
             # FIXME: we should use Async-signal-safe functions only
@@ -70,7 +76,7 @@ class ScanResults:
         return self
 
     def __exit__(self, type, value, bt):
-        if self.p.returncode is None:
+        if hasattr(self, "p") and self.p.returncode is None:
             # FIXME: TOCTOU race
             os.kill(self.p.pid, signal.SIGTERM)
         self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix=">>> ")
@@ -89,8 +95,7 @@ class ScanResults:
         sys.exit(self.ec)
 
     def print_with_ts(self, msg, prefix="<<< "):
-        ts = datetime.datetime.now().isoformat()
-        self.log_fd.write("%s%s\t%s\n" % (prefix, ts, msg))
+        self.log_fd.write("%s%s\t%s\n" % (prefix, current_iso_date(), msg))
 
     def error(self, msg, ec=1, err_prefix=""):
         self.print_with_ts("%serror: %s\n" % (err_prefix, msg), prefix="!!! ")
@@ -114,6 +119,37 @@ class ScanResults:
         (out, _) = self.p.communicate()
         return (self.p.returncode, out)
 
+    def open_res_file(self, rel_path):
+        abs_path = "%s/%s" % (self.resdir, rel_path)
+        return open(abs_path, "w")
+
+class IniWriter:
+    def __init__(self, results):
+        self.results = results
+
+    def __enter__(self):
+        self.ini = self.results.open_res_file("scan.ini")
+        self.write("[scan]\n")
+        self.append("tool", "csmock")
+        self.append("tool-version", "@VERSION@")
+        self.append("tool-args", str(sys.argv))
+        self.append("host", socket.gethostname())
+        self.append("store-results-to", self.results.output)
+        self.append("time-created", current_iso_date())
+        return self
+
+    def __exit__(self, type, value, bt):
+        self.append("time-finished", current_iso_date())
+        self.append("exit-code", self.results.ec)
+        self.ini.close()
+
+    def write(self, text):
+        self.ini.write(text)
+        results.log_fd.write("scan.ini: " + text)
+
+    def append(self, key, value):
+        self.write("%s = %s\n" % (key, value))
+
 class MockWrapper:
     def __init__(self, results, mock_profile):
         self.results = results
@@ -135,6 +171,11 @@ class MockWrapper:
             self.results.print_with_ts(msg % (self.lock_file, other_pid))
             time.sleep(15)
 
+        # prepare the mock command template with default arguments
+        self.def_cmd = ["mock", "-r", self.mock_profile]
+        if (results.get_cmd_output("mock --help | grep package_state")[0] == 0):
+            self.def_cmd += ["--disable-plugin=package_state"]
+
         return self
 
     def __exit__(self, type, value, bt):
@@ -143,8 +184,7 @@ class MockWrapper:
         os.system(cmd)
 
     def exec_mock_cmd(self, args):
-        cmd = ["mock", "-r", self.mock_profile] + args
-        return self.results.exec_cmd(cmd)
+        return self.results.exec_cmd(self.def_cmd + args)
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -238,20 +278,27 @@ if os.path.exists(output) and not args.force:
     parser.error("'%s' already exists, use --force to proceed" % output)
 
 with ScanResults(output) as results:
-    if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
-        results.fatal_error("failed to open SRPM: %s" % srpm)
+    with IniWriter(results) as ini_writer:
+        ini_writer.append("mock-config", mock_profile)
 
-    # TODO
-
-    with MockWrapper(results, mock_profile) as mock:
-        if (mock.exec_mock_cmd(["--init"]) != 0):
-            results.fatal_error("failed to init mock profile: %s"
-                    % mock_profile)
+        # check the given SRPM
+        if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
+            results.fatal_error("failed to open SRPM: %s" % srpm)
+        if (results.get_cmd_output("rpm -lpq '%s' | grep '\.spec$'" % srpm)[0]
+                != 0):
+            results.fatal_error("no specfile found in SRPM: %s" % srpm)
 
         # TODO
 
-        if not args.no_clean:
-            if (mock.exec_mock_cmd(["--clean"]) != 0):
-                results.error("failed to clean mock profile", ec=0)
+        with MockWrapper(results, mock_profile) as mock:
+            if (mock.exec_mock_cmd(["--init"]) != 0):
+                results.fatal_error("failed to init mock profile: %s"
+                        % mock_profile)
 
-    # TODO
+            # TODO
+
+            if not args.no_clean:
+                if (mock.exec_mock_cmd(["--clean"]) != 0):
+                    results.error("failed to clean mock profile", ec=0)
+
+        # TODO
