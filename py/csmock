@@ -60,7 +60,12 @@ class ScanResults:
 
     def __enter__(self):
         self.tmpdir = tempfile.mkdtemp(prefix="csmock")
-        self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
+        if self.use_tar:
+            self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
+        else:
+            if os.path.exists(output):
+                shutil.rmtree(output)
+            self.resdir = output
         os.mkdir(self.resdir)
 
         self.dbgdir = "%s/debug" % self.resdir
@@ -85,17 +90,19 @@ class ScanResults:
             os.kill(self.p.pid, signal.SIGTERM)
         self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix=">>> ")
         self.log_fd.close()
+        self.log_fd = sys.stderr
         if self.use_tar:
             tar_opts = "-c"
             if self.use_xz:
                 tar_opts += "J"
             tar_cmd = "tar %s -f '%s' -C '%s' '%s'" % (tar_opts,
                     self.output, self.tmpdir, self.dirname)
-            if os.system(tar_cmd) == 0:
-                sys.stderr.write("Wrote: %s\n\n" % self.output)
-                shutil.rmtree(self.tmpdir)
-        else:
-            os.system("mv -fvT '%s' '%s'" % (self.resdir, self.output))
+            if os.system(tar_cmd) != 0:
+                self.fatal_error("failed to write '%s', not removing '%s'..."
+                        % (self.output, self.tmpdir))
+
+        sys.stderr.write("Wrote: %s\n\n" % self.output)
+        shutil.rmtree(self.tmpdir)
         sys.exit(self.ec)
 
     def print_with_ts(self, msg, prefix="<<< "):
