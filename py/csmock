@@ -62,6 +62,10 @@ class ScanResults:
         self.tmpdir = tempfile.mkdtemp(prefix="csmock")
         self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
         os.mkdir(self.resdir)
+
+        self.dbgdir = "%s/debug" % self.resdir
+        os.mkdir(self.dbgdir)
+
         tee = ["tee", "%s/scan.log" % self.resdir]
         self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE,
                 preexec_fn=os.setsid)
@@ -106,9 +110,10 @@ class ScanResults:
         self.error(msg, err_prefix="fatal ", ec=ec)
         sys.exit(ec)
 
-    def exec_cmd(self, cmd):
+    def exec_cmd(self, cmd, shell=False):
         self.print_with_ts(str(cmd))
-        self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd)
+        self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd,
+                shell=shell)
         rv = self.p.wait()
         self.log_fd.write("\n")
         return rv
@@ -278,6 +283,10 @@ if os.path.exists(output) and not args.force:
     parser.error("'%s' already exists, use --force to proceed" % output)
 
 with ScanResults(output) as results:
+    # dump list of RPMs installed on the host (for debugging purposes)
+    results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-host.txt'"
+            % results.dbgdir, shell=True)
+
     with IniWriter(results) as ini_writer:
         ini_writer.append("mock-config", mock_profile)
 
