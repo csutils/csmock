@@ -103,10 +103,12 @@ class ScanResults:
 
         sys.stderr.write("Wrote: %s\n\n" % self.output)
         shutil.rmtree(self.tmpdir)
-        sys.exit(self.ec)
+        if type is None and value is None and bt is None:
+            sys.exit(self.ec)
 
     def print_with_ts(self, msg, prefix="<<< "):
         self.log_fd.write("%s%s\t%s\n" % (prefix, current_iso_date(), msg))
+        self.log_fd.flush()
 
     def error(self, msg, ec=1, err_prefix=""):
         self.print_with_ts("%serror: %s\n" % (err_prefix, msg), prefix="!!! ")
@@ -184,7 +186,11 @@ class MockWrapper:
             time.sleep(15)
 
         # prepare the mock command template with default arguments
-        self.def_cmd = ["mock", "-r", self.mock_profile]
+        if os.path.exists("/usr/bin/mock-unbuffered"):
+            mock = "mock-unbuffered"
+        else:
+            mock = "mock"
+        self.def_cmd = [mock, "-r", self.mock_profile]
         if (results.get_cmd_output("mock --help | grep package_state")[0] == 0):
             self.def_cmd += ["--disable-plugin=package_state"]
 
@@ -197,6 +203,15 @@ class MockWrapper:
 
     def exec_mock_cmd(self, args):
         return self.results.exec_cmd(self.def_cmd + args)
+
+class ScanProps:
+    def __init__(self):
+        self.install_pkgs = []
+
+def deplist_from_srpm(results, srpm):
+    (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
+    return filter(None, deps.split("\n"))
+
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -259,6 +274,8 @@ parser.add_argument("--version", action=VersionPrinter,
 # parse command-line arguments
 args = parser.parse_args()
 
+props = ScanProps()
+
 # make sure that 'srpm' is a file (note it can be a tar archive instead of SRPM)
 srpm = args.SRPM
 require_file(parser, srpm)
@@ -300,16 +317,21 @@ with ScanResults(output) as results:
         # check the given SRPM
         if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
             results.fatal_error("failed to open SRPM: %s" % srpm)
-        if (results.get_cmd_output("rpm -lpq '%s' | grep '\.spec$'" % srpm)[0]
-                != 0):
+        (ec, spec) = results.get_cmd_output("rpm -lpq '%s' | grep '\.spec$'"
+                % srpm)
+        if ec != 0:
             results.fatal_error("no specfile found in SRPM: %s" % srpm)
 
-        # TODO
+        # get the dependency list of the given SRPM
+        props.install_pkgs += deplist_from_srpm(results, srpm)
 
         with MockWrapper(results, mock_profile) as mock:
             if (mock.exec_mock_cmd(["--init"]) != 0):
                 results.fatal_error("failed to init mock profile: %s"
                         % mock_profile)
+
+            # install required packages according to ScanProps
+            mock.exec_mock_cmd(["--install"] + props.install_pkgs)
 
             # TODO
 
