@@ -204,6 +204,10 @@ class MockWrapper:
     def exec_mock_cmd(self, args):
         return self.results.exec_cmd(self.def_cmd + args)
 
+    def copy_out(self, src, dst):
+        args = ["--disable-plugin=selinux", "--copyout", src, dst]
+        return self.exec_mock_cmd(args)
+
 class ScanProps:
     def __init__(self):
         self.install_pkgs = []
@@ -332,6 +336,13 @@ with ScanResults(output) as results:
 
             # install required packages according to ScanProps
             mock.exec_mock_cmd(["--install"] + props.install_pkgs)
+
+            # dump list of RPMs installed in the chroot (for debugging purposes)
+            tmp_var_lib = "%s/var/lib" % results.tmpdir
+            os.makedirs(tmp_var_lib)
+            mock.copy_out("/var/lib/rpm", "%s/rpm" % tmp_var_lib)
+            results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-mock.txt'"
+                    % results.dbgdir, shell=True)
 
             # TODO
 
