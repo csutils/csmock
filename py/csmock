@@ -30,6 +30,17 @@ import sys
 import tempfile
 import time
 
+default_rpm_opts = [
+        "--define",     "_smp_mflags -kj13",
+        "--define",     "_without_testsuite 1",
+        "--define",     "apidocs 0",
+        "--define",     "libguestfs_runtests 0",
+        "--define",     "runselftest 0",
+        "--define",     "with_docs 0",
+        "--define",     "with_publican 0",
+        "--without",    "binfilter",
+        "--without",    "langpacks"]
+
 def current_iso_date():
     return datetime.datetime.now().isoformat()
 
@@ -234,6 +245,7 @@ class ScanProps:
     def __init__(self):
         self.install_pkgs = []
         self.copy_in_files = []
+        self.rpm_opts = default_rpm_opts
 
 def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
@@ -393,12 +405,14 @@ with ScanResults(output) as results:
             mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
 
             # run %prep phase without pluggin-in any static analyzers
-            ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s" % spec_in)
+            ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s%s"
+                    % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
             if (ec != 0):
                 results.error("%prep failed", ec=ec)
 
             # run %build phase with static analyzers plugged-in
-            build_cmd = "rpmbuild -bc --nodeps --short-circuit %s" % spec_in
+            build_cmd = "rpmbuild -bc --nodeps --short-circuit %s%s" \
+                    % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
             # TODO: wrap build_cmd by all the necessary wrappers
             ec = mock.exec_mockbuild_cmd(build_cmd)
             if (ec != 0):
