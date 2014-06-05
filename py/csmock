@@ -393,7 +393,16 @@ with ScanResults(output) as results:
             mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
 
             # run %prep phase without pluggin-in any static analyzers
-            mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s" % spec_in)
+            ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s" % spec_in)
+            if (ec != 0):
+                results.error("%prep failed", ec=ec)
+
+            # run %build phase with static analyzers plugged-in
+            build_cmd = "rpmbuild -bc --nodeps --short-circuit %s" % spec_in
+            # TODO: wrap build_cmd by all the necessary wrappers
+            ec = mock.exec_mockbuild_cmd(build_cmd)
+            if (ec != 0):
+                results.error("%build failed", ec=ec)
 
             # TODO
 
