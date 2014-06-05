@@ -201,8 +201,11 @@ class MockWrapper:
                 self.lock_file, self.pid, self.lock_file, self.lock_file)
         os.system(cmd)
 
+    def get_mock_cmd(self, args):
+        return self.def_cmd + args
+
     def exec_mock_cmd(self, args):
-        return self.results.exec_cmd(self.def_cmd + args)
+        return self.results.exec_cmd(self.get_mock_cmd(args))
 
     def copy_out(self, src, dst):
         args = ["--disable-plugin=selinux", "--copyout", src, dst]
@@ -211,11 +214,17 @@ class MockWrapper:
 class ScanProps:
     def __init__(self):
         self.install_pkgs = []
+        self.copy_in_files = []
 
 def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
     return filter(None, deps.split("\n"))
 
+def strlist_to_shell_cmd(lst):
+    cmd = ""
+    for i in lst:
+        cmd += " '%s'" % i
+    return cmd
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -326,6 +335,11 @@ with ScanResults(output) as results:
         if ec != 0:
             results.fatal_error("no specfile found in SRPM: %s" % srpm)
 
+        # copy the given SRPM into our tmp dir
+        srpm_dup = "%s/%s" % (results.tmpdir, os.path.basename(srpm))
+        shutil.copyfile(srpm, srpm_dup)
+        props.copy_in_files += [srpm_dup]
+
         # get the dependency list of the given SRPM
         props.install_pkgs += deplist_from_srpm(results, srpm)
 
@@ -343,6 +357,14 @@ with ScanResults(output) as results:
             mock.copy_out("/var/lib/rpm", "%s/rpm" % tmp_var_lib)
             results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-mock.txt'"
                     % results.dbgdir, shell=True)
+
+            # copy required files into the chroot
+            cmd = "tar -cP"
+            cmd += strlist_to_shell_cmd(props.copy_in_files)
+            cmd += " | "
+            cmd += strlist_to_shell_cmd(
+                    mock.get_mock_cmd(["--shell", "tar -xC/"]))
+            results.get_cmd_output(cmd)
 
             # TODO
 
