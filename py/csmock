@@ -328,13 +328,15 @@ require_file(parser, srpm)
 mock_profile = args.mock_profile
 require_file(parser, "/etc/mock/%s.cfg" % mock_profile)
 
+if args.list_of_pkgs is not None:
+    # append the list of packages to install specified on command-line
+    props.install_pkgs += args.list_of_pkgs.split()
+
 # fail if a not yet implemented option is given
 if args.tool != []:
     parser.error("option -t is not implemented yet")
 if args.shell_cmd is not None:
     parser.error("option -c is not implemented yet")
-if args.list_of_pkgs is not None:
-    parser.error("option --install is not implemented yet")
 if args.skip_patches:
     parser.error("option --skip-patches is not implemented yet")
 if args.diff_patches:
