@@ -33,6 +33,18 @@ import time
 def current_iso_date():
     return datetime.datetime.now().isoformat()
 
+def shell_quote(str_in):
+    str_out = ""
+    for i in range(0, len(str_in)):
+        c = str_in[i]
+        if c == "\\":
+            str_out += "\\\\"
+        elif c == "\"":
+            str_out += "\\\""
+        else:
+            str_out += c
+    return "\"" + str_out + "\""
+
 class ScanResults:
     def __init__(self, output):
         self.output = output
@@ -207,6 +219,13 @@ class MockWrapper:
     def exec_mock_cmd(self, args):
         return self.results.exec_cmd(self.get_mock_cmd(args))
 
+    def exec_chroot_cmd(self, cmd):
+        return self.exec_mock_cmd(["--chroot", cmd])
+
+    def exec_mockbuild_cmd(self, cmd):
+        return self.exec_chroot_cmd("/bin/su mockbuild -lc %s"
+                % shell_quote(cmd))
+
     def copy_out(self, src, dst):
         args = ["--disable-plugin=selinux", "--copyout", src, dst]
         return self.exec_mock_cmd(args)
@@ -334,6 +353,8 @@ with ScanResults(output) as results:
                 % srpm)
         if ec != 0:
             results.fatal_error("no specfile found in SRPM: %s" % srpm)
+        spec = spec.rstrip()
+        spec_in = "/builddir/build/SPECS/%s" % spec
 
         # copy the given SRPM into our tmp dir
         srpm_dup = "%s/%s" % (results.tmpdir, os.path.basename(srpm))
@@ -365,6 +386,14 @@ with ScanResults(output) as results:
             cmd += strlist_to_shell_cmd(
                     mock.get_mock_cmd(["--shell", "tar -xC/"]))
             results.get_cmd_output(cmd)
+
+            # TODO: run fixups
+
+            # install the copied SRPM into the chroot
+            mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
+
+            # run %prep phase without pluggin-in any static analyzers
+            mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s" % spec_in)
 
             # TODO
 
