@@ -30,6 +30,10 @@ import sys
 import tempfile
 import time
 
+csmock_datadir = "/usr/share/csmock"
+
+patch_rawbuild = csmock_datadir + "/scripts/patch-rawbuild.sh"
+
 default_rpm_opts = [
         "--define",     "_smp_mflags -kj13",
         "--define",     "_without_testsuite 1",
@@ -40,6 +44,15 @@ default_rpm_opts = [
         "--define",     "with_publican 0",
         "--without",    "binfilter",
         "--without",    "langpacks"]
+
+rawbuild_rpm_opts = [
+        "--define",     "__patch " + patch_rawbuild,
+        "--define",     "_rawbuild -b _RAWBUILD",
+        "--define",     "nofips 1",
+        "--define",     "nopam 1",
+        "--define",     "norunuser 1",
+        "--define",     "noselinux 1",
+        "--define",     "_with_vanilla 1"]
 
 def current_iso_date():
     return datetime.datetime.now().isoformat()
@@ -338,8 +351,6 @@ if args.list_of_pkgs is not None:
 # fail if a not yet implemented option is given
 if args.tool != []:
     parser.error("option -t is not implemented yet")
-if args.skip_patches:
-    parser.error("option --skip-patches is not implemented yet")
 if args.diff_patches:
     parser.error("option --diff-patches is not implemented yet")
 
@@ -356,6 +367,10 @@ output = os.path.realpath(output)
 # FIXME: TOCTOU race
 if os.path.exists(output) and not args.force:
     parser.error("'%s' already exists, use --force to proceed" % output)
+
+if args.skip_patches:
+    props.copy_in_files += [patch_rawbuild]
+    props.rpm_opts += rawbuild_rpm_opts
 
 with ScanResults(output) as results:
     # dump list of RPMs installed on the host (for debugging purposes)
