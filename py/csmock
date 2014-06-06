@@ -20,6 +20,7 @@
 import argparse
 import codecs
 import datetime
+import imp
 import os.path
 import re
 import signal
@@ -33,6 +34,8 @@ import time
 csmock_datadir = "/usr/share/csmock"
 
 patch_rawbuild = csmock_datadir + "/scripts/patch-rawbuild.sh"
+
+plugin_dir= "@PLUGIN_DIR@"
 
 default_rpm_opts = [
         "--define",     "_smp_mflags -kj13",
@@ -260,6 +263,37 @@ class ScanProps:
         self.copy_in_files = []
         self.rpm_opts = default_rpm_opts
 
+class PluginLoader:
+    def __init__(self):
+        self.pmap = { }
+
+    def try_load(self, modname, path):
+        fp, pathname, description = imp.find_module(modname, [path])
+        try:
+            module = imp.load_module(modname, fp, pathname, description)
+        finally:
+            fp.close()
+
+        props = module.get_plugin_props()
+        # TODO: check API version
+        prio = props.pass_priority
+        assert prio not in self.pmap
+        self.pmap[prio] = module
+
+    def load_default_plugins(self):
+        try:
+            files = os.listdir(plugin_dir)
+        except:
+            return
+
+        for fname in files:
+            parts = fname.split(".")
+            if len(parts) != 2:
+                continue
+            if parts[1] != "py":
+                continue
+            self.try_load(parts[0], path=plugin_dir)
+
 def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
     return filter(None, deps.split("\n"))
@@ -295,7 +329,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("SRPM",
         help="source RPM package to be scanned by static analyzers")
 
-# TODO: register plug-ins
+# load plug-ins
+plugins = PluginLoader()
+plugins.load_default_plugins()
 
 # define optional arguments
 parser.add_argument("-r", "--root", dest="mock_profile", default="default",

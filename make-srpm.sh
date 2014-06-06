@@ -98,16 +98,20 @@ Requires: csmock
 %description -n csmock-ng
 Hihgly experimental, currently suitable only for development of csmock itself.
 
+%{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+
 %prep
 %setup -q
 
 %build
 mkdir -p bin etc man sbin
 
-# ebmed RPM version into the scripts
+# ebmed VERSION and PLUGIN_DIR version into the scripts
 install -p -m0755 cov-{diff,mock}build bin/
 sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
-sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' -i py/csmock
+sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' \\
+    -e 's|@PLUGIN_DIR@|%{python_sitearch}/csmock/plugins|' \\
+    -i py/csmock
 
 help2man --no-info --section 1 --name \\
     "run static analysis of the given SRPM using mock" \\
@@ -137,7 +141,10 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_sbindir}" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
+    "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts" \\
+    "\$RPM_BUILD_ROOT%{python_sitearch}/" \\
+    "\$RPM_BUILD_ROOT%{python_sitearch}/csmock" \\
+    "\$RPM_BUILD_ROOT%{python_sitearch}/csmock/plugins"
 
 install -p -m0755 \\
     cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild py/csmock \\
@@ -148,6 +155,9 @@ install -p -m0644 man/{csmock,cov-{diff,mock}build}.1 "\$RPM_BUILD_ROOT%{_mandir
 install -p -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/build"
 install -p -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/prep"
 install -p -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
+
+install -p -m0644 py/plugins/gcc.py \\
+    "\$RPM_BUILD_ROOT%{python_sitearch}/csmock/plugins"
 
 install -p -m0755 scripts/patch-rawbuild.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
@@ -184,6 +194,7 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_bindir}/csmock
 %{_datadir}/csmock/scripts
 %{_mandir}/man1/csmock.1*
+%{python_sitearch}/csmock/plugins/*"
 EOF
 
 rpmbuild -bs "$SPEC"                            \
