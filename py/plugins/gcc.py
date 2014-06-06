@@ -11,3 +11,14 @@ class Plugin:
 
     def enable(self):
         self.enabled = True
+
+    def handle_args(self, args, props):
+        # TODO: handle args
+        if not self.enabled:
+            return
+
+        # FIXME: /usr/lib64 is arch-specific
+        props.copy_in_files += ["/usr/bin/cswrap", "/usr/lib64/cswrap"]
+        props.path = ["/usr/lib64/cswrap"] + props.path
+        props.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
+        props.env["CSWRAP_TIMEOUT"] = "300"
