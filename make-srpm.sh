@@ -87,10 +87,16 @@ Requires: rpm-build
 
 BuildArch: noarch
 
-
 %description
 This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
 SRPMs by Static Analysis tools in a fully automated way.
+
+%package -n csmock-ng
+Summary: Preview of a new major version of the csmock package
+Requires: csmock
+
+%description -n csmock-ng
+Hihgly experimental, currently suitable only for development of csmock itself.
 
 %prep
 %setup -q
@@ -98,9 +104,10 @@ SRPMs by Static Analysis tools in a fully automated way.
 %build
 mkdir -p bin etc man sbin
 
-# ebmed RPM version into the scripts and remove uses of mock-unbuffered
+# ebmed RPM version into the scripts
 install -p -m0755 cov-{diff,mock}build bin/
 sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
+sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' -i py/csmock
 
 help2man --no-info --section 1 --name \\
     "run static analysis of the given SRPM using mock" \\
@@ -109,6 +116,10 @@ help2man --no-info --section 1 --name \\
 help2man --no-info --section 1 --name \\
     "run static analysis of the given the patches in the given SRPM using cov-mockbuild" \\
     bin/cov-diffbuild > man/cov-diffbuild.1
+
+help2man --no-info --section 1 --name \\
+    "run static analysis of the given SRPM using mock" \\
+    py/csmock > man/csmock.1
 
 printf '#!/bin/sh\\nstdbuf -o0 /usr/sbin/mock "\$@"\\n' > ./sbin/mock-unbuffered
 printf 'USER=root\\nPROGRAM=/usr/sbin/mock-unbuffered\\nSESSION=false
@@ -128,10 +139,10 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc"
 
 install -p -m0755 \\
-    cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild \\
+    cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild py/csmock \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
-install -p -m0644 man/cov-{diff,mock}build.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
+install -p -m0644 man/{csmock,cov-{diff,mock}build}.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
 install -p -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/build"
 install -p -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/prep"
@@ -158,13 +169,16 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_mandir}/man1/cov-diffbuild.1*
 %{_mandir}/man1/cov-mockbuild.1*
 %{_datadir}/csmock
-
 %{_bindir}/mock-unbuffered
 %{_sbindir}/mock-unbuffered
 %{_sysconfdir}/pam.d/mock-unbuffered
 %config(noreplace) %{_sysconfdir}/security/console.apps/mock-unbuffered
-
 %doc COPYING
+
+%files -n csmock-ng
+%defattr(-,root,root,-)
+%{_bindir}/csmock
+%{_mandir}/man1/csmock.1*
 EOF
 
 rpmbuild -bs "$SPEC"                            \
