@@ -170,6 +170,7 @@ class ScanResults:
         self.p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                 stderr=self.log_fd, shell=True)
         (out, _) = self.p.communicate()
+        out = out.decode("utf8")
         return (self.p.returncode, out)
 
     def open_res_file(self, rel_path):
@@ -263,22 +264,25 @@ class ScanProps:
         self.copy_in_files = []
         self.rpm_opts = default_rpm_opts
 
-class PluginLoader:
+class PluginManager:
     def __init__(self):
-        self.pmap = { }
+        self.plug_by_prio = { }
+        self.plug_by_name = { }
 
     def try_load(self, modname, path):
         fp, pathname, description = imp.find_module(modname, [path])
         try:
             module = imp.load_module(modname, fp, pathname, description)
+            plugin = module.Plugin()
         finally:
             fp.close()
 
-        props = module.get_plugin_props()
+        props = plugin.get_props()
         # TODO: check API version
         prio = props.pass_priority
-        assert prio not in self.pmap
-        self.pmap[prio] = module
+        assert prio not in self.plug_by_prio
+        self.plug_by_prio[prio] = plugin
+        self.plug_by_name[modname] = plugin
 
     def load_default_plugins(self):
         try:
@@ -293,6 +297,13 @@ class PluginLoader:
             if parts[1] != "py":
                 continue
             self.try_load(parts[0], path=plugin_dir)
+
+    def get_name_list(self):
+        return self.plug_by_name.keys()
+
+    def enable(self, plugin_name):
+        plugin = self.plug_by_name[plugin_name]
+        plugin.enable()
 
 def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
@@ -324,22 +335,37 @@ def nvr_from_srpm(srpm):
 def nvr_from_tarball(tb):
     return re.sub("\.tar$", "", re.sub("\.[^.]*$", "", os.path.basename(srpm)))
 
+# load plug-ins
+plugins = PluginManager()
+plugins.load_default_plugins()
+plugin_list = plugins.get_name_list()
+
+# list available tools
+# FIXME: --list-available-tools takes precedence over --help and --version
+class ToolsPrinter(argparse.Action):
+    def __init__(self, option_strings, dest=None, default=None, help=None):
+        super(ToolsPrinter, self).__init__(option_strings=option_strings,
+                dest=dest, default=default, nargs=0, help=help)
+    def __call__(self, parser, namespace, values, option_string=None):
+        for i in plugin_list:
+            # TODO: print description?
+            sys.stdout.write("%s\n" % i)
+        sys.exit(0)
+
 # initialize argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument("SRPM",
         help="source RPM package to be scanned by static analyzers")
 
-# load plug-ins
-plugins = PluginLoader()
-plugins.load_default_plugins()
-
 # define optional arguments
 parser.add_argument("-r", "--root", dest="mock_profile", default="default",
         help="mock profile to use (defaults to mock's default)")
 
-# TODO: provide the actual list of choices
-parser.add_argument("-t", "--tool", action="append", default=[],
-        help="enable the selected tool (may be used more than once)")
+parser.add_argument("-t", "--tools", default="",
+        help="comma-spearated list of tools to enable")
+
+parser.add_argument("-l", "--list-available-tools", action=ToolsPrinter,
+        help="list available tools and exit")
 
 parser.add_argument("-c", "--shell-cmd",
         help="use shell command to build the given tarball (instead of SRPM)")
@@ -367,8 +393,21 @@ group.add_argument("--diff-patches", action="store_true",
 parser.add_argument("--version", action=VersionPrinter,
         help="print the version of csmock and exit")
 
+# TODO: add command-line options handled by plugins
+
 # parse command-line arguments
 args = parser.parse_args()
+
+# check that only available tools are requested
+for i in args.tools.split(","):
+    tool = i.strip()
+    if len(tool) == 0:
+        continue
+    if tool in plugin_list:
+        # explicitly enable this tool
+        plugins.enable(tool)
+    else:
+        parser.error("tool not available: %s" % tool)
 
 props = ScanProps()
 
@@ -385,8 +424,6 @@ if args.list_of_pkgs is not None:
     props.install_pkgs += args.list_of_pkgs.split()
 
 # fail if a not yet implemented option is given
-if args.tool != []:
-    parser.error("option -t is not implemented yet")
 if args.diff_patches:
     parser.error("option --diff-patches is not implemented yet")
 
@@ -407,6 +444,8 @@ if os.path.exists(output) and not args.force:
 if args.skip_patches:
     props.copy_in_files += [patch_rawbuild]
     props.rpm_opts += rawbuild_rpm_opts
+
+# TODO: poll plug-ins to reflect themselves in ScanProps
 
 with ScanResults(output) as results:
     # dump list of RPMs installed on the host (for debugging purposes)

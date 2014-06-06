@@ -2,5 +2,12 @@ class PluginProps:
     def __init__(self):
         self.pass_priority = 0x10
 
-def get_plugin_props():
-    return PluginProps()
+class Plugin:
+    def __init__(self):
+        self.enabled = False
+
+    def get_props(self):
+        return PluginProps()
+
+    def enable(self):
+        self.enabled = True
