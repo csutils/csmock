@@ -58,6 +58,12 @@ rawbuild_rpm_opts = [
         "--define",     "noselinux 1",
         "--define",     "_with_vanilla 1"]
 
+default_cswrap_filters = [
+        "csgrep --quiet --path '^/builddir/build/BUILD/' \
+--event='error|warning' --remove-duplicates",
+        "csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'",
+        "sed 's|^/builddir/build/BUILD/||'"]
+
 def current_iso_date():
     return datetime.datetime.now().isoformat()
 
@@ -110,6 +116,12 @@ class ScanResults:
 
         self.dbgdir = "%s/debug" % self.resdir
         os.mkdir(self.dbgdir)
+
+        self.dbgdir_raw = "%s/raw-results" % self.dbgdir
+        os.mkdir(self.dbgdir_raw)
+
+        self.dbgdir_uni = "%s/uni-results" % self.dbgdir
+        os.mkdir(self.dbgdir_uni)
 
         tee = ["tee", "%s/scan.log" % self.resdir]
         self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE,
@@ -266,6 +278,36 @@ class ScanProps:
         self.rpm_opts = default_rpm_opts
         self.path = []
         self.env = { }
+        self.copy_out_files = []
+        self.cswrap_enabled = False
+        self.cswrap_filters = default_cswrap_filters
+
+    def enable_cswrap(self):
+        if self.cswrap_enabled:
+            # already enabled
+            return
+        self.cswrap_enabled = True
+
+        # FIXME: /usr/lib64 is arch-specific
+        self.copy_in_files += ["/usr/bin/cswrap", "/usr/lib64/cswrap"]
+        self.path = ["/usr/lib64/cswrap"] + props.path
+        self.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
+        self.env["CSWRAP_TIMEOUT"] = "300"
+        self.copy_out_files += ["/builddir/cswrap-capture.err"]
+
+    def pick_cswrap_results(self, results):
+        if not self.cswrap_enabled:
+            return
+
+        # apply all filters using a shell pipe
+        fin = "%s/cswrap-capture.err" % results.dbgdir_raw
+        out = "%s/cswrap-capture.err" % results.dbgdir_uni
+        cmd = "cat '%s'" % fin
+        for filt in self.cswrap_filters:
+            cmd += " | %s" % filt
+        cmd += " > '%s'" % out
+        (rv, _) = results.get_cmd_output(cmd)
+        return rv
 
     def wrap_shell_cmd_by_env(self, cmd_in):
         # merge self.env with self.path
@@ -569,10 +611,21 @@ cd %%s*/\n\
             if (ec != 0):
                 results.error("%build failed", ec=ec)
 
+            # get the (intermediate) results out of the chroot
+            copy_out_cmd = ["--disable-plugin=selinux", "--copyout"]
+            copy_out_cmd += props.copy_out_files + [results.dbgdir_raw]
+            if mock.exec_mock_cmd(copy_out_cmd) != 0:
+                results.error("mock --copyout field")
+
             # TODO
 
             if not args.no_clean:
                 if (mock.exec_mock_cmd(["--clean"]) != 0):
                     results.error("failed to clean mock profile", ec=0)
+
+        # we are done with mock
+
+        if props.pick_cswrap_results(results) != 0:
+            results.error("failed to pick cswrap results")
 
         # TODO

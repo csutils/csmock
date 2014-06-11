@@ -17,8 +17,6 @@ class Plugin:
         if not self.enabled:
             return
 
-        # FIXME: /usr/lib64 is arch-specific
-        props.copy_in_files += ["/usr/bin/cswrap", "/usr/lib64/cswrap"]
-        props.path = ["/usr/lib64/cswrap"] + props.path
-        props.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
-        props.env["CSWRAP_TIMEOUT"] = "300"
+        props.enable_cswrap()
+        props.cswrap_filters += \
+            ["csgrep --invert-match --checker COMPILER_WARNING --event error"]
