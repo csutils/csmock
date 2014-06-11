@@ -495,7 +495,9 @@ fi
 
 if test -x /usr/libexec/clang-analyzer/scan-build/ccc-analyzer; then
     # avoid failing with "could not find clang line" on mozjs17-17.0.0-9.el7
-    sed -e 's/(!defined \\\$Clang)/("\\\$Clang" eq "")/' \\
+    # and glusterfs-3.6.0.15-1.el6
+    sed -e "s/\\\$ENV{'CLANG'}/'clang'/" \\
+        -e "s/\\\$ENV{'CLANG_CXX'}/'clang++'/" \\
         -i /usr/libexec/clang-analyzer/scan-build/ccc-analyzer
 
     if test -w /usr/bin/libtool; then
