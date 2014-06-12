@@ -376,6 +376,11 @@ class PluginManager:
         plugin = self.plug_by_name[plugin_name]
         plugin.enable()
 
+    def init_parser(self, parser):
+        for prio in self.plug_by_prio:
+            plugin = self.plug_by_prio[prio]
+            plugin.init_parser(parser)
+
     def handle_args(self, args, props):
         for prio in self.plug_by_prio:
             plugin = self.plug_by_prio[prio]
@@ -476,7 +481,8 @@ group.add_argument("--diff-patches", action="store_true",
 parser.add_argument("--version", action=VersionPrinter,
         help="print the version of csmock and exit")
 
-# TODO: add command-line options handled by plugins
+# add command-line options handled by plugins
+plugins.init_parser(parser)
 
 # parse command-line arguments
 args = parser.parse_args()
@@ -628,7 +634,7 @@ cd %%s*/\n\
             # get the (intermediate) results out of the chroot
             if len(props.copy_out_files) > 0:
                 dst = [results.dbgdir_raw]
-                if mock.copyout(props.copy_out_files + dst) != 0:
+                if mock.copy_out(props.copy_out_files + dst) != 0:
                     results.error("mock --copyout field")
 
             # TODO
