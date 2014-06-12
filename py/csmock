@@ -272,9 +272,9 @@ class MockWrapper:
         return self.exec_chroot_cmd("/bin/su mockbuild -lc %s"
                 % shell_quote(cmd))
 
-    def copy_out(self, src, dst):
-        args = ["--disable-plugin=selinux", "--copyout", src, dst]
-        return self.exec_mock_cmd(args)
+    def copy_out(self, args):
+        cmd = ["--disable-plugin=selinux", "--copyout"] + args
+        return self.exec_mock_cmd(cmd)
 
 class ScanProps:
     def __init__(self):
@@ -303,7 +303,8 @@ class ScanProps:
 
     def pick_cswrap_results(self, results):
         if not self.cswrap_enabled:
-            return
+            # not enabled --> succeeded trivially
+            return 0
 
         # apply all filters using a shell pipe
         fin = "%s/cswrap-capture.err" % results.dbgdir_raw
@@ -568,7 +569,7 @@ with ScanResults(output) as results:
             # dump list of RPMs installed in the chroot (for debugging purposes)
             tmp_var_lib = "%s/var/lib" % results.tmpdir
             os.makedirs(tmp_var_lib)
-            mock.copy_out("/var/lib/rpm", "%s/rpm" % tmp_var_lib)
+            mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
             results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-mock.txt'"
                     % results.dbgdir, shell=True)
 
@@ -625,10 +626,10 @@ cd %%s*/\n\
                 results.error("%build failed", ec=ec)
 
             # get the (intermediate) results out of the chroot
-            copy_out_cmd = ["--disable-plugin=selinux", "--copyout"]
-            copy_out_cmd += props.copy_out_files + [results.dbgdir_raw]
-            if mock.exec_mock_cmd(copy_out_cmd) != 0:
-                results.error("mock --copyout field")
+            if len(props.copy_out_files) > 0:
+                dst = [results.dbgdir_raw]
+                if mock.copyout(props.copy_out_files + dst) != 0:
+                    results.error("mock --copyout field")
 
             # TODO
 
@@ -648,8 +649,8 @@ cd %%s*/\n\
     # merge all results into a single file named scan-results.js
     ini_file = "%s/scan.ini" % results.resdir
     js_file = "%s/scan-results.js" % results.resdir
-    cmd = "cslinker --cwelist '%s' --inifile '%s' %s/*.err" % (cwe_list_file,
-            ini_file, results.dbgdir_uni)
+    cmd = "cslinker --cwelist '%s' --inifile '%s' $(ls %s/*.err)" \
+            % (cwe_list_file, ini_file, results.dbgdir_uni)
     for filt in props.result_filters:
         cmd += " | %s" % filt
     cmd += " > '%s'" % js_file
