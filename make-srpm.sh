@@ -98,6 +98,14 @@ Requires: csmock
 %description -n csmock-ng
 Hihgly experimental, currently suitable only for development of csmock itself.
 
+%package -n csmock-plugin-cppcheck
+Summary: csmock plug-in providing the support for Cppcheck
+Requires: cscppc
+Requires: csmock-ng
+
+%description -n csmock-plugin-cppcheck
+Hihgly experimental, currently suitable only for development of csmock itself.
+
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 %prep
@@ -156,7 +164,7 @@ install -p -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc
 install -p -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/prep"
 install -p -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
 
-install -p -m0644 py/plugins/gcc.py \\
+install -p -m0644 py/plugins/*.py \\
     "\$RPM_BUILD_ROOT%{python_sitearch}/csmock/plugins"
 
 install -p -m0755 scripts/patch-rawbuild.sh \\
@@ -194,7 +202,11 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_bindir}/csmock
 %{_datadir}/csmock/scripts
 %{_mandir}/man1/csmock.1*
-%{python_sitearch}/csmock/plugins/*"
+%{python_sitearch}/csmock/plugins/gcc.py*
+
+%files -n csmock-plugin-cppcheck
+%defattr(-,root,root,-)
+%{python_sitearch}/csmock/plugins/cppcheck.py*
 EOF
 
 rpmbuild -bs "$SPEC"                            \

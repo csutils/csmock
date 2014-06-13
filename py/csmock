@@ -296,7 +296,7 @@ class ScanProps:
 
         # FIXME: /usr/lib64 is arch-specific
         self.copy_in_files += ["/usr/bin/cswrap", "/usr/lib64/cswrap"]
-        self.path = ["/usr/lib64/cswrap"] + props.path
+        self.path = ["/usr/lib64/cswrap"] + self.path
         self.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
         self.env["CSWRAP_TIMEOUT"] = "300"
         self.copy_out_files += ["/builddir/cswrap-capture.err"]
@@ -377,12 +377,12 @@ class PluginManager:
         plugin.enable()
 
     def init_parser(self, parser):
-        for prio in self.plug_by_prio:
+        for prio in sorted(self.plug_by_prio):
             plugin = self.plug_by_prio[prio]
             plugin.init_parser(parser)
 
     def handle_args(self, args, props):
-        for prio in self.plug_by_prio:
+        for prio in sorted(self.plug_by_prio):
             plugin = self.plug_by_prio[prio]
             plugin.handle_args(args, props)
 
@@ -659,7 +659,7 @@ cd %%s*/\n\
             % (cwe_list_file, ini_file, results.dbgdir_uni)
     for filt in props.result_filters:
         cmd += " | %s" % filt
-    cmd += " > '%s'" % js_file
+    cmd += " | cssort --key=path > '%s'" % js_file
     results.exec_cmd(cmd, shell=True)
 
     # transform scan-results.js to scan-results.{err,html} and print stats
