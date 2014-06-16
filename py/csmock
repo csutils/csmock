@@ -584,8 +584,10 @@ with ScanResults(output) as results:
             tmp_var_lib = "%s/var/lib" % results.tmpdir
             os.makedirs(tmp_var_lib)
             mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
-            results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-mock.txt'"
-                    % results.dbgdir, shell=True)
+            tmp_rpm = "%s/rpm" % tmp_var_lib
+            results.exec_cmd("chmod -w '%s' && rpm -qa --root '%s' \
+| sort -V > '%s/rpm-list-mock.txt' && chmod u+w '%s'" % (tmp_rpm,
+                results.tmpdir, results.dbgdir, tmp_rpm), shell=True)
 
             if args.shell_cmd is not None:
                 # prepare a build script in our tmp dir
@@ -620,6 +622,9 @@ cd %%s*/\n\
                 # extract the given archive (we got instead of SRPM)
                 ec = mock.exec_mockbuild_cmd(
                         "tar -xvf '%s' -C /builddir/build/BUILD" % srpm_dup)
+
+            # make the unpacked contents accessible (if the maintainer did not)
+            mock.exec_chroot_cmd("chmod -R +r /builddir/build")
 
             if (ec != 0):
                 results.error("%prep failed", ec=ec)
