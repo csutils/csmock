@@ -289,6 +289,7 @@ class ScanProps:
         self.result_filters = default_result_filters
         self.build_cmd_wrappers = []
         self.post_build_chroot_cmds = []
+        self.post_process_hooks = []
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -672,7 +673,11 @@ cd %%s*/\n\
         if props.pick_cswrap_results(results) != 0:
             results.error("failed to pick cswrap results")
 
-        # TODO
+        # run post-process hooks
+        for hook in props.post_process_hooks:
+            rv = hook(results)
+            if rv != 0:
+                results.error("post-process hook failed", ec=rv)
 
     # we are done with IniWriter
 
