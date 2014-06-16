@@ -288,6 +288,7 @@ class ScanProps:
         self.cswrap_filters = default_cswrap_filters
         self.result_filters = default_result_filters
         self.build_cmd_wrappers = []
+        self.post_build_chroot_cmds = []
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -308,7 +309,7 @@ class ScanProps:
             return 0
 
         # apply all filters using a shell pipe
-        fin = "%s/cswrap-capture.err" % results.dbgdir_raw
+        fin = "%s/builddir/cswrap-capture.err" % results.dbgdir_raw
         out = "%s/cswrap-capture.err" % results.dbgdir_uni
         cmd = "cat '%s'" % fin
         for filt in self.cswrap_filters:
@@ -647,11 +648,18 @@ cd %%s*/\n\
             if (ec != 0):
                 results.error("%build failed", ec=ec)
 
+            # execute post-build commands in the chroot
+            for cmd in props.post_build_chroot_cmds:
+                mock.exec_chroot_cmd(cmd)
+
             # get the (intermediate) results out of the chroot
             if len(props.copy_out_files) > 0:
-                dst = [results.dbgdir_raw]
-                if mock.copy_out(props.copy_out_files + dst) != 0:
-                    results.error("mock --copyout field")
+                cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell",
+                    "tar -c " + strlist_to_shell_cmd(props.copy_out_files)]))
+ 
+                cmd += " | tar -xC '%s'" % results.dbgdir_raw
+                if results.exec_cmd(cmd, shell=True) != 0:
+                    results.error("field to get intermediate results from mock")
 
             # TODO
 

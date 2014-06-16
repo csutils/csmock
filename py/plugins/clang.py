@@ -7,7 +7,6 @@ class PluginProps:
 class Plugin:
     def __init__(self):
         self.enabled = False
-        self.use_host_cppcheck = False
 
     def get_props(self):
         return PluginProps()
