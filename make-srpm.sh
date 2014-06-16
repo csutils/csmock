@@ -78,6 +78,7 @@ Source0:    https://git.fedorahosted.org/cgit/csmock.git/snapshot/$SRC
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
+BuildRequires: python
 
 Requires: cscppc
 Requires: csdiff
@@ -96,6 +97,13 @@ Summary: Preview of a new major version of the csmock package
 Requires: csmock
 
 %description -n csmock-ng
+Hihgly experimental, currently suitable only for development of csmock itself.
+
+%package -n csmock-plugin-clang
+Summary: csmock plug-in providing the support for Clang
+Requires: csmock-ng
+
+%description -n csmock-plugin-clang
 Hihgly experimental, currently suitable only for development of csmock itself.
 
 %package -n csmock-plugin-cppcheck
@@ -167,7 +175,7 @@ install -p -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-ma
 install -p -m0644 py/plugins/*.py \\
     "\$RPM_BUILD_ROOT%{python_sitearch}/csmock/plugins"
 
-install -p -m0755 scripts/patch-rawbuild.sh \\
+install -p -m0755 scripts/*.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
 
 install -m0755 -d \\
@@ -200,9 +208,14 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %files -n csmock-ng
 %defattr(-,root,root,-)
 %{_bindir}/csmock
-%{_datadir}/csmock/scripts
+%{_datadir}/csmock/scripts/patch-rawbuild.sh
 %{_mandir}/man1/csmock.1*
 %{python_sitearch}/csmock/plugins/gcc.py*
+
+%files -n csmock-plugin-clang
+%defattr(-,root,root,-)
+%{_datadir}/csmock/scripts/fixups-clang.sh
+%{python_sitearch}/csmock/plugins/clang.py*
 
 %files -n csmock-plugin-cppcheck
 %defattr(-,root,root,-)

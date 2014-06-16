@@ -287,6 +287,7 @@ class ScanProps:
         self.cswrap_enabled = False
         self.cswrap_filters = default_cswrap_filters
         self.result_filters = default_result_filters
+        self.build_cmd_wrappers = []
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -315,6 +316,13 @@ class ScanProps:
         cmd += " > '%s'" % out
         (rv, _) = results.get_cmd_output(cmd)
         return rv
+
+    def wrap_build_cmd(self, cmd_in):
+        cmd_out = cmd_in
+        for w in self.build_cmd_wrappers:
+            cmd_out = "sh -c %s" % shell_quote(cmd_out)
+            cmd_out = w % cmd_out
+        return cmd_out
 
     def wrap_shell_cmd_by_env(self, cmd_in):
         # merge self.env with self.path
@@ -597,7 +605,9 @@ cd %%s*/\n\
                     mock.get_mock_cmd(["--shell", "tar -xC/"]))
             results.get_cmd_output(cmd)
 
-            # TODO: run fixups
+            # run fixups scripts
+            mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
+| xargs -n1 sh -x" % csmock_datadir)
 
             if args.shell_cmd is None:
                 # install the copied SRPM into the chroot
@@ -622,7 +632,8 @@ cd %%s*/\n\
                 # run the above prepared build script
                 build_cmd = "sh -x '%s'" % build_script
 
-            # TODO: wrap build_cmd by all the necessary wrappers
+            # wrap build_cmd by all the necessary wrappers
+            build_cmd = props.wrap_build_cmd(build_cmd)
 
             # initialize environment variables according to ScanProps
             build_cmd = props.wrap_shell_cmd_by_env(build_cmd)
