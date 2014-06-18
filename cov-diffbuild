@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# Copyright (C) 2011 Red Hat, Inc.
+# Copyright (C) 2011-2014 Red Hat, Inc.
 #
-# This file is part of csdiff.
+# This file is part of csmock.
 #
-# csdiff is free software: you can redistribute it and/or modify
+# csmock is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # any later version.
 #
-# csdiff is distributed in the hope that it will be useful,
+# csmock is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with csdiff.  If not, see <http://www.gnu.org/licenses/>.
+# along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 SELF="$0"
 ARGS="`for i in "$@"; do printf " '%s'" "$i"; done`"
@@ -30,11 +30,11 @@ OPTS="bcd:fhilm::ntw:"
 
 usage(){
     cat << EOF
-usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
+Usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
 
-  -b  Do not use Coverity Static Analysis (will become default at some point).
+  -b  Do not use Coverity Static Analysis (default for csmock, the new cli).
 
-  -c  Run cppcheck on the sources after the build (before running cov-analyze).
+  -c  Enable the Cppcheck tool (uses the version installed on the host).
 
   -d  A space-separated list of manually added dependences needed for build.
 
@@ -47,21 +47,17 @@ usage: $(basename $SELF) [-$OPTS] MOCK_PROFILE my-package.src.rpm [COV_OPTS]
       only build-log.txt is kept.  [Coverity only]
 
   -l  Enable clang analyzer.  It will use the clang-analyzer package from your
-      mock chroot, or fail if the package is not installable.  [EXPERIMENTAL]
+      mock chroot, or fail if the package is not installable.
 
-  -m  Commit the results to Integrity Manager and obtain the project/defect IDs.
-      You can specify the target host/stream as an optional argument using the
-      following format: user:passwd@host:port/stream
+  -m  Commit the results to Integrity Manager specified by the following
+      format: user:passwd@host:port/stream
 
   -n  Do not clean mock root after the build.
 
-  -t  Do not compress the resulting tarball.  Used to save time in case it is
-      going to be extracted right away.
+  -t  Do not compress the resulting tarball.
 
   -wN  Adjust compiler warning level.  -w0 means default flags, -w1 appends
-       -Wall and -Wextra, -w2 enables some other useful warnings, and -w3
-       enables a lot of warnings. -w2 and -w3 can cause build failures with
-       older mock profiles and/or non-default compilers (such as clang).
+       -Wall and -Wextra, and -w2 enables some other useful warnings.
 
   MOCK_PROFILE  Only name of the mock profile, without the path and without
                 the .cfg suffix.
@@ -108,7 +104,7 @@ while getopts $OPTS opt; do
 done
 shift $(($OPTIND - 1))
 
-# the first argument should be mock profile
+# the first operand is the mock profile to use
 MOCK_PROFILE="$1"
 MOCK_CFG="/etc/mock/$MOCK_PROFILE.cfg"
 test -f "$MOCK_CFG" || usage
