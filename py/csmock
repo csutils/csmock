@@ -280,6 +280,7 @@ class ScanProps:
     def __init__(self):
         self.install_pkgs = []
         self.copy_in_files = []
+        self.pre_mock_hooks = []
         self.rpm_opts = default_rpm_opts
         self.path = []
         self.env = { }
@@ -573,6 +574,12 @@ with ScanResults(output) as results:
 
         # get the dependency list of the given SRPM
         props.install_pkgs += deplist_from_srpm(results, srpm)
+
+        # run pre-mock hooks
+        for hook in props.pre_mock_hooks:
+            rv = hook(results)
+            if rv != 0:
+                results.error("pre-mock hook failed", ec=rv)
 
         with MockWrapper(results, mock_profile) as mock:
             if (mock.exec_mock_cmd(["--init"]) != 0):
