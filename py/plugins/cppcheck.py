@@ -20,7 +20,7 @@ class Plugin:
                 help="use host's Cppcheck instead of the one in chroot \
 (automatically enables the Cppcheck plug-in)")
 
-    def handle_args(self, args, props):
+    def handle_args(self, parser, args, props):
         self.use_host_cppcheck = args.use_host_cppcheck
         if self.use_host_cppcheck:
             self.enable()

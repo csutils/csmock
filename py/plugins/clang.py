@@ -18,7 +18,7 @@ class Plugin:
         # TODO: introduce options to enable/disable checkers
         pass
 
-    def handle_args(self, args, props):
+    def handle_args(self, parser, args, props):
         if not self.enabled:
             return
 

@@ -380,7 +380,7 @@ class PluginManager:
             self.try_load(parts[0], path=plugin_dir)
 
     def get_name_list(self):
-        return self.plug_by_name.keys()
+        return sorted(self.plug_by_name.keys())
 
     def enable(self, plugin_name):
         plugin = self.plug_by_name[plugin_name]
@@ -391,10 +391,10 @@ class PluginManager:
             plugin = self.plug_by_prio[prio]
             plugin.init_parser(parser)
 
-    def handle_args(self, args, props):
+    def handle_args(self, parser, args, props):
         for prio in sorted(self.plug_by_prio):
             plugin = self.plug_by_prio[prio]
-            plugin.handle_args(args, props)
+            plugin.handle_args(parser, args, props)
 
 def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
@@ -545,7 +545,7 @@ if args.skip_patches:
     props.rpm_opts += rawbuild_rpm_opts
 
 # poll plug-ins to reflect themselves in ScanProps
-plugins.handle_args(args, props)
+plugins.handle_args(parser, args, props)
 
 with ScanResults(output) as results:
     # dump list of RPMs installed on the host (for debugging purposes)

@@ -85,7 +85,7 @@ class Plugin:
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings. \
 (automatically enables the GCC plug-in)")
 
-    def handle_args(self, args, props):
+    def handle_args(self, parser, args, props):
         if args.gcc_warning_level is not None:
             self.enable()
             self.flags |= flags_by_warning_level(args.gcc_warning_level)
