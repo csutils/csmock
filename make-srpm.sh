@@ -80,10 +80,8 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: help2man
 BuildRequires: python
 
-Requires: cscppc
-Requires: csdiff
-Requires: cswrap
-Requires: mock
+Requires: csmock-plugin-clang
+Requires: csmock-plugin-cppcheck
 Requires: rpm-build
 
 BuildArch: noarch
@@ -94,7 +92,10 @@ SRPMs by Static Analysis tools in a fully automated way.
 
 %package -n csmock-ng
 Summary: Preview of a new major version of the csmock package
+Requires: csdiff
 Requires: csmock
+Requires: cswrap
+Requires: mock
 
 %description -n csmock-ng
 Hihgly experimental, currently suitable only for development of csmock itself.

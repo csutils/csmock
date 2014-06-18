@@ -26,21 +26,6 @@ export LC_ALL=C
 
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
-# rpm macros to use
-RPMM="\
---define '_smp_mflags -kj13' \
---define '_without_testsuite 1' \
---define 'apidocs 0' \
---define 'libguestfs_runtests 0' \
---define 'runselftest 0' \
---define 'with_docs 0' \
---define 'with_publican 0' \
---without binfilter \
---without langpacks"
-
-# PATH set for cov-build/rpmbuild
-ENV_PATH="/usr/lib64/cswrap:\\\$PATH:/"
-
 QUICK_BUILD_CMD="./configure; make -kj13"
 
 OPTS="bcd:fhilm::nq:rtw:x"
@@ -133,85 +118,39 @@ if m.group(5) is not None:
 EOF
 }
 
-load_im_opts() {
-    eval `parse_im_opts "$@"`
-}
-
-CSWRAP_ADD_CFLAGS="-Wno-unknown-pragmas"
-CSWRAP_DEL_CFLAGS="-Werror:-fdiagnostics-color:-fdiagnostics-color=always"
-CSWRAP_ADD_CXXFLAGS=
-CSWRAP_DEL_CXXFLAGS="$CSWRAP_DEL_CFLAGS"
-
-adjust_gcc_flags() {
-    level="$1"
-    test $level = 0 && return
-
-    # -W1 flags
-    CSWRAP_ADD_CFLAGS="-Wall:-Wextra"
-    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CFLAGS"
-    test $level = 1 && return
-
-    # -W2 flags
-    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wunreachable-code:-Wundef:-Wcast-align"
-    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wpointer-arith:-Wfloat-equal:-Wshadow"
-    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wwrite-strings"
-    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CFLAGS"
-    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CXXFLAGS:-Wctor-dtor-privacy"
-    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CXXFLAGS:-Woverloaded-virtual"
-    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wstrict-prototypes"
-    test $level = 2 && return
-
-    # -W3 flags
-    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wcast-qual:-Wconversion"
-    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Wswitch-default:-Wswitch-enum"
-    CSWRAP_ADD_CFLAGS="$CSWRAP_ADD_CFLAGS:-Waggregate-return:-Wstrict-overflow=5"
-    CSWRAP_ADD_CXXFLAGS="$CSWRAP_ADD_CXXFLAGS:-Weffc++"
-}
-
-CLANG_WRAP=
 COV_USED=yes
-COV_HTML=no
-COV_BIN_DIR="$(dirname "`which cov-analyze`")"
-COV_WRAP="$COV_BIN_DIR/cov-build --dir /builddir/cov"
-COV_DIR="`dirname "$COV_BIN_DIR"`"
-CPPCHECK=
-CPPCHECK_FILES=
+USE_CLANG=no
+USE_CPPCHECK=no
+
+CSMOCK_ARGS=
+CSMOCK_TOOLS="gcc"
 
 while getopts $OPTS opt; do
     case "$opt" in
         b)  COV_USED=no
-            COV_WRAP="; export PATH; mkdir -p /builddir/cov;"
             ;;
 
-        c)  CPPCHECK="/usr/bin/cppcheck"
-            test -x "$CPPCHECK" || die "$CPPCHECK not found"
-            CPPCHECK_GCC="/usr/bin/cscppc"
-            test -e "$CPPCHECK_GCC" || die "$CPPCHECK_GCC not found"
-            CPPCHECK_FILES="$CPPCHECK $CPPCHECK_GCC /usr/lib64/cscppc"
-            test -d "/usr/share/cppcheck" \
-                && CPPCHECK_FILES="$CPPCHECK_FILES /usr/share/cppcheck"
-            CPPCHECK_FILES="$CPPCHECK_FILES /usr/share/cscppc"
-            ENV_PATH="/usr/lib64/cscppc:$ENV_PATH"
+        c)  CSMOCK_ARGS="$CSMOCK_ARGS --use-host-cppcheck"
+            USE_CPPCHECK=yes
             ;;
 
-        d)  EXTRA_DEPS="$OPTARG"
+        d)  CSMOCK_ARGS="$CSMOCK_ARGS --install '$OPTARG'"
             ;;
 
         f)  OVERWRITE_RESULTS=yes
             ;;
 
-        h)  COV_HTML=yes
+        h)  CSMOCK_ARGS="$CSMOCK_ARGS --cov-html-output"
             ;;
 
-        i)
-            KEEP_COV=yes
+        i)  CSMOCK_ARGS="$CSMOCK_ARGS --cov-keep-int-dir"
             ;;
 
-        l)
-            CLANG_WRAP="scan-build -plist"
+        l)  CSMOCK_TOOLS="${CSMOCK_TOOLS},clang"
+            USE_CLANG=yes
             ;;
 
-        m)
+        m)  CSMOCK_ARGS="$CSMOCK_ARGS --cov-commit-to '$OPTARG'"
             COMMIT_TO_IM=yes
             COMMIT_TO_IM_OPTS="$OPTARG"
             if test -n "$COMMIT_TO_IM_OPTS"; then
@@ -220,7 +159,7 @@ while getopts $OPTS opt; do
             fi
             ;;
 
-        n)  NO_CLEAN=yes
+        n)  CSMOCK_ARGS="$CSMOCK_ARGS --no-clean"
             ;;
 
         q)
@@ -237,7 +176,7 @@ while getopts $OPTS opt; do
         w)
             case "$OPTARG" in
                 [0-3])
-                    adjust_gcc_flags "$OPTARG"
+                    CSMOCK_ARGS="$CSMOCK_ARGS -w$OPTARG"
                     ;;
 
                 *)
@@ -246,7 +185,7 @@ while getopts $OPTS opt; do
             esac
             ;;
 
-        x)
+        x)  CSMOCK_ARGS="$CSMOCK_TOOLS --skip-patches"
             RAWBUILD=yes
             ;;
 
@@ -261,21 +200,6 @@ shift $(($OPTIND - 1))
 MOCK_PROFILE="$1"
 MOCK_CFG="/etc/mock/$MOCK_PROFILE.cfg"
 test -f "$MOCK_CFG" || usage
-
-# $1 ... key in .ini
-write_status_and_update_ec() {
-    last_ec=$?
-    printf "status-$1 = %d\n" "$last_ec" >> "$INI"
-    test 0 -eq "$last_ec" || update_ec "$last_ec"
-}
-
-# $1 ... key in .ini, $2 ... error message
-write_status_and_die() {
-    last_ec=$?
-    printf "status-$1 = %d\n" "$last_ec" >> "$INI"
-    test -n "$2" && printf "error-message = %s\n" "$2" >> "$INI"
-    die "$last_ec" "$2"
-}
 
 # the second operand is the SRPM to build/analyze
 SRPM="`readlink -f "$2"`"
@@ -315,38 +239,42 @@ cmd_wrap() {
     "$@"
 }
 
-MOCK_OPTS=
-if mock --help | grep package_state >/dev/null; then
-    MOCK_OPTS="$MOCK_OPTS --disable-plugin=package_state"
-fi
-
-# invoke mock with given parameters
-mock_wrap() {
-    cmd_wrap mock-unbuffered $MOCK_OPTS -r "$MOCK_PROFILE" "$@"
-}
-
-# profile-level lock file
-LOCK="/tmp/.csmock-${MOCK_PROFILE}.lock"
-MLOCK="/tmp/.csmock-${MOCK_PROFILE}.metalock"
-
+shift
+shift
+COV_OPTS="$*"
 # prepare $TMP directory
 TMP="`mktemp -d $TMPDIR/csmock.XXXXXX`"
 BASE_DIR="$TMP/$BASE/$RUN"
-DEBUG_DIR="$BASE_DIR/debug"
-mkdir -p "$DEBUG_DIR" || die "mktemp failed"
+CSMOCK_RESDIR="$TMP/csmock-output"
+mkdir -p "$BASE_DIR" || die "mktemp failed"
 
 # from now on, do the pack/cleanup on exit, no matter if we succeeded or not
 trap "test 0 -eq \"\$EC\" || touch \"${BASE_DIR}.FAILED\"
-    test -r \"$LOCK\" && test $$ = \"\$(<$LOCK)\" && rm -fv '$LOCK'
     cmd_wrap tar $TAR_OPTS -cvf '$TGZ' -C '$TMP' '$BASE'
     echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
 
-COV="$BASE_DIR/$BASE.cov"
+if test xyes = "x$COV_USED"; then
+    CSMOCK_TOOLS="${CSMOCK_TOOLS},coverity"
+else
+    COV_OPTS=
+fi
+if test -n "$COV_OPTS"; then
+    CSMOCK_ARGS="$CSMOCK_ARGS --cov-analyze-opts='$COV_OPTS'"
+fi
+if test xyes = "x$USE_TARBALL"; then
+    CSMOCK_ARGS="--shell-cmd '$QUICK_BUILD_CMD'"
+fi
+
+CSMOCK_ARGS="$CSMOCK_ARGS -t '$CSMOCK_TOOLS'"
+CSMOCK_ARGS="$CSMOCK_ARGS -r '$MOCK_PROFILE'"
+CSMOCK_ARGS="$CSMOCK_ARGS -o '$CSMOCK_RESDIR'"
+CSMOCK_ARGS="$CSMOCK_ARGS '$SRPM'"
+
+COV="$BASE_DIR/cov"
 ERR="$BASE_DIR/$BASE.err"
 HTML="$BASE_DIR/$BASE.html"
 INI="$BASE_DIR/$BASE.ini"
  JS="$BASE_DIR/$BASE.js"
-MAP="$BASE_DIR/$BASE.map"
 LOG="$BASE_DIR/$BASE.log"
 
 cov_version() {
@@ -431,14 +359,9 @@ write_index() {
     printf "</body>\n</html>\n"
 }
 
-do_scan() {
 # extra options for cov-analyze
-shift
-shift
-COV_OPTS="--wait-for-license -co BAD_FREE:allow_first_field:true $*"
-
 printf "[scan]
-tool = csmock
+tool = cov-mockbuild
 tool-version = %s
 tool-args =%s
 analyzer = coverity
@@ -451,271 +374,15 @@ time-created = %s\n" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
 
-cmd_wrap rpm -qa | sort -V > "$DEBUG_DIR/rpm-list-host.txt"
+eval csmock "$CSMOCK_ARGS" || update_ec
 
-# copy the SRPM (or tarball) to our temp
-SRPM_BASE="`basename "$SRPM"`"
-SRPM_DUP="$TMP/$SRPM_BASE"
-cp -t "$TMP" "$SRPM"
-test -f "$SRPM_DUP" || write_status_and_die "bootstrap"
-
-# prepare a build script if building a source tarball instead of SRPM
-if test xyes = "x$USE_TARBALL"; then
-    BUILD_SCRIPT="$TMP/build.sh"
-    { printf "#!/bin/sh\ncd /builddir/build/BUILD || exit \$?\ncd %s*/\n%s\n" \
-        "$BASE" "$QUICK_BUILD_CMD" | tee "$BUILD_SCRIPT" ;} \
-        || write_status_and_update_ec "prep"
-fi
-
-# various fixups that can be applied on the buildroot prior to build
-FIXUPS="$TMP/fixups.sh"
-cat > "$FIXUPS" << EOF
-#!/bin/sh
-
-if test -d /usr/lib64/clang-analyzer && ! test -d /usr/libexec/clang-analyzer
-then
-    # the directory was moved from %{_libdir} to %{_libexecdir}
-    ln -sv ../lib64/clang-analyzer /usr/libexec/clang-analyzer
-fi
-
-if test -x /usr/libexec/clang-analyzer/scan-build/scan-build; then
-    # allow scan-build to invoke clang through the cswrap wrapper
-    patch /usr/libexec/clang-analyzer/scan-build/scan-build << XXX
-1533,1534c1533
-<       DieDiag("error: Cannot find an executable 'clang' relative to scan-build." .
-<    	          "  Consider using --use-analyzer to pick a version of 'clang' to use for static analysis.\\\\n");
----
->       \\\$Clang = "clang";
-XXX
-fi
-
-if test -x /usr/libexec/clang-analyzer/scan-build/ccc-analyzer; then
-    # avoid failing with "could not find clang line" on mozjs17-17.0.0-9.el7
-    # and glusterfs-3.6.0.15-1.el6
-    sed -e "s/\\\$ENV{'CLANG'}/'clang'/" \\
-        -e "s/\\\$ENV{'CLANG_CXX'}/'clang++'/" \\
-        -i /usr/libexec/clang-analyzer/scan-build/ccc-analyzer
-
-    if test -w /usr/bin/libtool; then
-      # avoid failing on "unable to infer tagged configuration"
-      sed -e 's/^available_tags=".*"\$/available_tags=/' \\
-          -i /usr/bin/libtool
-    fi
-fi
-
-if readlink /usr/libexec/clang-analyzer/scan-build/clang; then
-    # prevent the symlink to shadow the cswrap symlink if it appears in \$PATH
-    rm -fv /usr/libexec/clang-analyzer/scan-build/clang
-fi
-
-if test -r /usr/lib64/gobject-introspection/giscanner/dumper.py; then
-    # pretend we use GCC even if we run through scan-build; g-ir-scanner would
-    # otherwise think we use MS compiler and insert compilation flags that GCC
-    # does not understand
-    sed -i "s/^\\( *\\)self._compiler_cmd =.*\\\$/\1self._compiler_cmd = 'gcc'/" \\
-        /usr/lib64/gobject-introspection/giscanner/dumper.py
-fi
-EOF
-
-BASHRC="$TMP/bashrc"
-cp -R "/usr/share/csmock/bashrc" "$BASHRC"
-
-# prepare a dummy patcher
-if test xyes = "x$RAWBUILD"; then
-    PWRAP_DIR="$TMP/pwrap"
-    mkdir "$PWRAP_DIR" || write_status_and_die "bootstrap"
-
-    if echo "$MOCK_PROFILE" | grep "rhel-5"; then
-        # el5 rpm does not seem to use the %{__patch} macro for some reason
-        ENV_PATH="$PWRAP_DIR:$ENV_PATH"
-    fi
-
-    PWRAP="$PWRAP_DIR/patch"
-    cat > "$PWRAP" << EOF
-#!/bin/sh
-
-need_for_build(){
-    while test -n "\$1"; do
-        if test "x--suffix" = "x\$1"; then
-            shift
-            if test "x_RAWBUILD" = "x\$1"; then
-                return 0
-            fi
-        fi
-
-        shift
-    done
-
-    return 1
-}
-
-if need_for_build "\$@"; then
-    echo "\$0: applying a patch annotated by _RAWBUILD" >&2
-    /usr/bin/patch "\$@"
-else
-    echo "\$0: ignoring a patch not annotated by _RAWBUILD" >&2
-    dd of=/dev/null status=noxfer 2>/dev/null
-fi
-EOF
-    chmod 0755 "$PWRAP"
-    RPMM="$RPMM --define '__patch $PWRAP' \
---define '_rawbuild -b _RAWBUILD' \
---define 'nofips 1' \
---define 'nopam 1' \
---define 'norunuser 1' \
---define 'noselinux 1' \
---define '_with_vanilla 1'"
-fi
-
-# prepare .tar of all the files we need inside mock chroot
-TPL_BASE="bootstrap.tar"
-TPL="$TMP/$TPL_BASE"
-printf "\n>>> %s\tcreating %s\n" "`date`" "$TPL"
-tar -cP -f "$TPL" "$SRPM_DUP" $PWRAP "$FIXUPS" "$BASHRC" $CPPCHECK_FILES \
-    $BUILD_SCRIPT                               \
-    /etc/resolv.conf                            \
-    "$COV_DIR"/{VERSION.xml,config,dtd}         \
-    "$COV_BIN_DIR"/{cov-*,libcapture-*.so}      \
-    /usr/{bin,lib64}/cswrap                     \
-    || write_status_and_die "bootstrap" "failed to create $TPL"
-
-# acquire the profile-level lock
-until flock -w15 "$MLOCK" -c "test ! -f '$LOCK' && echo $$ > '$LOCK'"; do
-    printf '>>> %s\twaiting till %s (PID %s) disappears...\n' \
-        "`date`" "$LOCK" "$(<$LOCK)"
-    sleep 15 || break
-done
-test $$ = "$(<$LOCK)" || die "failed to create lock file"
-
-# initialize mock chroot
-mock_wrap --init \
-    || write_status_and_die "bootstrap" "mock --init failed"
-mock_wrap --copyin "$TPL" /tmp \
-    || write_status_and_die "bootstrap" "mock --copyin failed"
-rm -f "$TPL"
-
-# prepare all we need to build the package
-mock_wrap --chroot "tar -C / -xf \"/tmp/$TPL_BASE\"" \
-    || write_status_and_die "bootstrap" "bootstrap failed"
-mock_wrap --install "xml-common" "yum-utils" \
-    || write_status_and_die "bootstrap" "mock --install failed"
-
-if test -n "$CLANG_WRAP"; then
-    mock_wrap --install "clang-analyzer" "imake" \
-        || write_status_and_die "bootstrap" "failed to install clang-analyzer"
-fi
-
-if test -n "$EXTRA_DEPS"; then
-    # install all dependences manually specified by the user
-    mock_wrap -v --install $EXTRA_DEPS \
-        || write_status_and_update_ec installdeps
-fi
-
-if test xyes = "x$USE_TARBALL"; then
-    mock_wrap --chroot "/bin/su mockbuild -lc \
-\"tar -xvf \\\"$SRPM_DUP\\\" -C /builddir/build/BUILD\""
-else
-    # yet another desperate attempt to install missing deps; without the
-    # following hack it was impossible to install lm_sensors-devel as a
-    # dependency of net-snmp-5.5-31.el6.src.rpm
-    eval mock_wrap -v --install "`rpm -pq "$SRPM_DUP" --requires | while read dep
-        do printf " '%s'" "$dep"
-    done`"
-
-    # 'mock --installdeps' is not always sufficient, neither yum-builddep is
-    mock_wrap --installdeps "$SRPM_DUP"
-
-    # install the SRPM within the mock chroot
-    SPEC="`rpm -lpq "$SRPM_DUP" 2>/dev/null | grep '\.spec$'`"
-    mock_wrap --chroot "rpm -Uvh --nodeps \"$SRPM_DUP\"" \
-        || write_status_and_die "bootstrap" "failed to install SRPM"
-fi
-
-# make the unpacked contents of the SRPM accessible (if the maintainer did not)
-mock_wrap --chroot "chmod -R +r /builddir/build"
-
-if test xyes != "x$USE_TARBALL"; then
-    # rebuild the SRPM to avoid RPM incompatibilities when resolving deps
-    mock_wrap --chroot "rpmbuild -bs --nodeps /builddir/build/SPECS/$SPEC $RPMM"
-
-    # ensure the just built SRPM has the same name as the original one
-    mock_wrap --chroot "/bin/bash -c 'cd /builddir/build/SRPMS && \
-eval mv -v *.src.rpm $SRPM_BASE || :'"
-
-    # 'mock --installdeps' is not always sufficient, neither yum-builddep is
-    mock_wrap --disable-plugin=selinux --copyout \
-        "/builddir/build/SRPMS/$SRPM_BASE" "$SRPM_DUP"
-    mock_wrap --installdeps "$SRPM_DUP"
-    mock_wrap --chroot "yum-builddep --nogpgcheck \
-/builddir/build/SRPMS/$SRPM_BASE"
-fi
-
-# TODO: branch by RHEL version
-mock_wrap --chroot "sh -x $FIXUPS"
-
-# obtain the list of packages installed in mock chroot
-mkdir -p "$TMP/var/lib"
-TMP_RPM="$TMP/var/lib/rpm"
-mock_wrap --disable-plugin=selinux --copyout "/var/lib/rpm" "$TMP_RPM"
-chmod -w "$TMP_RPM"
-cmd_wrap rpm -qa --root "$TMP" | sort -V > "$DEBUG_DIR/rpm-list-mock.txt"
-chmod u+w "$TMP_RPM"
-
-if test xyes = "x$USE_TARBALL"; then
-    BUILD_CMD="sh -x \"$BUILD_SCRIPT\""
-else
-    BUILD_CMD="rpmbuild -bc --nodeps --short-circuit \
-/builddir/build/SPECS/$SPEC $RPMM"
-
-    # run the %prep phase as usually (without cov-build)
-    mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/prep; PATH=$ENV_PATH \
-rpmbuild -bp --nodeps /builddir/build/SPECS/$SPEC $RPMM\"" \
-        || write_status_and_update_ec "prep"
-fi
-
-# run the %build phase through cov-build
-mock_wrap --chroot "/bin/su mockbuild -lc \". $BASHRC/build; PATH=$ENV_PATH \
-$COV_WRAP sh -xc \\\"unset XML_CATALOG_FILES; \
-CSWRAP_ADD_CFLAGS=$CSWRAP_ADD_CFLAGS CSWRAP_ADD_CXXFLAGS=$CSWRAP_ADD_CXXFLAGS \
-CSWRAP_DEL_CFLAGS=$CSWRAP_DEL_CFLAGS CSWRAP_DEL_CXXFLAGS=$CSWRAP_DEL_CXXFLAGS \
-CSWRAP_CAP_FILE=/builddir/cov/compiler-warnings.err \
-CSWRAP_TIMEOUT=300 \
-$CLANG_WRAP $BUILD_CMD\\\"\"" \
-    || { write_status_and_update_ec "build"; COMMIT_TO_IM=no; }
-
-# get the intermediate directory out of the chroot and store it to $COV
-mock_wrap --chroot "chmod -R +r /builddir/cov" \
-    || write_status_and_update_ec "post"
-mock_wrap --disable-plugin=selinux --copyout /builddir/cov "$COV" \
-    || write_status_and_update_ec "post"
-
-# ###########################################################################
-# we do not need the chroot anymore
-if test xyes != "x$NO_CLEAN"; then
-    mock_wrap --clean || write_status_and_update_ec "post"
-fi
-
-# release the lock
-test $$ = "$(<$LOCK)" && rm -fv "$LOCK"
-
-# capture compiler/clang warnings (#TODO: ignore more auto-generated files)
-if test -e "$COV/compiler-warnings.err"; then
-    cmd_wrap sh -c "csgrep --quiet --path '^/builddir/build/BUILD/' \
-        --event='error|warning' \"$COV/compiler-warnings.err\" \
-        --remove-duplicates \
-        | csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c' \
-        | csgrep --invert-match --event 'syntaxError|preprocessorErrorDirective' \
-        | csgrep --invert-match --checker '(CLANG|COMPILER)_WARNING' --event 'error' \
-        | sed 's|^/builddir/build/BUILD/||' \
-        > \"$BASE_DIR/compiler-warnings.err\""
-
-    mv -v "$COV/compiler-warnings.err" "$DEBUG_DIR"
-fi
+cmd_wrap mv "$CSMOCK_RESDIR"/* "$BASE_DIR"
+ln -sv scan-results.log "$LOG"
 
 if test xyes = "x$COV_USED"; then
     # get the line stating count of successfully parsed compilation units
     PSTAT="`grep 'C/C++ compilation units (.*%) are ready for analysis$' \
-        "$COV/build-log.txt"`"
+        "$BASE_DIR/debug/build-log.txt"`"
 
     # deal with the build-log.txt format introduced in CSA 6.6.x
     PSTAT="`echo "$PSTAT" | sed -r 's/^[^>]+> //'`"
@@ -736,57 +403,10 @@ fi
 PROJ_NAME="$BASE"
 test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
 printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
-
-# branch by Coverity version
-if test -d "$COV/c"; then
-    # CSA <  7.0.0
-    COV_C="$COV/c"
-else
-    # CSA >= 7.0.0
-    COV_C="$COV"
-fi
-
-# check whether it makes sense to wait for the license to become available
-if test -f "$COV_C"/emit/*/emit-db.write-lock; then
-
-    # run the analysis
-    cmd_wrap cov-analyze --dir "$COV" $COV_OPTS             \
-        || write_status_and_update_ec "analyze"
-
-    # store the list of defects to $ERR
-    cmd_wrap cov-dump-err "$COV" > "$ERR"                   \
-        || write_status_and_update_ec "analyze"
-
-    if test xyes = "x$COMMIT_TO_IM"; then
-        # initialize variables for IM configuration
-        test -n "$COMMIT_TO_IM_OPTS" && load_im_opts "$COMMIT_TO_IM_OPTS"
-        . /usr/share/covscan/cov-default-connect.sh
-
-        cmd_wrap cov-commit-project "$COV" "$PROJ_NAME"             \
-            || write_status_and_update_ec "commit"
-
-        PROJ_ID="`cov-getprojkey -p "$PROJ_NAME"`"
-        if test 0 -lt "$PROJ_ID"; then
-            printf "project-id = %d\n" "$PROJ_ID" | tee --append "$INI"
-            cmd_wrap cov-query-defects "$PROJ_NAME"                 \
-                | perl -p -e 's/\/builddir\/build\/BUILD\///'       \
-                > "$MAP"                                            \
-                || write_status_and_update_ec "commit"
-
-            CSHTML_OPTS="--defect-url-template ${COV_IM_PUB_URL}/\
-sourcebrowser.htm?projectId=%s#mergedDefectId=%s"
-        fi
-    fi
-elif test xyes = "x$COV_USED"; then
-    # just make sure we return non-zero exit code if we analyzed nothing
-    touch "$ERR"
-    update_ec 1 "analyze"
-fi
-
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 if test xyes = "x$COV_USED"; then
-    ALOG="$COV_C/output/analysis-log.txt"
+    ALOG="$BASE_DIR/debug/analysis-log.txt"
 
     # write the 'lines-processed' field to .ini
     LSTAT="`grep 'Total LoC input to cov-analyze' "$ALOG"`"
@@ -797,20 +417,13 @@ if test xyes = "x$COV_USED"; then
     TSTAT="`grep 'Time taken by .*analysis' "$ALOG"`"
     ATIME="`printf '%s\n' "$TSTAT" | sed -r 's|^[^0-9]*||'`"
     printf "time-elapsed-analysis = %s\n" "$ATIME" | tee --append "$INI"
-else
-    # create *.err a placeholder to make cslinker succeed
-    touch "$ERR"
 fi
 
-# do we have a readable .map file?
-if test -r "$MAP"; then
-    MAP="--mapfile $MAP"
-else
-    MAP=
-fi
+cmd_wrap cslinker --inifile "$INI" "$BASE_DIR/scan-results.js" \
+    > "$BASE_DIR/results.js"
 
-cmd_wrap cslinker --cwelist /usr/share/csmock/cwe-map.csv --inifile "$INI" \
-    $MAP "$ERR" > "$JS"
+cmd_wrap csgrep --mode=json --invert-match \
+    --checker '(CLANG|COMPILER|CPPCHECK)_WARNING' "$BASE_DIR/results.js" > "$JS"
 
 # regenerate .err from .js to get the CWE numbers in place and drop trace events
 cmd_wrap csgrep --prune-events=1 "$JS" > "$ERR"
@@ -818,25 +431,6 @@ cmd_wrap csgrep --prune-events=1 "$JS" > "$ERR"
 # generate .html from .js without trace events
 cmd_wrap sh -c "csgrep --prune-events=1 --mode=json \"$JS\" \
     | cshtml $CSHTML_OPTS - > \"$HTML\""
-
-if test xyes = "x$COV_USED"; then
-    mv -v "$COV/build-log.txt" "$DEBUG_DIR"
-    if test xyes = "x$COV_HTML"; then
-        cmd_wrap cov-format-errors --dir "$COV"
-        mv -v "$COV_C/output/errors" "$COV/../cov-html/"
-    fi
-fi
-
-if test xyes != "x$KEEP_COV"; then
-    rm -rf "$COV"
-fi
-
-cmd_wrap sh -c "csgrep --mode=json --invert-match --path ^/usr/include \
-    \"$JS\" \
-    `print_if_readable $BASE_DIR/cppcheck.err` \
-    `print_if_readable $BASE_DIR/compiler-warnings.err` \
-    | csgrep --mode=json --invert-match --path=\"^ksh-.*[0-9]+\.c\$\" \
-    | cssort --key=path > \"$BASE_DIR/results.js\""
 
 cmd_wrap csgrep --mode=grep --prune-events=1 "$BASE_DIR/results.js" \
     > "$BASE_DIR/results.err"
@@ -850,7 +444,7 @@ cmd_wrap csgrep --checker "COMPILER_WARNING" "$BASE_DIR/results.js" \
 cmd_wrap cshtml "$BASE_DIR/compiler-warnings.err" \
     > "$BASE_DIR/compiler-warnings.html"
 
-if test -n "$CLANG_WRAP"; then
+if test xyes = "x$USE_CLANG"; then
     # filter out clang warnings
     cmd_wrap csgrep --checker "CLANG_WARNING" "$BASE_DIR/results.js" \
         > "$BASE_DIR/clang-warnings.err"
@@ -858,7 +452,7 @@ if test -n "$CLANG_WRAP"; then
         > "$BASE_DIR/clang-warnings.html"
 fi
 
-if test -n "$CPPCHECK"; then
+if test xyes = "x$USE_CPPCHECK"; then
     # filter out cppcheck warnings
     cmd_wrap csgrep --checker "CPPCHECK_WARNING" "$BASE_DIR/results.js" \
         > "$BASE_DIR/cppcheck-warnings.err"
@@ -874,11 +468,4 @@ cmd_wrap csgrep --mode=stat "$BASE_DIR/results.err" \
 
 printf "\n<<< %s has finished, exit code is %s\n" "$SELF" "${EC:=0}"
 
-exit $EC
-
-} # do_scan()
-
-do_scan 2>&1 | tee "$LOG"
-
-EC="$?"
 exit $EC
