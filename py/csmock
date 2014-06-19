@@ -333,7 +333,7 @@ class ScanProps:
         path_str = ""
         for p in self.path:
             path_str += p + ":"
-        path_str += "\\$PATH"
+        path_str += "$PATH"
         assert "PATH" not in merged_env
         merged_env["PATH"] = path_str
 
