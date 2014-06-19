@@ -79,6 +79,9 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
 BuildRequires: python
+%if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
+BuildRequires: python-argparse
+%endif
 
 Requires: cscppc
 Requires: csdiff
