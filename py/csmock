@@ -414,6 +414,23 @@ def transform_results(js_file, results):
     results.exec_cmd("cshtml '%s' > '%s'" % (js_file, html_file), shell=True)
     return (err_file, html_file)
 
+def find_missing_pkgs(required, installed_file):
+    missing = []
+    installed = set()
+    with open(installed_file) as f:
+        lines = f.readlines()
+        for l in lines:
+            pkg = re.sub("-[0-9].*$", "", l.strip())
+            installed.add(pkg)
+    for dep in required:
+        if re.match("^.*[()/]", dep) is not None:
+            # FIXME: we do not check this kind of dependencies
+            continue
+        pkg = re.sub(" .*$", "", dep)
+        if pkg not in installed:
+            missing += [pkg]
+    return missing
+
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
     def __init__(self, option_strings, dest=None, default=None, help=None):
@@ -594,9 +611,15 @@ with ScanResults(output) as results:
             os.makedirs(tmp_var_lib)
             mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
             tmp_rpm = "%s/rpm" % tmp_var_lib
+            installed = "%s/rpm-list-mock.txt" % results.dbgdir
             results.exec_cmd("chmod -w '%s' && rpm -qa --root '%s' \
-| sort -V > '%s/rpm-list-mock.txt' && chmod u+w '%s'" % (tmp_rpm,
-                results.tmpdir, results.dbgdir, tmp_rpm), shell=True)
+| sort -V > '%s' && chmod u+w '%s'" % (tmp_rpm,
+                results.tmpdir, installed, tmp_rpm), shell=True)
+
+            missing_deps = find_missing_pkgs(props.install_pkgs, installed)
+            if 0 < len(missing_deps):
+                results.fatal_error("failed to install dependencies: %s" % \
+                        missing_deps)
 
             if args.shell_cmd is not None:
                 # prepare a build script in our tmp dir
