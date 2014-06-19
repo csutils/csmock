@@ -66,7 +66,8 @@ default_cswrap_filters = [
 
 # remember to use --mode=json for csgrep (TODO: improve csgrep's interface)
 default_result_filters = [
-        "csgrep --mode=json --strip-path-prefix /builddir/build/BUILD/",
+        "csgrep --mode=json --path '^/builddir/build/BUILD/' \
+--strip-path-prefix /builddir/build/BUILD/",
         "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
 
 def current_iso_date():
