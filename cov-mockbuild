@@ -374,10 +374,16 @@ time-created = %s\n" \
     "$MOCK_PROFILE" "`date '+%Y-%m-%d %H:%M:%S'`" \
     | tee "$INI"
 
+PROJ_NAME="$BASE"
+test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
+printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
+
 eval csmock "$CSMOCK_ARGS" || update_ec
 
 cmd_wrap mv "$CSMOCK_RESDIR"/* "$BASE_DIR"
-ln -sv scan-results.log "$LOG"
+ln -sv scan.log "$LOG"
+
+printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
 if test xyes = "x$COV_USED"; then
     # get the line stating count of successfully parsed compilation units
@@ -398,14 +404,7 @@ if test xyes = "x$COV_USED"; then
     # write the parsing statistics to .ini
     printf "compilation-unit-count = %d\ncompilation-unit-ratio = %d\n" \
         "$U_COUNT" "$U_RATIO" | tee --append "$INI"
-fi
 
-PROJ_NAME="$BASE"
-test xyes = "x$RAWBUILD" && PROJ_NAME+="-rawbuild"
-printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
-printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
-
-if test xyes = "x$COV_USED"; then
     ALOG="$BASE_DIR/debug/analysis-log.txt"
 
     # write the 'lines-processed' field to .ini
