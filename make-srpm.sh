@@ -80,9 +80,16 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: help2man
 BuildRequires: python
 
+Requires: csdiff
+Requires: cswrap
+Requires: mock
+Requires: rpm-build
+
+# TODO: make these sub-packages optional
 Requires: csmock-plugin-clang
 Requires: csmock-plugin-cppcheck
-Requires: rpm-build
+
+Obsoletes: csmock-ng <= 1.1.1
 
 BuildArch: noarch
 
@@ -90,19 +97,9 @@ BuildArch: noarch
 This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
 SRPMs by Static Analysis tools in a fully automated way.
 
-%package -n csmock-ng
-Summary: Preview of a new major version of the csmock package
-Requires: csdiff
-Requires: csmock
-Requires: cswrap
-Requires: mock
-
-%description -n csmock-ng
-Hihgly experimental, currently suitable only for development of csmock itself.
-
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
-Requires: csmock-ng
+Requires: csmock
 
 %description -n csmock-plugin-clang
 Hihgly experimental, currently suitable only for development of csmock itself.
@@ -110,7 +107,7 @@ Hihgly experimental, currently suitable only for development of csmock itself.
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
 Requires: cscppc
-Requires: csmock-ng
+Requires: csmock
 
 %description -n csmock-plugin-cppcheck
 Hihgly experimental, currently suitable only for development of csmock itself.
@@ -193,22 +190,19 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_bindir}/cov-dump-err
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
+%{_bindir}/csmock
 %{_bindir}/rpmbuild-rawbuild
 %{_mandir}/man1/cov-diffbuild.1*
 %{_mandir}/man1/cov-mockbuild.1*
+%{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
+%{_datadir}/csmock/scripts/patch-rawbuild.sh
+%{python_sitearch}/csmock/plugins/gcc.py*
 %{_bindir}/mock-unbuffered
 %{_sbindir}/mock-unbuffered
 %{_sysconfdir}/pam.d/mock-unbuffered
 %config(noreplace) %{_sysconfdir}/security/console.apps/mock-unbuffered
 %doc COPYING
-
-%files -n csmock-ng
-%defattr(-,root,root,-)
-%{_bindir}/csmock
-%{_datadir}/csmock/scripts/patch-rawbuild.sh
-%{_mandir}/man1/csmock.1*
-%{python_sitearch}/csmock/plugins/gcc.py*
 
 %files -n csmock-plugin-clang
 %defattr(-,root,root,-)
