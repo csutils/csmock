@@ -157,7 +157,6 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
     "\$RPM_BUILD_ROOT%{_sbindir}" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts" \\
     "\$RPM_BUILD_ROOT%{python_sitearch}/" \\
     "\$RPM_BUILD_ROOT%{python_sitearch}/csmock" \\
@@ -169,8 +168,6 @@ install -p -m0755 \\
 
 install -p -m0644 man/{csmock,cov-{diff,mock}build}.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -p -m0644 build.bashrc        "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/build"
-install -p -m0644 prep.bashrc         "\$RPM_BUILD_ROOT%{_datadir}/csmock/bashrc/prep"
 install -p -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
 
 install -p -m0644 py/plugins/*.py \\
@@ -199,7 +196,7 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_bindir}/rpmbuild-rawbuild
 %{_mandir}/man1/cov-diffbuild.1*
 %{_mandir}/man1/cov-mockbuild.1*
-%{_datadir}/csmock
+%{_datadir}/csmock/cwe-map.csv
 %{_bindir}/mock-unbuffered
 %{_sbindir}/mock-unbuffered
 %{_sysconfdir}/pam.d/mock-unbuffered
