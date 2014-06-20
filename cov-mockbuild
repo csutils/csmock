@@ -255,6 +255,13 @@ trap "test 0 -eq \"\$EC\" || touch \"${BASE_DIR}.FAILED\"
 
 if test xyes = "x$COV_USED"; then
     CSMOCK_TOOLS="${CSMOCK_TOOLS},coverity"
+
+    COV_BIN_DIR="$(dirname "`which cov-analyze`")"
+    COV_WRAP="$COV_BIN_DIR/cov-build --dir /builddir/cov"
+    COV_DIR="`dirname "$COV_BIN_DIR"`"
+    if test -x "$COV_BIN_DIR/cov-analyze"; then
+        CSMOCK_ARGS="$CSMOCK_ARGS --cov-use-instance $COV_DIR"
+    fi
 else
     COV_OPTS=
 fi
