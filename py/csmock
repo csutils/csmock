@@ -85,6 +85,12 @@ def shell_quote(str_in):
             str_out += c
     return "\"" + str_out + "\""
 
+def strlist_to_shell_cmd(lst):
+    cmd = ""
+    for i in lst:
+        cmd += " '%s'" % i
+    return cmd.lstrip()
+
 class ScanResults:
     def __init__(self, output):
         self.output = output
@@ -205,7 +211,7 @@ class IniWriter:
         self.write("[scan]\n")
         self.append("tool", "csmock")
         self.append("tool-version", "@VERSION@")
-        self.append("tool-args", str(sys.argv))
+        self.append("tool-args", strlist_to_shell_cmd(sys.argv))
         self.append("host", socket.gethostname())
         self.append("store-results-to", self.results.output)
         self.append("time-created", current_iso_date())
@@ -405,12 +411,6 @@ def deplist_from_srpm(results, srpm):
     for d in raw_deps:
         deps += [d.strip()]
     return deps
-
-def strlist_to_shell_cmd(lst):
-    cmd = ""
-    for i in lst:
-        cmd += " '%s'" % i
-    return cmd
 
 def transform_results(js_file, results):
     err_file  = re.sub("\.js", ".err",  js_file)
@@ -639,7 +639,7 @@ cd %%s*/\n\
                 props.copy_in_files += [build_script]
 
             # copy required files into the chroot
-            cmd = "tar -cP"
+            cmd = "tar -cP "
             cmd += strlist_to_shell_cmd(props.copy_in_files)
             cmd += " | "
             cmd += strlist_to_shell_cmd(
@@ -655,7 +655,7 @@ cd %%s*/\n\
                 mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
 
                 # run %prep phase without pluggin-in any static analyzers
-                ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s%s"
+                ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s %s"
                         % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
             else:
                 # extract the given archive (we got instead of SRPM)
@@ -670,7 +670,7 @@ cd %%s*/\n\
 
             if args.shell_cmd is None:
                 # run %build phase with static analyzers plugged-in
-                build_cmd = "rpmbuild -bc --nodeps --short-circuit %s%s" \
+                build_cmd = "rpmbuild -bc --nodeps --short-circuit %s %s" \
                         % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
             else:
                 # run the above prepared build script
