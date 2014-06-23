@@ -87,11 +87,19 @@ def shell_quote(str_in):
             str_out += c
     return "\"" + str_out + "\""
 
-def strlist_to_shell_cmd(lst):
-    cmd = ""
-    for i in lst:
-        cmd += " '%s'" % i
-    return cmd.lstrip()
+def strlist_to_shell_cmd(cmd_in, escape_special=False):
+    def translate_one(i):
+        if escape_special:
+            return shell_quote(i)
+        else:
+            return "'%s'" % i
+
+    if type(cmd_in) is str:
+        return "sh -c %s" % translate_one(cmd_in)
+    cmd_out = ""
+    for i in cmd_in:
+        cmd_out += " " + translate_one(i)
+    return cmd_out.lstrip()
 
 class ScanResults:
     def __init__(self, output):
@@ -156,7 +164,7 @@ class ScanResults:
         if hasattr(self, "p") and self.p.returncode is None:
             # FIXME: TOCTOU race
             os.kill(self.p.pid, signal.SIGTERM)
-        self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix=">>> ")
+        self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix="<<< ")
         self.log_fd.close()
         self.log_fd = sys.stderr
         if self.use_tar:
@@ -174,7 +182,7 @@ class ScanResults:
         if type is None and value is None and bt is None:
             sys.exit(self.ec)
 
-    def print_with_ts(self, msg, prefix="<<< "):
+    def print_with_ts(self, msg, prefix=">>> "):
         self.log_fd.write("%s%s\t%s\n" % (prefix, current_iso_date(), msg))
         self.log_fd.flush()
 
@@ -188,7 +196,7 @@ class ScanResults:
         sys.exit(ec)
 
     def exec_cmd(self, cmd, shell=False):
-        self.print_with_ts(str(cmd))
+        self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
         self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd,
                 shell=shell)
         rv = self.p.wait()
