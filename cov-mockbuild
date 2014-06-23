@@ -428,8 +428,9 @@ fi
 cmd_wrap cslinker --inifile "$INI" "$BASE_DIR/scan-results.js" \
     > "$BASE_DIR/results.js"
 
-cmd_wrap csgrep --mode=json --invert-match \
-    --checker '(CLANG|COMPILER|CPPCHECK)_WARNING' "$BASE_DIR/results.js" > "$JS"
+cmd_wrap sh -c "csgrep --mode=json --invert-match \
+    --checker '(CLANG|COMPILER|CPPCHECK)_WARNING' \"$BASE_DIR/results.js\" \
+    | cssort --key checker > \"$JS\""
 
 # regenerate .err from .js to get the CWE numbers in place and drop trace events
 cmd_wrap csgrep --prune-events=1 "$JS" > "$ERR"
