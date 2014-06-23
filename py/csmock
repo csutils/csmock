@@ -736,4 +736,6 @@ cd %%s*/\n\
 
     # transform scan-results.js to scan-results.{err,html} and print stats
     (err_file, _) = transform_results(js_file, results)
-    results.exec_cmd(["csgrep", "--mode=stat", err_file])
+    summary_file = "%s/scan-results-summary.txt" % results.resdir
+    cmd = "csgrep --mode=stat '%s' | tee '%s'" % (err_file, summary_file)
+    results.exec_cmd(cmd, shell=True)
