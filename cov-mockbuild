@@ -388,7 +388,7 @@ printf "project-name = %s\n" "$PROJ_NAME" | tee --append "$INI"
 eval csmock "$CSMOCK_ARGS" || update_ec
 
 cmd_wrap mv "$CSMOCK_RESDIR"/* "$BASE_DIR"
-ln -sv scan.log "$LOG"
+mv -v "$BASE_DIR/scan.log" "$LOG"
 
 printf "time-finished = %s\n" "`date '+%Y-%m-%d %H:%M:%S'`" >> "$INI"
 
@@ -465,6 +465,9 @@ if test xyes = "x$USE_CPPCHECK"; then
     cmd_wrap cshtml "$BASE_DIR/cppcheck-warnings.err" \
         > "$BASE_DIR/cppcheck-warnings.html"
 fi
+
+mkdir "$BASE_DIR/debug/csmock"
+cmd_wrap mv -v "$BASE_DIR"/scan* "$BASE_DIR/debug/csmock/"
 
 # print a brief summary of the defects found
 cmd_wrap csgrep --mode=stat "$BASE_DIR/results.err" \
