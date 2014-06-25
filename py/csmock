@@ -437,10 +437,10 @@ def find_missing_pkgs(required, installed_file):
     with open(installed_file) as f:
         lines = f.readlines()
         for l in lines:
-            pkg = re.sub("-[0-9].*$", "", l.strip())
+            pkg = re.sub(" .*$", "", l.strip())
             installed.add(pkg)
     for dep in required:
-        if re.match("^.*[()/]", dep) is not None:
+        if re.match("^.*(/|rpmlib\\(.*\\))", dep) is not None:
             # FIXME: we do not check this kind of dependencies
             continue
         pkg = re.sub(" .*$", "", dep)
@@ -628,11 +628,13 @@ with ScanResults(output) as results:
         mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
         tmp_rpm = "%s/rpm" % tmp_var_lib
         installed = "%s/rpm-list-mock.txt" % results.dbgdir
-        results.exec_cmd("chmod -w '%s' && rpm -qa --root '%s' \
-| sort -V > '%s' && chmod u+w '%s'" % (tmp_rpm,
-            results.tmpdir, installed, tmp_rpm), shell=True)
+        provides = "%s/rpm-list-mock-provides.txt" % results.tmpdir
+        results.exec_cmd("chmod -w '%s' && rpm -qa --root '%s' | sort -V \
+> '%s' && rpm -qa --provides --root '%s' > '%s' && chmod u+w '%s'" % (tmp_rpm,
+            results.tmpdir, installed, results.tmpdir, provides, tmp_rpm),
+            shell=True)
 
-        missing_deps = find_missing_pkgs(props.install_pkgs, installed)
+        missing_deps = find_missing_pkgs(props.install_pkgs, provides)
         if 0 < len(missing_deps):
             results.fatal_error("failed to install dependencies: %s" % \
                     missing_deps)
