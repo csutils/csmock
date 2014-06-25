@@ -22,20 +22,20 @@ class PluginProps:
         self.pass_priority = 0x10
 
 del_flags_by_level_common = {
-        0: {"-Werror", "-fdiagnostics-color", "-fdiagnostics-color=always"}}
+        0: set(["-Werror", "-fdiagnostics-color", "-fdiagnostics-color=always"])}
 
 add_flags_by_level_common = {
-        1: {"-Wall", "-Wextra"},
-        2: {"-Wunreachable-code", "-Wundef", "-Wcast-align",
+        1: set(["-Wall", "-Wextra"]),
+        2: set(["-Wunreachable-code", "-Wundef", "-Wcast-align",
             "-Wpointer-arith", "-Wfloat-equal", "-Wshadow",
-            "-Wwrite-strings"}}
+            "-Wwrite-strings"])}
 
 add_flags_by_level_c_only = {
-        0: {"-Wno-unknown-pragmas"}}
+        0: set(["-Wno-unknown-pragmas"])}
 
 add_flags_by_level_cxx_only = {
-        2: {"-Wctor-dtor-privacy", "-Woverloaded-virtual",
-            "-Wstrict-prototypes"}}
+        2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual",
+            "-Wstrict-prototypes"])}
 
 def serialize_flags(flags):
     str = ""
