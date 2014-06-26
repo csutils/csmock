@@ -50,3 +50,8 @@ class Plugin:
         props.copy_in_files += ["/usr/share/csmock/scripts/fixups-clang.sh"]
 
         props.build_cmd_wrappers += ["scan-build -plist %s"]
+
+        # needed for the krb5 package, which overrides $CC by the __cc RPM macro
+        props.rpm_opts += [
+                "--define",  "__cc /usr/libexec/clang-analyzer/scan-build/ccc-analyzer",
+                "--define", "__cxx /usr/libexec/clang-analyzer/scan-build/c++-analyzer"]
