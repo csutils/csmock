@@ -300,6 +300,9 @@ class MockWrapper:
         cmd = ["--disable-plugin=selinux", "--copyout"] + args
         return self.exec_mock_cmd(cmd)
 
+    def try_install(self, pkg):
+        return self.exec_mock_cmd(["--install", pkg])
+
 class ScanProps:
     def __init__(self):
         self.install_pkgs = []
@@ -439,6 +442,8 @@ def transform_results(js_file, results):
 def find_missing_pkgs(props, results):
     # dump list of RPMs installed in the chroot (for debugging purposes)
     tmp_var_lib = "%s/var/lib" % results.tmpdir
+    if os.path.isdir(tmp_var_lib):
+        shutil.rmtree(tmp_var_lib)
     os.makedirs(tmp_var_lib)
     mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
     tmp_rpm = "%s/rpm" % tmp_var_lib
@@ -640,8 +645,17 @@ with ScanResults(output) as results:
         mock.exec_mock_cmd(["--install"] + props.install_pkgs)
         missing_deps = find_missing_pkgs(props, results)
         if 0 < len(missing_deps):
-            results.fatal_error("failed to install dependencies: %s" % \
-                    missing_deps)
+            results.error("hard to install dependencies, still trying...", ec=0)
+
+            # try to install the packages one by one
+            for pkg in props.install_pkgs:
+                mock.try_install(pkg)
+
+            # check that all dependencies are installed
+            missing_deps = find_missing_pkgs(props, results)
+            if 0 < len(missing_deps):
+                results.fatal_error("failed to install dependencies: %s" % \
+                        missing_deps)
 
         if args.shell_cmd is not None:
             # prepare a build script in our tmp dir
