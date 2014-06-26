@@ -163,10 +163,15 @@ class ScanResults:
         self.ini_writer.close()
         if hasattr(self, "p") and self.p.returncode is None:
             # FIXME: TOCTOU race
-            os.kill(self.p.pid, signal.SIGTERM)
+            try:
+                os.kill(self.p.pid, signal.SIGTERM)
+                self.p.wait()
+            except Exception:
+                pass
         self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix="<<< ")
         self.log_fd.close()
         self.log_fd = sys.stderr
+        self.log_pid.wait()
         if self.use_tar:
             tar_opts = "-c"
             if self.use_xz:
