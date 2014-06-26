@@ -637,25 +637,39 @@ with ScanResults(output) as results:
             results.error("pre-mock hook failed", ec=rv)
 
     with MockWrapper(results, mock_profile) as mock:
-        if (mock.exec_mock_cmd(["--init"]) != 0):
-            results.fatal_error("failed to init mock profile: %s"
-                    % mock_profile)
+        scrub_done = False
+        while True:
+            if mock.exec_mock_cmd(["--init"]) != 0:
+                if scrub_done:
+                    results.fatal_error("failed to init mock profile: %s"
+                            % mock_profile)
+                else:
+                    mock.exec_mock_cmd(["--scrub=root-cache"])
+                    scrub_done = True
+                    continue
 
-        # install required packages according to ScanProps
-        mock.exec_mock_cmd(["--install"] + props.install_pkgs)
-        missing_deps = find_missing_pkgs(props, results)
-        if 0 < len(missing_deps):
-            results.error("hard to install dependencies, still trying...", ec=0)
+            # install required packages according to ScanProps
+            mock.exec_mock_cmd(["--install"] + props.install_pkgs)
+            missing_deps = find_missing_pkgs(props, results)
+            if len(missing_deps) == 0:
+                break
 
             # try to install the packages one by one
+            results.error("hard to install dependencies, still trying...", ec=0)
             for pkg in props.install_pkgs:
                 mock.try_install(pkg)
 
             # check that all dependencies are installed
             missing_deps = find_missing_pkgs(props, results)
-            if 0 < len(missing_deps):
+            if len(missing_deps) == 0:
+                break
+            if scrub_done:
                 results.fatal_error("failed to install dependencies: %s" % \
                         missing_deps)
+            else:
+                mock.exec_mock_cmd(["--scrub=root-cache"])
+                scrub_done = True
+                continue
 
         if args.shell_cmd is not None:
             # prepare a build script in our tmp dir
