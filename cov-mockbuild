@@ -185,7 +185,7 @@ while getopts $OPTS opt; do
             esac
             ;;
 
-        x)  CSMOCK_ARGS="$CSMOCK_TOOLS --skip-patches"
+        x)  CSMOCK_ARGS="$CSMOCK_ARGS --skip-patches"
             RAWBUILD=yes
             ;;
 
