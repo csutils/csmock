@@ -58,8 +58,10 @@ class Plugin:
                 ["/usr/bin/cscppc", "/usr/lib64/cscppc", "/usr/share/cscppc"]
 
         if self.use_host_cppcheck:
-            # install only tinyxml2
-            props.install_pkgs += ["tinyxml2"]
+            # install only tinyxml2 (if acutally required by cppcheck)
+            cmd = "rpm -q cppcheck --requires | grep tinyxml2 > /dev/null"
+            if os.system(cmd) == 0:
+                props.install_pkgs += ["tinyxml2"]
 
             # copy cppcheck's binaries into the chroot
             props.copy_in_files += ["/usr/bin/cppcheck"]
