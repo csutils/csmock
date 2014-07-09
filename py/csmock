@@ -134,7 +134,13 @@ class ScanResults:
             if os.path.exists(output):
                 shutil.rmtree(output)
             self.resdir = output
-        os.mkdir(self.resdir)
+
+        try:
+            os.mkdir(self.resdir)
+        except OSError as e:
+            sys.stderr.write(
+                    "error: failed to create output directory: %s\n" % e)
+            sys.exit(1)
 
         self.dbgdir = "%s/debug" % self.resdir
         os.mkdir(self.dbgdir)
