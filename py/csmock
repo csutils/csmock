@@ -676,11 +676,11 @@ with ScanResults(output) as results:
         if args.shell_cmd is not None:
             # prepare a build script in our tmp dir
             build_script = "%s/build.sh" % results.tmpdir
-            results.get_cmd_output("printf '#!/bin/sh\n\
+            results.exec_cmd("printf '#!/bin/sh\n\
 cd /builddir/build/BUILD || exit $?\n\
 cd %%s*/\n\
 %%s' '%s' '%s' | tee '%s' >&2\n" % (nvr_from_tarball(srpm),
-            args.shell_cmd, build_script))
+            args.shell_cmd, build_script), shell=True)
             props.copy_in_files += [build_script]
 
         # copy required files into the chroot
@@ -689,7 +689,7 @@ cd %%s*/\n\
         cmd += " | "
         cmd += strlist_to_shell_cmd(
                 mock.get_mock_cmd(["--shell", "tar -xC/"]))
-        results.get_cmd_output(cmd)
+        results.exec_cmd(cmd, shell=True)
 
         # run fixups scripts
         mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
