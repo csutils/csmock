@@ -269,7 +269,7 @@ if test -n "$COV_OPTS"; then
     CSMOCK_ARGS="$CSMOCK_ARGS --cov-analyze-opts='$COV_OPTS'"
 fi
 if test xyes = "x$USE_TARBALL"; then
-    CSMOCK_ARGS="--shell-cmd '$QUICK_BUILD_CMD'"
+    CSMOCK_ARGS="$CSMOCK_ARGS --shell-cmd '$QUICK_BUILD_CMD'"
 fi
 
 CSMOCK_ARGS="$CSMOCK_ARGS -t '$CSMOCK_TOOLS'"
