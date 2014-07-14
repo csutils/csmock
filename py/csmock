@@ -670,7 +670,7 @@ with ScanResults(output) as results:
                 break
             if scrub_done:
                 results.fatal_error("failed to install dependencies: %s" % \
-                        missing_deps)
+                        strlist_to_shell_cmd(missing_deps))
             else:
                 mock.exec_mock_cmd(["--scrub=root-cache"])
                 scrub_done = True
