@@ -694,14 +694,25 @@ cd %%s*/\n\
                 mock.get_mock_cmd(["--shell", "tar -xC/"]))
         results.exec_cmd(cmd, shell=True)
 
+        if args.shell_cmd is None:
+            # install the copied SRPM into the chroot
+            mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
+
+            # rebuild the given SRPM (and rename to match the original one)
+            mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
+/builddir/build/SRPMS && eval mv -v *.src.rpm %s || :'"
+                    % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
+
+            # use the rebuilt SRPM to install arch-specific dependencies
+            mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
+            mock.exec_mock_cmd(["--installdeps", "-v", srpm_dup])
+            find_missing_pkgs(props, results)
+
         # run fixups scripts
         mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
 | xargs -n1 sh -x" % csmock_datadir)
 
         if args.shell_cmd is None:
-            # install the copied SRPM into the chroot
-            mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
-
             # run %prep phase without pluggin-in any static analyzers
             ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s %s"
                     % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
