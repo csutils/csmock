@@ -492,12 +492,6 @@ def require_file(parser, name):
     if not os.path.isfile(name):
         parser.error("'%s' is not a file" % name)
 
-def nvr_from_srpm(srpm):
-    return re.sub("\.src\.rpm$", "", os.path.basename(srpm))
-
-def nvr_from_tarball(tb):
-    return re.sub("\.tar$", "", re.sub("\.[^.]*$", "", os.path.basename(srpm)))
-
 # load plug-ins
 plugins = PluginManager()
 plugins.load_default_plugins()
@@ -591,13 +585,16 @@ if args.list_of_pkgs is not None:
 if args.diff_patches:
     parser.error("option --diff-patches is not implemented yet")
 
+# resolve NVR
+srpm_base = os.path.basename(srpm)
+if args.shell_cmd is None:
+    nvr = re.sub("\.src\.rpm$", "", srpm_base)
+else:
+    nvr = re.sub("\.tar$", "", re.sub("\.[^.]*$", "", srpm_base))
+
 # resolve name of the file/dir we are going to store the results to
 output = args.output
 if args.output is None:
-    if args.shell_cmd is None:
-        nvr = nvr_from_srpm(srpm)
-    else:
-        nvr = nvr_from_tarball(srpm)
     output = nvr + ".tar.xz"
 output = os.path.realpath(output)
 
@@ -631,7 +628,7 @@ with ScanResults(output) as results:
         spec_in = "/builddir/build/SPECS/%s" % spec
 
     # copy the given SRPM into our tmp dir
-    srpm_dup = "%s/%s" % (results.tmpdir, os.path.basename(srpm))
+    srpm_dup = "%s/%s" % (results.tmpdir, srpm_base)
     shutil.copyfile(srpm, srpm_dup)
     props.copy_in_files += [srpm_dup]
 
@@ -685,7 +682,7 @@ with ScanResults(output) as results:
             results.exec_cmd("printf '#!/bin/sh\n\
 cd /builddir/build/BUILD || exit $?\n\
 cd %%s*/\n\
-%%s' '%s' '%s' | tee '%s' >&2\n" % (nvr_from_tarball(srpm),
+%%s' '%s' '%s' | tee '%s' >&2\n" % (nvr,
             args.shell_cmd, build_script), shell=True)
             props.copy_in_files += [build_script]
 
