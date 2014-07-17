@@ -121,9 +121,9 @@ Hihgly experimental, currently suitable only for development of csmock itself.
 %setup -q
 
 %build
-mkdir -p bin etc man sbin
+mkdir -p bin man
 
-# ebmed VERSION and PLUGIN_DIR version into the scripts
+# embed VERSION and PLUGIN_DIR version into the scripts
 install -p -m0755 cov-{diff,mock}build bin/
 sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
 sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' \\
@@ -142,10 +142,6 @@ help2man --no-info --section 1 --name \\
     "run static analysis of the given SRPM using mock" \\
     py/csmock > man/csmock.1
 
-printf '#!/bin/sh\\nstdbuf -o0 /usr/sbin/mock "\$@"\\n' > ./sbin/mock-unbuffered
-printf 'USER=root\\nPROGRAM=/usr/sbin/mock-unbuffered\\nSESSION=false
-FALLBACK=false\\nKEEP_ENV_VARS=COLUMNS,SSH_AUTH_SOCK\\n' > ./etc/mock-unbuffered
-
 %clean
 rm -rf "\$RPM_BUILD_ROOT"
 
@@ -155,7 +151,6 @@ rm -rf "\$RPM_BUILD_ROOT"
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_bindir}" \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
-    "\$RPM_BUILD_ROOT%{_sbindir}" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts" \\
     "\$RPM_BUILD_ROOT%{python_sitearch}/" \\
@@ -176,18 +171,6 @@ install -p -m0644 py/plugins/*.py \\
 install -p -m0755 scripts/*.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
 
-install -m0755 -d \\
-    "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/" \\
-    "\$RPM_BUILD_ROOT%{_sysconfdir}/pam.d/"
-
-install -p -m0755 sbin/mock-unbuffered "\$RPM_BUILD_ROOT%{_sbindir}"
-
-install -p -m0644 etc/mock-unbuffered \\
-    "\$RPM_BUILD_ROOT%{_sysconfdir}/security/console.apps/"
-
-ln -s mock "\$RPM_BUILD_ROOT%{_sysconfdir}/pam.d/mock-unbuffered"
-ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
-
 %files
 %defattr(-,root,root,-)
 %{_bindir}/cov-dump-err
@@ -201,10 +184,6 @@ ln -s consolehelper "\$RPM_BUILD_ROOT%{_bindir}/mock-unbuffered"
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
 %{python_sitearch}/csmock/plugins/gcc.py*
-%{_bindir}/mock-unbuffered
-%{_sbindir}/mock-unbuffered
-%{_sysconfdir}/pam.d/mock-unbuffered
-%config(noreplace) %{_sysconfdir}/security/console.apps/mock-unbuffered
 %doc COPYING
 
 %files -n csmock-plugin-clang
