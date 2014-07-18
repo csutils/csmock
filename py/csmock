@@ -524,9 +524,6 @@ parser.add_argument("-t", "--tools", default="",
 parser.add_argument("-l", "--list-available-tools", action=ToolsPrinter,
         help="list available tools and exit")
 
-parser.add_argument("-c", "--shell-cmd",
-        help="use shell command to build the given tarball (instead of SRPM)")
-
 parser.add_argument("--install", dest="list_of_pkgs",
         help="space-separated list of packages to install into the chroot")
 
@@ -539,12 +536,14 @@ parser.add_argument("-f", "--force", action="store_true",
 parser.add_argument("--no-clean", action="store_true",
         help="do not clean chroot when it becomes unused")
 
-# --skip-patches and --diff-patches are mutually exclusive
+# --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
 group = parser.add_mutually_exclusive_group()
 group.add_argument("--skip-patches", action="store_true",
         help="skip patches not annotated by %%{?_rawbuild} (vanilla build)")
 group.add_argument("--diff-patches", action="store_true",
         help="scan with/without patches and diff the lists of defects")
+group.add_argument("-c", "--shell-cmd",
+        help="use shell command to build the given tarball (instead of SRPM)")
 
 # needed for help2man
 parser.add_argument("--version", action=VersionPrinter,
