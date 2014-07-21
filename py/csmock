@@ -280,7 +280,7 @@ class MockWrapper:
         else:
             mock = "mock"
         self.def_cmd = [mock, "-r", self.mock_profile]
-        if (results.get_cmd_output("mock --help | grep package_state")[0] == 0):
+        if (self.results.get_cmd_output("mock --help | grep package_state")[0] == 0):
             self.def_cmd += ["--disable-plugin=package_state"]
 
         return self
@@ -448,7 +448,7 @@ def transform_results(js_file, results):
 | cshtml - > '%s'" % (js_file, html_file), shell=True)
     return (err_file, html_file)
 
-def find_missing_pkgs(props, results):
+def find_missing_pkgs(props, results, mock):
     # dump list of RPMs installed in the chroot (for debugging purposes)
     tmp_var_lib = "%s/var/lib" % results.tmpdir
     if os.path.isdir(tmp_var_lib):
@@ -581,10 +581,6 @@ if args.list_of_pkgs is not None:
     # append the list of packages to install specified on command-line
     props.install_pkgs += args.list_of_pkgs.split()
 
-# fail if a not yet implemented option is given
-if args.diff_patches:
-    parser.error("option --diff-patches is not implemented yet")
-
 # resolve NVR
 srpm_base = os.path.basename(srpm)
 if args.shell_cmd is None:
@@ -602,196 +598,206 @@ output = os.path.realpath(output)
 if os.path.exists(output) and not args.force:
     parser.error("'%s' already exists, use --force to proceed" % output)
 
-if args.skip_patches:
-    props.copy_in_files += [patch_rawbuild]
-    props.rpm_opts += rawbuild_rpm_opts
-
 # poll plug-ins to reflect themselves in ScanProps
 plugins.handle_args(parser, args, props)
 
-with ScanResults(output) as results:
-    results.ini_writer.append("mock-config", mock_profile)
+def do_scan(props, output, skip_patches):
+    if skip_patches:
+        props.copy_in_files += [patch_rawbuild]
+        props.rpm_opts += rawbuild_rpm_opts
 
-    # dump list of RPMs installed on the host (for debugging purposes)
-    results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-host.txt'"
-            % results.dbgdir, shell=True)
+    with ScanResults(output) as results:
+        results.ini_writer.append("mock-config", mock_profile)
 
-    if args.shell_cmd is None:
-        # check the given SRPM
-        if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
-            results.fatal_error("failed to open SRPM: %s" % srpm)
-        (ec, spec) = results.get_cmd_output("rpm -lpq '%s' | grep '\.spec$'"
-                % srpm)
-        if ec != 0:
-            results.fatal_error("no specfile found in SRPM: %s" % srpm)
-        spec = spec.rstrip()
-        spec_in = "/builddir/build/SPECS/%s" % spec
+        # dump list of RPMs installed on the host (for debugging purposes)
+        results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-host.txt'"
+                % results.dbgdir, shell=True)
 
-    # copy the given SRPM into our tmp dir
-    srpm_dup = "%s/%s" % (results.tmpdir, srpm_base)
-    shutil.copyfile(srpm, srpm_dup)
-    props.copy_in_files += [srpm_dup]
+        if args.shell_cmd is None:
+            # check the given SRPM
+            if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
+                results.fatal_error("failed to open SRPM: %s" % srpm)
+            (ec, spec) = results.get_cmd_output("rpm -lpq '%s' | grep '\.spec$'"
+                    % srpm)
+            if ec != 0:
+                results.fatal_error("no specfile found in SRPM: %s" % srpm)
+            spec = spec.rstrip()
+            spec_in = "/builddir/build/SPECS/%s" % spec
 
-    # get the dependency list of the given SRPM
-    props.install_pkgs += deplist_from_srpm(results, srpm)
+        # copy the given SRPM into our tmp dir
+        srpm_dup = "%s/%s" % (results.tmpdir, srpm_base)
+        shutil.copyfile(srpm, srpm_dup)
+        props.copy_in_files += [srpm_dup]
 
-    # run pre-mock hooks
-    for hook in props.pre_mock_hooks:
-        rv = hook(results)
-        if rv != 0:
-            results.error("pre-mock hook failed", ec=rv)
+        # get the dependency list of the given SRPM
+        props.install_pkgs += deplist_from_srpm(results, srpm)
 
-    with MockWrapper(results, mock_profile) as mock:
-        scrub_done = False
-        while True:
-            if mock.exec_mock_cmd(["--init"]) != 0:
+        # run pre-mock hooks
+        for hook in props.pre_mock_hooks:
+            rv = hook(results)
+            if rv != 0:
+                results.error("pre-mock hook failed", ec=rv)
+
+        with MockWrapper(results, mock_profile) as mock:
+            scrub_done = False
+            while True:
+                if mock.exec_mock_cmd(["--init"]) != 0:
+                    if scrub_done:
+                        results.fatal_error("failed to init mock profile: %s"
+                                % mock_profile)
+                    else:
+                        mock.exec_mock_cmd(["--scrub=root-cache"])
+                        scrub_done = True
+                        continue
+
+                # install required packages according to ScanProps
+                mock.exec_mock_cmd(["--install"] + props.install_pkgs)
+                missing_deps = find_missing_pkgs(props, results, mock)
+                if len(missing_deps) == 0:
+                    break
+
+                # try to install the packages one by one
+                results.error("hard to install dependencies, still trying...", ec=0)
+                for pkg in props.install_pkgs:
+                    mock.try_install(pkg)
+
+                # check that all dependencies are installed
+                missing_deps = find_missing_pkgs(props, results, mock)
+                if len(missing_deps) == 0:
+                    break
                 if scrub_done:
-                    results.fatal_error("failed to init mock profile: %s"
-                            % mock_profile)
+                    results.fatal_error("failed to install dependencies: %s" % \
+                            strlist_to_shell_cmd(missing_deps))
                 else:
                     mock.exec_mock_cmd(["--scrub=root-cache"])
                     scrub_done = True
                     continue
 
-            # install required packages according to ScanProps
-            mock.exec_mock_cmd(["--install"] + props.install_pkgs)
-            missing_deps = find_missing_pkgs(props, results)
-            if len(missing_deps) == 0:
-                break
-
-            # try to install the packages one by one
-            results.error("hard to install dependencies, still trying...", ec=0)
-            for pkg in props.install_pkgs:
-                mock.try_install(pkg)
-
-            # check that all dependencies are installed
-            missing_deps = find_missing_pkgs(props, results)
-            if len(missing_deps) == 0:
-                break
-            if scrub_done:
-                results.fatal_error("failed to install dependencies: %s" % \
-                        strlist_to_shell_cmd(missing_deps))
-            else:
-                mock.exec_mock_cmd(["--scrub=root-cache"])
-                scrub_done = True
-                continue
-
-        if args.shell_cmd is not None:
-            # prepare a build script in our tmp dir
-            build_script = "%s/build.sh" % results.tmpdir
-            results.exec_cmd("printf '#!/bin/sh\n\
+            if args.shell_cmd is not None:
+                # prepare a build script in our tmp dir
+                build_script = "%s/build.sh" % results.tmpdir
+                results.exec_cmd("printf '#!/bin/sh\n\
 cd /builddir/build/BUILD || exit $?\n\
 cd %%s*/\n\
 %%s' '%s' '%s' | tee '%s' >&2\n" % (nvr,
-            args.shell_cmd, build_script), shell=True)
-            props.copy_in_files += [build_script]
+                args.shell_cmd, build_script), shell=True)
+                props.copy_in_files += [build_script]
 
-        # copy required files into the chroot
-        cmd = "tar -cP "
-        cmd += strlist_to_shell_cmd(props.copy_in_files)
-        cmd += " | "
-        cmd += strlist_to_shell_cmd(
-                mock.get_mock_cmd(["--shell", "tar -xC/"]))
-        results.exec_cmd(cmd, shell=True)
+            # copy required files into the chroot
+            cmd = "tar -cP "
+            cmd += strlist_to_shell_cmd(props.copy_in_files)
+            cmd += " | "
+            cmd += strlist_to_shell_cmd(
+                    mock.get_mock_cmd(["--shell", "tar -xC/"]))
+            results.exec_cmd(cmd, shell=True)
 
-        if args.shell_cmd is None:
-            # install the copied SRPM into the chroot
-            mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
-            # make the installed SRPM accessible (if the maintainer did not)
-            mock.exec_chroot_cmd("chmod -R +r /builddir")
+            if args.shell_cmd is None:
+                # install the copied SRPM into the chroot
+                mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
+                # make the installed SRPM accessible (if the maintainer did not)
+                mock.exec_chroot_cmd("chmod -R +r /builddir")
 
-            # rebuild the given SRPM (and rename to match the original one)
-            mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
+                # rebuild the given SRPM (and rename to match the original one)
+                mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
 /builddir/build/SRPMS && eval mv -v *.src.rpm %s || :'"
-                    % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
+                        % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
 
-            # use the rebuilt SRPM to install arch-specific dependencies
-            mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
-            mock.exec_mock_cmd(["--installdeps", "-v", srpm_dup])
-            find_missing_pkgs(props, results)
+                # use the rebuilt SRPM to install arch-specific dependencies
+                mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
+                mock.exec_mock_cmd(["--installdeps", "-v", srpm_dup])
+                find_missing_pkgs(props, results, mock)
 
-        # run fixups scripts
-        mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
+            # run fixups scripts
+            mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
 | xargs -n1 sh -x" % csmock_datadir)
 
-        if args.shell_cmd is None:
-            # run %prep phase without pluggin-in any static analyzers
-            ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s %s"
-                    % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
-        else:
-            # extract the given archive (we got instead of SRPM)
-            ec = mock.exec_mockbuild_cmd(
-                    "tar -xvf '%s' -C /builddir/build/BUILD" % srpm_dup)
+            if args.shell_cmd is None:
+                # run %prep phase without pluggin-in any static analyzers
+                ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s %s"
+                        % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
+            else:
+                # extract the given archive (we got instead of SRPM)
+                ec = mock.exec_mockbuild_cmd(
+                        "tar -xvf '%s' -C /builddir/build/BUILD" % srpm_dup)
 
-        # make the unpacked contents accessible (if the maintainer did not)
-        mock.exec_chroot_cmd("chmod -R +r /builddir/build")
+            # make the unpacked contents accessible (if the maintainer did not)
+            mock.exec_chroot_cmd("chmod -R +r /builddir/build")
 
-        if (ec != 0):
-            results.error("%prep failed", ec=ec)
+            if (ec != 0):
+                results.error("%prep failed", ec=ec)
 
-        if args.shell_cmd is None:
-            # run %build phase with static analyzers plugged-in
-            build_cmd = "rpmbuild -bc --nodeps --short-circuit %s %s" \
-                    % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
-        else:
-            # run the above prepared build script
-            build_cmd = "sh -x '%s'" % build_script
+            if args.shell_cmd is None:
+                # run %build phase with static analyzers plugged-in
+                build_cmd = "rpmbuild -bc --nodeps --short-circuit %s %s" \
+                        % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
+            else:
+                # run the above prepared build script
+                build_cmd = "sh -x '%s'" % build_script
 
-        # wrap build_cmd by all the necessary wrappers
-        build_cmd = props.wrap_build_cmd(build_cmd)
+            # wrap build_cmd by all the necessary wrappers
+            build_cmd = props.wrap_build_cmd(build_cmd)
 
-        # initialize environment variables according to ScanProps
-        build_cmd = props.wrap_shell_cmd_by_env(build_cmd)
+            # initialize environment variables according to ScanProps
+            build_cmd = props.wrap_shell_cmd_by_env(build_cmd)
 
-        ec = mock.exec_mockbuild_cmd(build_cmd)
-        if (ec != 0):
-            results.error("%build failed", ec=ec)
+            ec = mock.exec_mockbuild_cmd(build_cmd)
+            if (ec != 0):
+                results.error("%build failed", ec=ec)
 
-        # execute post-build commands in the chroot
-        for cmd in props.post_build_chroot_cmds:
-            mock.exec_chroot_cmd(cmd)
+            # execute post-build commands in the chroot
+            for cmd in props.post_build_chroot_cmds:
+                mock.exec_chroot_cmd(cmd)
 
-        # get the (intermediate) results out of the chroot
-        if len(props.copy_out_files) > 0:
-            cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell",
-                "tar -c " + strlist_to_shell_cmd(props.copy_out_files)]))
+            # get the (intermediate) results out of the chroot
+            if len(props.copy_out_files) > 0:
+                cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell",
+                    "tar -c " + strlist_to_shell_cmd(props.copy_out_files)]))
 
-            cmd += " | tar -xC '%s'" % results.dbgdir_raw
-            if results.exec_cmd(cmd, shell=True) != 0:
-                results.error("field to get intermediate results from mock")
+                cmd += " | tar -xC '%s'" % results.dbgdir_raw
+                if results.exec_cmd(cmd, shell=True) != 0:
+                    results.error("field to get intermediate results from mock")
 
-        # TODO
+            # TODO
 
-        if not args.no_clean:
-            if (mock.exec_mock_cmd(["--clean"]) != 0):
-                results.error("failed to clean mock profile", ec=0)
+            if not args.no_clean:
+                if (mock.exec_mock_cmd(["--clean"]) != 0):
+                    results.error("failed to clean mock profile", ec=0)
 
-    # we are done with mock
+        # we are done with mock
 
-    if props.pick_cswrap_results(results) != 0:
-        results.error("failed to pick cswrap results")
+        if props.pick_cswrap_results(results) != 0:
+            results.error("failed to pick cswrap results")
 
-    # run post-process hooks
-    for hook in props.post_process_hooks:
-        rv = hook(results)
-        if rv != 0:
-            results.error("post-process hook failed", ec=rv)
+        # run post-process hooks
+        for hook in props.post_process_hooks:
+            rv = hook(results)
+            if rv != 0:
+                results.error("post-process hook failed", ec=rv)
 
-    # we are done with IniWriter
-    results.ini_writer.close()
+        # we are done with IniWriter
+        results.ini_writer.close()
 
-    # merge all results into a single file named scan-results.js
-    ini_file = "%s/scan.ini" % results.resdir
-    js_file = "%s/scan-results.js" % results.resdir
-    cmd = "cslinker --cwelist '%s' --inifile '%s' $(ls %s/*.err)" \
-            % (cwe_list_file, ini_file, results.dbgdir_uni)
-    for filt in props.result_filters:
-        cmd += " | %s" % filt
-    cmd += " | cssort --key=path > '%s'" % js_file
-    results.exec_cmd(cmd, shell=True)
+        # merge all results into a single file named scan-results.js
+        ini_file = "%s/scan.ini" % results.resdir
+        js_file = "%s/scan-results.js" % results.resdir
+        cmd = "cslinker --cwelist '%s' --inifile '%s' $(ls %s/*.err)" \
+                % (cwe_list_file, ini_file, results.dbgdir_uni)
+        for filt in props.result_filters:
+            cmd += " | %s" % filt
+        cmd += " | cssort --key=path > '%s'" % js_file
+        results.exec_cmd(cmd, shell=True)
 
-    # transform scan-results.js to scan-results.{err,html} and print stats
-    (err_file, _) = transform_results(js_file, results)
-    summary_file = "%s/scan-results-summary.txt" % results.resdir
-    cmd = "csgrep --mode=stat '%s' | tee '%s'" % (err_file, summary_file)
-    results.exec_cmd(cmd, shell=True)
+        # transform scan-results.js to scan-results.{err,html} and print stats
+        (err_file, _) = transform_results(js_file, results)
+        summary_file = "%s/scan-results-summary.txt" % results.resdir
+        cmd = "csgrep --mode=stat '%s' | tee '%s'" % (err_file, summary_file)
+        results.exec_cmd(cmd, shell=True)
+
+def do_diff_scan(props, output):
+    # TODO
+    parser.error("option --diff-patches is not implemented yet")
+
+if args.diff_patches:
+    do_diff_scan(props, output)
+else:
+    do_scan(props, output, args.skip_patches)
