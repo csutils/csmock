@@ -132,9 +132,9 @@ class ScanResults:
         if self.use_tar:
             self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
         else:
-            if os.path.exists(output):
-                shutil.rmtree(output)
-            self.resdir = output
+            if os.path.exists(self.output):
+                shutil.rmtree(self.output)
+            self.resdir = self.output
 
         try:
             os.mkdir(self.resdir)
@@ -191,8 +191,6 @@ class ScanResults:
 
         sys.stderr.write("Wrote: %s\n\n" % self.output)
         shutil.rmtree(self.tmpdir)
-        if type is None and value is None and bt is None:
-            sys.exit(self.ec)
 
     def print_with_ts(self, msg, prefix=">>> "):
         self.log_fd.write("%s%s\t%s\n" % (prefix, current_iso_date(), msg))
@@ -447,6 +445,13 @@ def transform_results(js_file, results):
     results.exec_cmd("csgrep --mode=json --prune-events=1 '%s' \
 | cshtml - > '%s'" % (js_file, html_file), shell=True)
     return (err_file, html_file)
+
+# transform scan-results.js to scan-results.{err,html} and write stats
+def finalize_results(js_file, results):
+    (err_file, _) = transform_results(js_file, results)
+    summary_file = "%s/scan-results-summary.txt" % results.resdir
+    cmd = "csgrep --mode=stat '%s' | tee '%s'" % (err_file, summary_file)
+    return results.exec_cmd(cmd, shell=True)
 
 def find_missing_pkgs(props, results, mock):
     # dump list of RPMs installed in the chroot (for debugging purposes)
@@ -787,17 +792,40 @@ cd %%s*/\n\
         cmd += " | cssort --key=path > '%s'" % js_file
         results.exec_cmd(cmd, shell=True)
 
-        # transform scan-results.js to scan-results.{err,html} and print stats
-        (err_file, _) = transform_results(js_file, results)
-        summary_file = "%s/scan-results-summary.txt" % results.resdir
-        cmd = "csgrep --mode=stat '%s' | tee '%s'" % (err_file, summary_file)
-        results.exec_cmd(cmd, shell=True)
+        finalize_results(js_file, results)
+        return results.ec
 
 def do_diff_scan(props, output):
-    # TODO
-    parser.error("option --diff-patches is not implemented yet")
+    with ScanResults(output) as results:
+        run0 = "%s/run0" % results.resdir
+        ec = do_scan(copy.deepcopy(props), run0, skip_patches=True)
+        if 0 != ec:
+            results.fatal_error("vanilla scan failed", ec=ec)
+
+        run1 = "%s/run1" % results.resdir
+        ec = do_scan(props, run1, skip_patches=False)
+        if 0 != ec:
+            results.fatal_error("regular scan failed", ec=ec)
+
+        # finalize scan.ini
+        results.ini_writer.append("title", "%s - Defects in Patches" % nvr)
+        results.ini_writer.close()
+        ini_file = "%s/scan.ini" % results.resdir
+
+        # diff both runs and serialize the result using the JSON format
+        run0_file = "%s/scan-results.js" % run0
+        run1_file = "%s/scan-results.js" % run1
+        js_file = "%s/scan-results.js" % results.resdir
+        if 0 != results.exec_cmd("csdiff %s %s | cslinker --inifile %s - > %s" \
+                % (run0_file, run1_file, ini_file, js_file), shell=True):
+            results.error("csdiff failed")
+
+        finalize_results(js_file, results)
+        return results.ec
 
 if args.diff_patches:
-    do_diff_scan(props, output)
+    ec = do_diff_scan(props, output)
 else:
-    do_scan(props, output, args.skip_patches)
+    ec = do_scan(props, output, args.skip_patches)
+
+sys.exit(ec)
