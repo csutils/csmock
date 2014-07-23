@@ -40,8 +40,9 @@ cwe_list_file = csmock_datadir + "/cwe-map.csv"
 
 plugin_dir= "@PLUGIN_DIR@"
 
+default_jobs_cnt = 13
+
 default_rpm_opts = [
-        "--define",     "_smp_mflags -kj13",
         "--define",     "_without_testsuite 1",
         "--define",     "apidocs 0",
         "--define",     "libguestfs_runtests 0",
@@ -539,6 +540,9 @@ parser.add_argument("-o", "--output",
 parser.add_argument("-f", "--force", action="store_true",
         help="overwrite the resulting file or directory if it exists already")
 
+parser.add_argument("-j", "--jobs", type=int, default=default_jobs_cnt,
+        help="maximal number of jobs running in parallel (passed to 'make')")
+
 parser.add_argument("--no-clean", action="store_true",
         help="do not clean chroot when it becomes unused")
 
@@ -573,6 +577,12 @@ for i in args.tools.split(","):
         parser.error("tool not available: %s" % tool)
 
 props = ScanProps()
+
+# initialize the %{_smp_mflags} RPM macro
+mflags_rpmm = "_smp_mflags"
+mflags_rpmm += " -j%d" % args.jobs
+mflags_rpmm += " -k"
+props.rpm_opts += ["--define", mflags_rpmm]
 
 # make sure that 'srpm' is a file (note it can be a tar archive instead of SRPM)
 srpm = args.SRPM
