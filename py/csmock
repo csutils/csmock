@@ -785,7 +785,7 @@ cd %%s*/\n\
         # merge all results into a single file named scan-results.js
         ini_file = "%s/scan.ini" % results.resdir
         js_file = "%s/scan-results.js" % results.resdir
-        cmd = "cslinker --cwelist '%s' --inifile '%s' $(ls %s/*.err)" \
+        cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' $(ls %s/*.err)" \
                 % (cwe_list_file, ini_file, results.dbgdir_uni)
         for filt in props.result_filters:
             cmd += " | %s" % filt
