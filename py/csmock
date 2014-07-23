@@ -697,6 +697,8 @@ cd %%s*/\n\
         if args.shell_cmd is None:
             # install the copied SRPM into the chroot
             mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
+            # make the installed SRPM accessible (if the maintainer did not)
+            mock.exec_chroot_cmd("chmod -R +r /builddir")
 
             # rebuild the given SRPM (and rename to match the original one)
             mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
