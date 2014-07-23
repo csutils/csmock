@@ -104,8 +104,9 @@ def strlist_to_shell_cmd(cmd_in, escape_special=False):
     return cmd_out.lstrip()
 
 class ScanResults:
-    def __init__(self, output):
+    def __init__(self, output, keep_going=False):
         self.output = output
+        self.keep_going = keep_going
         self.use_xz = False
         self.use_tar = False
         self.dirname = os.path.basename(output)
@@ -201,6 +202,8 @@ class ScanResults:
         self.print_with_ts("%serror: %s\n" % (err_prefix, msg), prefix="!!! ")
         if (self.ec < ec):
             self.ec = ec
+        if not self.keep_going and (0 != self.ec):
+            sys.exit(ec)
 
     def fatal_error(self, msg, ec=1):
         self.error(msg, err_prefix="fatal ", ec=ec)
@@ -324,6 +327,7 @@ class ScanProps:
         self.build_cmd_wrappers = []
         self.post_build_chroot_cmds = []
         self.post_process_hooks = []
+        self.keep_going = False
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -543,6 +547,9 @@ parser.add_argument("-f", "--force", action="store_true",
 parser.add_argument("-j", "--jobs", type=int, default=default_jobs_cnt,
         help="maximal number of jobs running in parallel (passed to 'make')")
 
+parser.add_argument("-k", "--keep-going", action="store_true",
+        help="continue as much as possible after an error")
+
 parser.add_argument("--no-clean", action="store_true",
         help="do not clean chroot when it becomes unused")
 
@@ -577,11 +584,13 @@ for i in args.tools.split(","):
         parser.error("tool not available: %s" % tool)
 
 props = ScanProps()
+props.keep_going = args.keep_going
 
 # initialize the %{_smp_mflags} RPM macro
 mflags_rpmm = "_smp_mflags"
 mflags_rpmm += " -j%d" % args.jobs
-mflags_rpmm += " -k"
+if props.keep_going:
+    mflags_rpmm += " -k"
 props.rpm_opts += ["--define", mflags_rpmm]
 
 # make sure that 'srpm' is a file (note it can be a tar archive instead of SRPM)
@@ -621,7 +630,7 @@ def do_scan(props, output, skip_patches):
         props.copy_in_files += [patch_rawbuild]
         props.rpm_opts += rawbuild_rpm_opts
 
-    with ScanResults(output) as results:
+    with ScanResults(output, props.keep_going) as results:
         results.ini_writer.append("mock-config", mock_profile)
 
         # dump list of RPMs installed on the host (for debugging purposes)
@@ -681,8 +690,9 @@ def do_scan(props, output, skip_patches):
                 if len(missing_deps) == 0:
                     break
                 if scrub_done:
-                    results.fatal_error("failed to install dependencies: %s" % \
+                    results.error("failed to install dependencies: %s" % \
                             strlist_to_shell_cmd(missing_deps))
+                    break
                 else:
                     mock.exec_mock_cmd(["--scrub=root-cache"])
                     scrub_done = True
@@ -806,16 +816,16 @@ cd %%s*/\n\
         return results.ec
 
 def do_diff_scan(props, output):
-    with ScanResults(output) as results:
+    with ScanResults(output, props.keep_going) as results:
         run0 = "%s/run0" % results.resdir
         ec = do_scan(copy.deepcopy(props), run0, skip_patches=True)
         if 0 != ec:
-            results.fatal_error("vanilla scan failed", ec=ec)
+            results.error("vanilla scan failed", ec=ec)
 
         run1 = "%s/run1" % results.resdir
         ec = do_scan(props, run1, skip_patches=False)
         if 0 != ec:
-            results.fatal_error("regular scan failed", ec=ec)
+            results.error("regular scan failed", ec=ec)
 
         # finalize scan.ini
         results.ini_writer.append("title", "%s - Defects in Patches" % nvr)
