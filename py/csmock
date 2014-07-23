@@ -680,18 +680,18 @@ def do_scan(props, output, skip_patches):
                 if len(missing_deps) == 0:
                     break
 
-                # try to install the packages one by one
-                results.error("hard to install dependencies, still trying...", ec=0)
-                for pkg in props.install_pkgs:
-                    mock.try_install(pkg)
+                results.error("hard to install dependencies (%s), still trying..." % \
+                        strlist_to_shell_cmd(missing_deps), ec=0)
 
-                # check that all dependencies are installed
-                missing_deps = find_missing_pkgs(props, results, mock)
-                if len(missing_deps) == 0:
-                    break
                 if scrub_done:
-                    results.error("failed to install dependencies: %s" % \
-                            strlist_to_shell_cmd(missing_deps))
+                    # try to install the packages one by one
+                    for pkg in props.install_pkgs:
+                        mock.try_install(pkg)
+                    # check that all dependencies are installed
+                    missing_deps = find_missing_pkgs(props, results, mock)
+                    if len(missing_deps) != 0:
+                        results.error("failed to install dependencies: %s" % \
+                                strlist_to_shell_cmd(missing_deps))
                     break
                 else:
                     mock.exec_mock_cmd(["--scrub=root-cache"])
