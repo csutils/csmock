@@ -78,7 +78,7 @@ Source0:    https://git.fedorahosted.org/cgit/csmock.git/snapshot/$SRC
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
-BuildRequires: python
+BuildRequires: python-devel
 %if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
 BuildRequires: python-argparse
 %endif
@@ -115,7 +115,10 @@ Requires: csmock
 %description -n csmock-plugin-cppcheck
 Hihgly experimental, currently suitable only for development of csmock itself.
 
-%{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%endif
 
 %prep
 %setup -q
@@ -127,7 +130,7 @@ mkdir -p bin man
 install -p -m0755 cov-{diff,mock}build bin/
 sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
 sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' \\
-    -e 's|@PLUGIN_DIR@|%{python_sitearch}/csmock/plugins|' \\
+    -e 's|@PLUGIN_DIR@|%{python2_sitelib}/csmock/plugins|' \\
     -i py/csmock
 
 help2man --no-info --section 1 --name \\
@@ -153,9 +156,9 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts" \\
-    "\$RPM_BUILD_ROOT%{python_sitearch}/" \\
-    "\$RPM_BUILD_ROOT%{python_sitearch}/csmock" \\
-    "\$RPM_BUILD_ROOT%{python_sitearch}/csmock/plugins"
+    "\$RPM_BUILD_ROOT%{python2_sitelib}/" \\
+    "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock" \\
+    "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
 
 install -p -m0755 \\
     cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild py/csmock \\
@@ -166,7 +169,7 @@ install -p -m0644 man/{csmock,cov-{diff,mock}build}.1 "\$RPM_BUILD_ROOT%{_mandir
 install -p -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
 
 install -p -m0644 py/plugins/*.py \\
-    "\$RPM_BUILD_ROOT%{python_sitearch}/csmock/plugins"
+    "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
 
 install -p -m0755 scripts/*.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
@@ -183,17 +186,17 @@ install -p -m0755 scripts/*.sh \\
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
-%{python_sitearch}/csmock/plugins/gcc.py*
+%{python2_sitelib}/csmock/plugins/gcc.py*
 %doc COPYING
 
 %files -n csmock-plugin-clang
 %defattr(-,root,root,-)
 %{_datadir}/csmock/scripts/fixups-clang.sh
-%{python_sitearch}/csmock/plugins/clang.py*
+%{python2_sitelib}/csmock/plugins/clang.py*
 
 %files -n csmock-plugin-cppcheck
 %defattr(-,root,root,-)
-%{python_sitearch}/csmock/plugins/cppcheck.py*
+%{python2_sitelib}/csmock/plugins/cppcheck.py*
 EOF
 
 rpmbuild -bs "$SPEC"                            \
