@@ -40,6 +40,8 @@ cwe_list_file = csmock_datadir + "/cwe-map.csv"
 
 plugin_dir= "@PLUGIN_DIR@"
 
+default_cswrap_timeout = 30
+
 default_jobs_cnt = 13
 
 default_rpm_opts = [
@@ -328,6 +330,7 @@ class ScanProps:
         self.post_build_chroot_cmds = []
         self.post_process_hooks = []
         self.keep_going = False
+        self.cswrap_timeout = default_cswrap_timeout
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -344,7 +347,7 @@ class ScanProps:
         self.copy_in_files += ["/usr/bin/cswrap", cswrap_path]
         self.path = [cswrap_path] + self.path
         self.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
-        self.env["CSWRAP_TIMEOUT"] = "300"
+        self.env["CSWRAP_TIMEOUT"] = "%d" % self.cswrap_timeout
         self.copy_out_files += ["/builddir/cswrap-capture.err"]
 
     def pick_cswrap_results(self, results):
@@ -552,6 +555,9 @@ parser.add_argument("-f", "--force", action="store_true",
 parser.add_argument("-j", "--jobs", type=int, default=default_jobs_cnt,
         help="maximal number of jobs running in parallel (passed to 'make')")
 
+parser.add_argument("--cswrap-timeout", type=int, default=default_cswrap_timeout,
+        help="maximal amount of time taken by analysis of a single module [s]")
+
 parser.add_argument("-k", "--keep-going", action="store_true",
         help="continue as much as possible after an error")
 
@@ -590,6 +596,7 @@ for i in args.tools.split(","):
 
 props = ScanProps()
 props.keep_going = args.keep_going
+props.cswrap_timeout = args.cswrap_timeout
 
 # initialize the %{_smp_mflags} RPM macro
 mflags_rpmm = "_smp_mflags"
