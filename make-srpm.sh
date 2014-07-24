@@ -84,7 +84,7 @@ BuildRequires: python-argparse
 %endif
 
 Requires: csdiff
-Requires: cswrap
+Requires: cswrap >= 1.0.4
 Requires: mock
 Requires: rpm-build
 
@@ -109,7 +109,7 @@ Hihgly experimental, currently suitable only for development of csmock itself.
 
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
-Requires: cscppc
+Requires: cscppc >= 1.0.4
 Requires: csmock
 
 %description -n csmock-plugin-cppcheck

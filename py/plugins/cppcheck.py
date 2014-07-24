@@ -18,6 +18,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import subprocess
 
 class PluginProps:
     def __init__(self):
@@ -52,10 +53,15 @@ class Plugin:
 --checker CPPCHECK_WARNING \
 --event 'preprocessorErrorDirective|syntaxError'"]
 
-        # FIXME: /usr/lib64 is arch-specific
-        props.path = ["/usr/lib64/cscppc"] + props.path
+        # resolve cscppc_path by querying csmock binary
+        cmd = ["cscppc", "--print-path-to-wrap"]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = p.communicate()
+        cscppc_path = out.strip()
+
+        props.path = [cscppc_path] + props.path
         props.copy_in_files += \
-                ["/usr/bin/cscppc", "/usr/lib64/cscppc", "/usr/share/cscppc"]
+                ["/usr/bin/cscppc", cscppc_path, "/usr/share/cscppc"]
 
         if self.use_host_cppcheck:
             # install only tinyxml2 (if acutally required by cppcheck)

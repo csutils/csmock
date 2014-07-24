@@ -335,9 +335,14 @@ class ScanProps:
             return
         self.cswrap_enabled = True
 
-        # FIXME: /usr/lib64 is arch-specific
-        self.copy_in_files += ["/usr/bin/cswrap", "/usr/lib64/cswrap"]
-        self.path = ["/usr/lib64/cswrap"] + self.path
+        # resolve cswrap_path by querying cswrap binary
+        cmd = ["cswrap", "--print-path-to-wrap"]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = p.communicate()
+        cswrap_path = out.strip()
+
+        self.copy_in_files += ["/usr/bin/cswrap", cswrap_path]
+        self.path = [cswrap_path] + self.path
         self.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
         self.env["CSWRAP_TIMEOUT"] = "300"
         self.copy_out_files += ["/builddir/cswrap-capture.err"]
