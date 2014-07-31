@@ -110,6 +110,9 @@ class Plugin:
             self.flags |= flags_by_warning_level(args.gcc_warning_level)
 
         if not self.enabled:
+            # drop COMPILER_WARNING defects mistakenly enabled by other plug-ins
+            props.cswrap_filters += \
+                ["csgrep --invert-match --checker COMPILER_WARNING"]
             return
 
         props.enable_cswrap()
