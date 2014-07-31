@@ -40,7 +40,7 @@ cwe_list_file = csmock_datadir + "/cwe-map.csv"
 
 plugin_dir= "@PLUGIN_DIR@"
 
-default_cswrap_timeout = 8
+default_cswrap_timeout = 30
 
 default_jobs_cnt = 13
 
