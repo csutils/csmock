@@ -40,7 +40,7 @@ cwe_list_file = csmock_datadir + "/cwe-map.csv"
 
 plugin_dir= "@PLUGIN_DIR@"
 
-default_cswrap_timeout = 60
+default_cswrap_timeout = 8
 
 default_jobs_cnt = 13
 
@@ -348,6 +348,7 @@ class ScanProps:
         self.path = [cswrap_path] + self.path
         self.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
         self.env["CSWRAP_TIMEOUT"] = "%d" % self.cswrap_timeout
+        self.env["CSWRAP_TIMEOUT_FOR"] = ""
         self.copy_out_files += ["/builddir/cswrap-capture.err"]
 
     def pick_cswrap_results(self, results):

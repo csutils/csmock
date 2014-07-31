@@ -42,6 +42,7 @@ class Plugin:
             return
 
         props.enable_cswrap()
+        props.env["CSWRAP_TIMEOUT_FOR"] += ":clang:clang++"
         props.cswrap_filters += \
                 ["csgrep --invert-match --checker CLANG_WARNING --event error"]
 
