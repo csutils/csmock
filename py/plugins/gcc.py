@@ -31,11 +31,11 @@ add_flags_by_level_common = {
             "-Wwrite-strings"])}
 
 add_flags_by_level_c_only = {
-        0: set(["-Wno-unknown-pragmas"])}
+        0: set(["-Wno-unknown-pragmas"]),
+        2: set(["-Wstrict-prototypes"])}
 
 add_flags_by_level_cxx_only = {
-        2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual",
-            "-Wstrict-prototypes"])}
+        2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
 
 def serialize_flags(flags):
     str = ""
