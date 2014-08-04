@@ -62,7 +62,7 @@ class FlagsMatrix:
 
     def write_to_env(self, env):
         env["CSWRAP_ADD_CFLAGS"]   = serialize_flags(self.add_cflags)
-        env["CSWRAP_DEL_CFLAGS="]  = serialize_flags(self.del_cflags)
+        env["CSWRAP_DEL_CFLAGS"]   = serialize_flags(self.del_cflags)
         env["CSWRAP_ADD_CXXFLAGS"] = serialize_flags(self.add_cxxflags)
         env["CSWRAP_DEL_CXXFLAGS"] = serialize_flags(self.del_cxxflags)
 
