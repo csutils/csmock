@@ -18,6 +18,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 
 class PluginProps:
     def __init__(self):
@@ -56,3 +57,15 @@ class Plugin:
         props.rpm_opts += [
                 "--define",  "__cc /usr/libexec/clang-analyzer/scan-build/ccc-analyzer",
                 "--define", "__cxx /usr/libexec/clang-analyzer/scan-build/c++-analyzer"]
+
+        def store_clang_version_hook(results, mock):
+            cmd = "grep '^clang-[0-9]' %s/rpm-list-mock.txt" % results.dbgdir
+            (rc, nvr) = results.get_cmd_output(cmd)
+            if 0 != rc:
+                return rc
+
+            ver = re.sub("-[0-9].*$", "", re.sub("^clang-", "", nvr.strip()))
+            results.ini_writer.append("analyzer-version-clang", ver)
+            return 0
+
+        props.post_depinst_hooks += [store_clang_version_hook]
