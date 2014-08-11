@@ -319,6 +319,7 @@ class ScanProps:
         self.install_pkgs = []
         self.copy_in_files = []
         self.pre_mock_hooks = []
+        self.post_depinst_hooks = []
         self.rpm_opts = default_rpm_opts
         self.path = []
         self.env = { }
@@ -728,6 +729,12 @@ cd %%s*/\n\
             cmd += strlist_to_shell_cmd(
                     mock.get_mock_cmd(["--shell", "tar -xC/"]))
             results.exec_cmd(cmd, shell=True)
+
+            # run post-depinst hooks
+            for hook in props.post_depinst_hooks:
+                rv = hook(results, mock)
+                if rv != 0:
+                    results.error("post-depinst hook failed", ec=rv)
 
             if args.shell_cmd is None:
                 # install the copied SRPM into the chroot

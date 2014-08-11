@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x10
@@ -120,3 +122,15 @@ class Plugin:
             ["csgrep --invert-match --checker COMPILER_WARNING --event error"]
 
         self.flags.write_to_env(props.env)
+
+        def store_gcc_version_hook(results, mock):
+            cmd = "grep '^gcc-[0-9]' %s/rpm-list-mock.txt" % results.dbgdir
+            (rc, nvr) = results.get_cmd_output(cmd)
+            if 0 != rc:
+                return rc
+
+            ver = re.sub("-[0-9].*$", "", re.sub("^gcc-", "", nvr.strip()))
+            results.ini_writer.append("analyzer-version-gcc", ver)
+            return 0
+
+        props.post_depinst_hooks += [store_gcc_version_hook]
