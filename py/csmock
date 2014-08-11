@@ -219,9 +219,9 @@ class ScanResults:
         self.log_fd.write("\n")
         return rv
 
-    def get_cmd_output(self, cmd, input=None):
+    def get_cmd_output(self, cmd, input=None, shell=True):
         self.p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                stderr=self.log_fd, shell=True)
+                stderr=self.log_fd, shell=shell)
         (out, _) = self.p.communicate()
         out = out.decode("utf8")
         return (self.p.returncode, out)

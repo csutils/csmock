@@ -18,6 +18,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import subprocess
 
 class PluginProps:
@@ -77,3 +78,15 @@ class Plugin:
         else:
             # install cppcheck into the chroot
             props.install_pkgs += ["cppcheck"]
+
+        def store_cppcheck_version_hook(results, mock):
+            cmd = mock.get_mock_cmd(["--chroot", "cppcheck --version"])
+            (rc, verstr) = results.get_cmd_output(cmd, shell=False)
+            if 0 != rc:
+                return rc
+
+            ver = re.sub("^Cppcheck ", "", verstr.strip())
+            results.ini_writer.append("analyzer-version-cppcheck", ver)
+            return 0
+
+        props.post_depinst_hooks += [store_cppcheck_version_hook]
