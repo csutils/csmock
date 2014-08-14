@@ -105,6 +105,37 @@ def strlist_to_shell_cmd(cmd_in, escape_special=False):
         cmd_out += " " + translate_one(i)
     return cmd_out.lstrip()
 
+def find_missing_pkgs(pkgs, results, mock):
+    # dump list of RPMs installed in the chroot (for debugging purposes)
+    tmp_var_lib = "%s/var/lib" % results.tmpdir
+    if os.path.isdir(tmp_var_lib):
+        shutil.rmtree(tmp_var_lib)
+    os.makedirs(tmp_var_lib)
+    mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
+    tmp_rpm = "%s/rpm" % tmp_var_lib
+    installed = "%s/rpm-list-mock.txt" % results.dbgdir
+    provides = "%s/rpm-list-mock-provides.txt" % results.tmpdir
+    results.exec_cmd("chmod -w '%s' && rpm -qa --root '%s' | sort -V \
+> '%s' && rpm -qa --provides --root '%s' > '%s' && chmod u+w '%s'" % (tmp_rpm,
+        results.tmpdir, installed, results.tmpdir, provides, tmp_rpm),
+        shell=True)
+
+    missing = []
+    installed = set()
+    with open(provides) as f:
+        lines = f.readlines()
+        for l in lines:
+            pkg = re.sub(" .*$", "", l.strip())
+            installed.add(pkg)
+    for dep in pkgs:
+        if re.match("^.*(/|rpmlib\\(.*\\))", dep) is not None:
+            # FIXME: we do not check this kind of dependencies
+            continue
+        pkg = re.sub(" .*$", "", dep)
+        if pkg not in installed:
+            missing += [pkg]
+    return missing
+
 class ScanResults:
     def __init__(self, output, keep_going=False):
         self.output = output
@@ -468,37 +499,6 @@ def finalize_results(js_file, results):
     cmd = "csgrep --mode=stat '%s' | tee '%s'" % (err_file, summary_file)
     return results.exec_cmd(cmd, shell=True)
 
-def find_missing_pkgs(props, results, mock):
-    # dump list of RPMs installed in the chroot (for debugging purposes)
-    tmp_var_lib = "%s/var/lib" % results.tmpdir
-    if os.path.isdir(tmp_var_lib):
-        shutil.rmtree(tmp_var_lib)
-    os.makedirs(tmp_var_lib)
-    mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
-    tmp_rpm = "%s/rpm" % tmp_var_lib
-    installed = "%s/rpm-list-mock.txt" % results.dbgdir
-    provides = "%s/rpm-list-mock-provides.txt" % results.tmpdir
-    results.exec_cmd("chmod -w '%s' && rpm -qa --root '%s' | sort -V \
-> '%s' && rpm -qa --provides --root '%s' > '%s' && chmod u+w '%s'" % (tmp_rpm,
-        results.tmpdir, installed, results.tmpdir, provides, tmp_rpm),
-        shell=True)
-
-    missing = []
-    installed = set()
-    with open(provides) as f:
-        lines = f.readlines()
-        for l in lines:
-            pkg = re.sub(" .*$", "", l.strip())
-            installed.add(pkg)
-    for dep in props.install_pkgs:
-        if re.match("^.*(/|rpmlib\\(.*\\))", dep) is not None:
-            # FIXME: we do not check this kind of dependencies
-            continue
-        pkg = re.sub(" .*$", "", dep)
-        if pkg not in installed:
-            missing += [pkg]
-    return missing
-
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
     def __init__(self, option_strings, dest=None, default=None, help=None):
@@ -705,7 +705,7 @@ def do_scan(props, output, skip_patches):
 
                 # install required packages according to ScanProps
                 mock.exec_mock_cmd(["--install"] + props.install_pkgs)
-                missing_deps = find_missing_pkgs(props, results, mock)
+                missing_deps = find_missing_pkgs(props.install_pkgs, results, mock)
                 if len(missing_deps) == 0:
                     break
 
@@ -717,7 +717,7 @@ def do_scan(props, output, skip_patches):
                     for pkg in props.install_pkgs:
                         mock.try_install(pkg)
                     # check that all dependencies are installed
-                    missing_deps = find_missing_pkgs(props, results, mock)
+                    missing_deps = find_missing_pkgs(props.install_pkgs, results, mock)
                     if len(missing_deps) != 0:
                         results.error("failed to install dependencies: %s" % \
                                 strlist_to_shell_cmd(missing_deps))
@@ -766,7 +766,7 @@ cd %%s*/\n\
                     # use the rebuilt SRPM to install arch-specific dependencies
                     mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
                     mock.exec_mock_cmd(["--installdeps", "-v", srpm_dup])
-                    find_missing_pkgs(props, results, mock)
+                    find_missing_pkgs(props.install_pkgs, results, mock)
 
                 # run fixups scripts
                 mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
