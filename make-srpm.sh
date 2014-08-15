@@ -107,6 +107,14 @@ Requires: csmock
 %description -n csmock-plugin-clang
 Hihgly experimental, currently suitable only for development of csmock itself.
 
+%package -n csmock-plugin-clang-fast
+Summary: csmock plug-in providing the support for Clang via the csclng wrapper
+Requires: csclng
+Requires: csmock
+
+%description -n csmock-plugin-clang-fast
+Hihgly experimental, currently suitable only for development of csmock itself.
+
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
 Requires: cscppc >= 1.0.4
@@ -193,6 +201,10 @@ install -p -m0755 scripts/*.sh \\
 %defattr(-,root,root,-)
 %{_datadir}/csmock/scripts/fixups-clang.sh
 %{python2_sitelib}/csmock/plugins/clang.py*
+
+%files -n csmock-plugin-clang-fast
+%defattr(-,root,root,-)
+%{python2_sitelib}/csmock/plugins/clang-fast.py*
 
 %files -n csmock-plugin-cppcheck
 %defattr(-,root,root,-)
