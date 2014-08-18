@@ -97,15 +97,15 @@ Obsoletes: csmock-ng <= 1.1.1
 BuildArch: noarch
 
 %description
-This package contains cov-mockbuild and cov-diffbuild tools that allow to scan
-SRPMs by Static Analysis tools in a fully automated way.
+This package contains the csmock tool that allows to scan SRPMs by Static
+Analysis tools in a fully automated way.
 
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
 Requires: csmock
 
 %description -n csmock-plugin-clang
-Hihgly experimental, currently suitable only for development of csmock itself.
+This package contains the clang plug-in for csmock.
 
 %package -n csmock-plugin-clang-fast
 Summary: csmock plug-in providing the support for Clang via the csclng wrapper
@@ -113,7 +113,7 @@ Requires: csclng
 Requires: csmock
 
 %description -n csmock-plugin-clang-fast
-Hihgly experimental, currently suitable only for development of csmock itself.
+Highly experimental, currently suitable only for development of csmock itself.
 
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
@@ -121,7 +121,7 @@ Requires: cscppc >= 1.0.4
 Requires: csmock
 
 %description -n csmock-plugin-cppcheck
-Hihgly experimental, currently suitable only for development of csmock itself.
+This package contains the cppcheck plug-in for csmock.
 
 %if 0%{?rhel} && 0%{?rhel} <= 6
 %{!?__python2: %global __python2 /usr/bin/python2}
