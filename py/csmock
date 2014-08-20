@@ -422,7 +422,7 @@ class ScanProps:
         self.path = [cswrap_path] + self.path
         self.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
         self.env["CSWRAP_TIMEOUT"] = "%d" % self.cswrap_timeout
-        self.env["CSWRAP_TIMEOUT_FOR"] = ""
+        self.env["CSWRAP_TIMEOUT_FOR"] = ":"
         self.copy_out_files += ["/builddir/cswrap-capture.err"]
 
     def pick_cswrap_results(self, results):
