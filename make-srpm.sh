@@ -75,7 +75,6 @@ Group:      Development/Tools
 License:    GPLv3+
 URL:        https://git.fedorahosted.org/cgit/csmock.git
 Source0:    https://git.fedorahosted.org/cgit/csmock.git/snapshot/$SRC
-BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires: help2man
 BuildRequires: python-devel
@@ -153,12 +152,7 @@ help2man --no-info --section 1 --name \\
     "run static analysis of the given SRPM using mock" \\
     py/csmock > man/csmock.1
 
-%clean
-rm -rf "\$RPM_BUILD_ROOT"
-
 %install
-rm -rf "\$RPM_BUILD_ROOT"
-
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_bindir}" \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
@@ -183,7 +177,6 @@ install -p -m0755 scripts/*.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
 
 %files
-%defattr(-,root,root,-)
 %{_bindir}/cov-dump-err
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
@@ -198,22 +191,17 @@ install -p -m0755 scripts/*.sh \\
 %doc COPYING
 
 %files -n csmock-plugin-clang
-%defattr(-,root,root,-)
 %{_datadir}/csmock/scripts/fixups-clang.sh
 %{python2_sitelib}/csmock/plugins/clang.py*
 
 %files -n csmock-plugin-clang-fast
-%defattr(-,root,root,-)
 %{python2_sitelib}/csmock/plugins/clang-fast.py*
 
 %files -n csmock-plugin-cppcheck
-%defattr(-,root,root,-)
 %{python2_sitelib}/csmock/plugins/cppcheck.py*
 EOF
 
 rpmbuild -bs "$SPEC"                            \
     --define "_sourcedir $TMP"                  \
     --define "_specdir $TMP"                    \
-    --define "_srcrpmdir $DST"                  \
-    --define "_source_filedigest_algorithm md5" \
-    --define "_binary_filedigest_algorithm md5"
+    --define "_srcrpmdir $DST"
