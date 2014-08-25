@@ -101,18 +101,11 @@ Analysis tools in a fully automated way.
 
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
+Requires: csclng
 Requires: csmock
 
 %description -n csmock-plugin-clang
 This package contains the clang plug-in for csmock.
-
-%package -n csmock-plugin-clang-fast
-Summary: csmock plug-in providing the support for Clang via the csclng wrapper
-Requires: csclng
-Requires: csmock
-
-%description -n csmock-plugin-clang-fast
-Highly experimental, currently suitable only for development of csmock itself.
 
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
@@ -191,11 +184,7 @@ install -p -m0755 scripts/*.sh \\
 %doc COPYING
 
 %files -n csmock-plugin-clang
-%{_datadir}/csmock/scripts/fixups-clang.sh
 %{python2_sitelib}/csmock/plugins/clang.py*
-
-%files -n csmock-plugin-clang-fast
-%{python2_sitelib}/csmock/plugins/clang-fast.py*
 
 %files -n csmock-plugin-cppcheck
 %{python2_sitelib}/csmock/plugins/cppcheck.py*

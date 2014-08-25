@@ -19,6 +19,7 @@
 
 import os
 import re
+import subprocess
 
 class PluginProps:
     def __init__(self):
@@ -47,16 +48,17 @@ class Plugin:
         props.cswrap_filters += \
                 ["csgrep --invert-match --checker CLANG_WARNING --event error"]
 
-        props.install_pkgs += ["clang-analyzer", "imake"]
+        props.install_pkgs += ["clang"]
 
-        props.copy_in_files += ["/usr/share/csmock/scripts/fixups-clang.sh"]
+        # resolve csclng_path by querying csmock binary
+        cmd = ["csclng", "--print-path-to-wrap"]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = p.communicate()
+        csclng_path = out.strip()
 
-        props.build_cmd_wrappers += ["scan-build -plist %s"]
-
-        # needed for the krb5 package, which overrides $CC by the __cc RPM macro
-        props.rpm_opts += [
-                "--define",  "__cc /usr/libexec/clang-analyzer/scan-build/ccc-analyzer",
-                "--define", "__cxx /usr/libexec/clang-analyzer/scan-build/c++-analyzer"]
+        props.path = [csclng_path] + props.path
+        props.copy_in_files += \
+                ["/usr/bin/csclng", csclng_path]
 
         def store_clang_version_hook(results, mock):
             cmd = "grep '^clang-[0-9]' %s/rpm-list-mock.txt" % results.dbgdir
