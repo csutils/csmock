@@ -172,6 +172,9 @@ install -p -m0644 py/plugins/*.py \\
 install -p -m0755 scripts/*.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
 
+# needed to create the csmock RPM
+%files
+
 %files -n csmock-common
 %{_bindir}/cov-dump-err
 %{_bindir}/cov-diffbuild
