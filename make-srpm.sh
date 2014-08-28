@@ -82,27 +82,30 @@ BuildRequires: python-devel
 BuildRequires: python-argparse
 %endif
 
+# This pulls in csmock-common transitively
+Requires: csmock-plugin-clang
+Requires: csmock-plugin-cppcheck
+
+BuildArch: noarch
+
+%description
+This is a metapackage pulling in csmock-common and basic csmock plug-ins.
+
+%package -n csmock-common
+Summary: Core of csmock (a mock wrapper for Static Analysis tools)
 Requires: csdiff
 Requires: cswrap >= 1.0.4
 Requires: mock
 Requires: rpm-build
 
-# TODO: make these sub-packages optional
-Requires: csmock-plugin-clang
-Requires: csmock-plugin-cppcheck
-
-Obsoletes: csmock-ng <= 1.1.1
-
-BuildArch: noarch
-
-%description
+%description -n csmock-common
 This package contains the csmock tool that allows to scan SRPMs by Static
 Analysis tools in a fully automated way.
 
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
 Requires: csclng
-Requires: csmock
+Requires: csmock-common
 
 %description -n csmock-plugin-clang
 This package contains the clang plug-in for csmock.
@@ -110,7 +113,7 @@ This package contains the clang plug-in for csmock.
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
 Requires: cscppc >= 1.0.4
-Requires: csmock
+Requires: csmock-common
 
 %description -n csmock-plugin-cppcheck
 This package contains the cppcheck plug-in for csmock.
@@ -169,7 +172,7 @@ install -p -m0644 py/plugins/*.py \\
 install -p -m0755 scripts/*.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
 
-%files
+%files -n csmock-common
 %{_bindir}/cov-dump-err
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
