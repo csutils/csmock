@@ -82,7 +82,7 @@ BuildRequires: python-devel
 BuildRequires: python-argparse
 %endif
 
-# This pulls in csmock-common transitively
+Requires: csmock-common
 Requires: csmock-plugin-clang
 Requires: csmock-plugin-cppcheck
 
