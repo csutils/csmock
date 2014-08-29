@@ -719,13 +719,13 @@ def do_scan(props, output, skip_patches):
                 spec = spec.rstrip()
                 spec_in = "/builddir/build/SPECS/%s" % spec
 
+                # get the dependency list of the given SRPM
+                props.install_pkgs += deplist_from_srpm(results, srpm)
+
             # copy the given SRPM into our tmp dir
             srpm_dup = "%s/%s" % (results.tmpdir, srpm_base)
             shutil.copyfile(srpm, srpm_dup)
             props.copy_in_files += [srpm_dup]
-
-            # get the dependency list of the given SRPM
-            props.install_pkgs += deplist_from_srpm(results, srpm)
 
         # run pre-mock hooks
         for hook in props.pre_mock_hooks:
