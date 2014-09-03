@@ -24,6 +24,24 @@ set -o pipefail
 
 export LC_ALL=C
 
+if tty 0>&2 >/dev/null; then
+    R="\033[1;31m"
+    G="\033[1;32m"
+    N="\033[0m"
+else
+    R=
+    G=
+    N=
+fi
+
+printf "${R}
+*******************************************************************************
+*                                                                              *
+*   ${N}cov-diffbuild is deprecated, please use '${G}csmock --diff-patches${N}' instead!${R}   *
+*                                                                              *
+********************************************************************************
+${N}\n" >&2
+
 test -z "$TMPDIR" && TMPDIR="/tmp"
 
 OPTS="bcd:fhilm::ntw:"

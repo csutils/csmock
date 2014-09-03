@@ -137,11 +137,11 @@ sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' \\
     -i py/csmock
 
 help2man --no-info --section 1 --name \\
-    "run static analysis of the given SRPM using mock" \\
+    "DEPRECATED - please use csmock instead!" \\
     bin/cov-mockbuild > man/cov-mockbuild.1
 
 help2man --no-info --section 1 --name \\
-    "run static analysis of the given the patches in the given SRPM using cov-mockbuild" \\
+    "DEPRECATED - please use 'csmock --diff-patches' instead!" \\
     bin/cov-diffbuild > man/cov-diffbuild.1
 
 help2man --no-info --section 1 --name \\
