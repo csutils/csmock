@@ -405,6 +405,7 @@ class ScanProps:
         self.post_process_hooks = []
         self.keep_going = False
         self.cswrap_timeout = default_cswrap_timeout
+        self.no_scan = False
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -656,6 +657,7 @@ if args.no_scan and args.shell_cmd is not None:
 props = ScanProps()
 props.keep_going = args.keep_going
 props.cswrap_timeout = args.cswrap_timeout
+props.no_scan = args.no_scan
 
 # initialize the %{_smp_mflags} RPM macro
 mflags_rpmm = "_smp_mflags"
@@ -672,7 +674,7 @@ if args.list_of_pkgs is not None:
     # append the list of packages to install specified on command-line
     props.install_pkgs += args.list_of_pkgs.split()
 
-if not args.no_scan:
+if not props.no_scan:
     # make sure that 'srpm' is a file (it can be a tar archive instead of SRPM)
     require_file(parser, srpm)
 
@@ -708,7 +710,7 @@ def do_scan(props, output, skip_patches):
         results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-host.txt'"
                 % results.dbgdir, shell=True)
 
-        if not args.no_scan:
+        if not props.no_scan:
             if args.shell_cmd is None:
                 # check the given SRPM
                 if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
@@ -762,7 +764,7 @@ cd %%s*/\n\
                 if rv != 0:
                     results.error("post-depinst hook failed", ec=rv)
 
-            if not args.no_scan:
+            if not props.no_scan:
                 if args.shell_cmd is None:
                     # install the copied SRPM into the chroot
                     mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
@@ -837,7 +839,7 @@ cd %%s*/\n\
 
         # we are done with mock
 
-        if not args.no_scan:
+        if not props.no_scan:
             if props.pick_cswrap_results(results) != 0:
                 results.error("failed to pick cswrap results")
 
