@@ -676,6 +676,7 @@ if not args.no_scan:
     # make sure that 'srpm' is a file (it can be a tar archive instead of SRPM)
     require_file(parser, srpm)
 
+if srpm is not None:
     # resolve NVR
     srpm_base = os.path.basename(srpm)
     if args.shell_cmd is None:
