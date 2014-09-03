@@ -159,7 +159,7 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
 
 install -p -m0755 \\
-    cov-{diff,mock}build cov-dump-err rpmbuild-rawbuild py/csmock \\
+    cov-{diff,mock}build rpmbuild-rawbuild py/csmock \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
 install -p -m0644 man/{csmock,cov-{diff,mock}build}.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
@@ -176,7 +176,6 @@ install -p -m0755 scripts/*.sh \\
 %files
 
 %files -n csmock-common
-%{_bindir}/cov-dump-err
 %{_bindir}/cov-diffbuild
 %{_bindir}/cov-mockbuild
 %{_bindir}/csmock
