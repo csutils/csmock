@@ -587,7 +587,7 @@ parser.add_argument("SRPM", nargs="?",
 parser.add_argument("-r", "--root", dest="mock_profile", default="default",
         help="mock profile to use (defaults to mock's default)")
 
-parser.add_argument("-t", "--tools", default="",
+parser.add_argument("-t", "--tools", action="append", default=[],
         help="comma-spearated list of tools to enable")
 
 parser.add_argument("-l", "--list-available-tools", action=ToolsPrinter,
@@ -637,15 +637,16 @@ plugins.init_parser(parser)
 args = parser.parse_args()
 
 # check that only available tools are requested
-for i in args.tools.split(","):
-    tool = i.strip()
-    if len(tool) == 0:
-        continue
-    if tool in plugin_list:
-        # explicitly enable this tool
-        plugins.enable(tool)
-    else:
-        parser.error("tool not available: %s" % tool)
+for i in args.tools:
+    for j in i.split(","):
+        tool = j.strip()
+        if len(tool) == 0:
+            continue
+        if tool in plugin_list:
+            # explicitly enable this tool
+            plugins.enable(tool)
+        else:
+            parser.error("tool not available: %s" % tool)
 
 srpm = args.SRPM
 output = args.output
