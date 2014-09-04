@@ -144,8 +144,7 @@ help2man --no-info --section 1 --name \\
     "DEPRECATED - please use 'csmock --diff-patches' instead!" \\
     bin/cov-diffbuild > man/cov-diffbuild.1
 
-help2man --no-info --section 1 --name \\
-    "run static analysis of the given SRPM using mock" \\
+help2man --no-info --section 1 --include doc/csmock.h2m \\
     py/csmock > man/csmock.1
 
 %install

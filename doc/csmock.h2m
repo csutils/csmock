@@ -1,0 +1,33 @@
+[NAME]
+csmock - run static analysis of the given SRPM using mock
+
+[OUTPUT FORMAT]
+If not overridden by the --output option, csmock creates an archive
+.B NVR.tar.xz
+in the current directory for an SRPM named NVR.src.rpm (or NVR.tar.* if the
+--shell-cmd option is used).  The archive contains a directory named NVR as the
+only top-level directory, containing the following items:
+
+.B scan-results.err
+- scan results encoded as plain-text (for source code editors)
+
+.B scan-results.html
+- scan results encoded as HTML (suitable for web browsers)
+
+.B scan-results.js
+- scan results, including scan metadata, encoded using JSON
+
+.B scan-results-summary.txt
+- total count of defects found by particular checkers
+
+.B scan.ini
+- scan metadata encoded in the INI format
+
+.B scan.log
+- scan log file (useful for debugging scan failures)
+
+.B debug
+- a directory containing additional data (intended for csmock debugging)
+
+Note that external plug-ins of csmock may create additional files (not covered
+by this man page) in the directory with results.
