@@ -311,8 +311,13 @@ class MockWrapper:
 
         # prepare the mock command template with default arguments
         if os.path.exists("/usr/bin/mock-unbuffered"):
-            mock = "mock-unbuffered"
+            # mock wrapper writing debug output without buffering
+            mock = "/usr/bin/mock-unbuffered"
+        elif os.path.exists("/usr/bin/mock"):
+            # mock wrapper for non-privileged users (members of group mock)
+            mock = "/usr/bin/mock"
         else:
+            # fallback to any mock in $PATH (e.g. /usr/local/bin/mock)
             mock = "mock"
         self.def_cmd = [mock, "-r", self.mock_profile]
         if (self.results.get_cmd_output("mock --help | grep package_state")[0] == 0):
