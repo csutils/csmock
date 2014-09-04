@@ -163,7 +163,7 @@ install -p -m0755 \\
 
 install -p -m0644 man/{csmock,cov-{diff,mock}build}.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
-install -p -m0644 cov_checker_map.txt "\$RPM_BUILD_ROOT%{_datadir}/csmock/cwe-map.csv"
+install -p -m0644 cwe-map.csv "\$RPM_BUILD_ROOT%{_datadir}/csmock/"
 
 install -p -m0644 py/plugins/*.py \\
     "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
