@@ -21,6 +21,24 @@ SELF="$0"
 LC_ALL=C
 export SELF LC_ALL
 
+if tty 0>&2 >/dev/null; then
+    R="\033[1;31m"
+    G="\033[1;32m"
+    N="\033[0m"
+else
+    R=
+    G=
+    N=
+fi
+
+printf "${R}
+************************************************************************************
+*                                                                                  *
+*   ${N}rpmbuild-rawbuild is deprecated, please use '${G}csmock --skip-patches${N}' instead!${R}   *
+*                                                                                  *
+************************************************************************************
+${N}\n" >&2
+
 if test -z "$1" || test "x--help" = "x$1"; then
     printf "Usage: %s RPMBUILD_OPTIONS SPEC|SRPM
 
