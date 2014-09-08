@@ -185,7 +185,7 @@ install -p -m0755 scripts/*.sh \\
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
 %{python2_sitelib}/csmock/plugins/gcc.py*
-%doc COPYING
+%doc COPYING README
 
 %files -n csmock-plugin-clang
 %{python2_sitelib}/csmock/plugins/clang.py*

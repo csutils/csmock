@@ -1,0 +1,40 @@
+csmock
+======
+csmock is a tool for scanning SRPMs by Static Analysis tools in a fully
+automated way.  You can find the up2date sources in the following repository:
+
+    https://git.fedorahosted.org/cgit/csmock.git
+
+Please report bugs and feature requests to the following mailing-list:
+
+    https://fedorahosted.org/mailman/listinfo/csmock-devel
+
+csmock is licensed under GPLv3+, see COPYING for details.
+
+
+Dependences
+-----------
+    * csdiff (non-interactive tools for processing scan results in plain-text)
+
+    * cswrap (generic compiler wrapper using to capture diagnostic messages)
+
+    * mock (chroot-based tool for building RPMs)
+
+
+RPM-based Installation
+----------------------
+    ./make-srpm.sh
+
+    rpmbuild --rebuild ./csmock-*.src.rpm
+
+    sudo yum install ...
+
+
+Documentation
+-------------
+See the 'csmock(1)' man page for usage of csmock itself.  The output
+of 'csmock --help' additionally includes the command-line options handled
+by csmock plug-ins.  A higher-level description can be found in the Flock
+2014 presentation about csmock:
+
+    https://kdudka.fedorapeople.org/static-analysis-flock2014.pdf
