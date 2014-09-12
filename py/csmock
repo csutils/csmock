@@ -411,6 +411,7 @@ class ScanProps:
         self.keep_going = False
         self.cswrap_timeout = default_cswrap_timeout
         self.no_scan = False
+        self.need_rpm_bi = False
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -823,6 +824,13 @@ cd %%s*/\n\
                 ec = mock.exec_mockbuild_cmd(build_cmd)
                 if (ec != 0):
                     results.error("%build failed", ec=ec)
+
+                if props.need_rpm_bi:
+                    cmd = "rpmbuild -bi --nodeps --short-circuit %s %s" \
+                        % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
+                    ec = mock.exec_mockbuild_cmd(cmd)
+                    if (ec != 0):
+                        results.error("%install failed", ec=ec)
 
                 # execute post-build commands in the chroot
                 for cmd in props.post_build_chroot_cmds:

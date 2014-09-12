@@ -32,7 +32,7 @@ RPM-based Installation
 
 Documentation
 -------------
-See the 'csmock(1)' man page for usage of csmock itself.  The output
+See the 'csmock(1)' man page for the usage of csmock itself.  The output
 of 'csmock --help' additionally includes the command-line options handled
 by csmock plug-ins.  A higher-level description can be found in the Flock
 2014 presentation about csmock:
