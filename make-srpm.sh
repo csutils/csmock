@@ -124,6 +124,12 @@ Summary: csmock plug-in providing the support for Pylint.
 %description -n csmock-plugin-pylint
 This package contains the pylint plug-in for csmock.
 
+%package -n csmock-plugin-shellcheck
+Summary: csmock plug-in providing the support for Pylint.
+
+%description -n csmock-plugin-shellcheck
+This package contains the shellcheck plug-in for csmock.
+
 %if 0%{?rhel} && 0%{?rhel} <= 6
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -202,6 +208,10 @@ install -p -m0755 scripts/*.sh \\
 %files -n csmock-plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
 %{python2_sitelib}/csmock/plugins/pylint*
+
+%files -n csmock-plugin-shellcheck
+%{_datadir}/csmock/scripts/run-shellcheck.sh
+%{python2_sitelib}/csmock/plugins/shellcheck*
 EOF
 
 rpmbuild -bs "$SPEC"                            \
