@@ -60,6 +60,8 @@ class Plugin:
         props.path = [csclng_path] + props.path
         props.copy_in_files += \
                 ["/usr/bin/csclng", csclng_path]
+        if os.path.exists("/usr/bin/csclng++"):
+            props.copy_in_files += ["/usr/bin/csclng++"]
 
         def store_clang_version_hook(results, mock):
             cmd = "grep '^clang-[0-9]' %s/rpm-list-mock.txt" % results.dbgdir
