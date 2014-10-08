@@ -363,6 +363,9 @@ class MockWrapper:
                 self.results.fatal_error("failed to init mock profile: %s"
                         % self.mock_profile)
 
+            if len(pkgs) == 0:
+                return True
+
             # install required packages (all at once)
             self.exec_mock_cmd(["--install"] + pkgs)
             missing_deps = find_missing_pkgs(pkgs, self.results, self)
@@ -391,6 +394,9 @@ class MockWrapper:
             self.results.error("failed to install dependencies: %s" % \
                     strlist_to_shell_cmd(missing_deps))
             return False
+
+    def init(self):
+       return self.init_and_install([])
 
 class ScanProps:
     def __init__(self):
@@ -729,9 +735,6 @@ def do_scan(props, output, skip_patches):
                 spec = spec.rstrip()
                 spec_in = "/builddir/build/SPECS/%s" % spec
 
-                # get the dependency list of the given SRPM
-                props.install_pkgs += deplist_from_srpm(results, srpm)
-
             # copy the given SRPM into our tmp dir
             srpm_dup = "%s/%s" % (results.tmpdir, srpm_base)
             shutil.copyfile(srpm, srpm_dup)
@@ -744,6 +747,24 @@ def do_scan(props, output, skip_patches):
                 results.error("pre-mock hook failed", ec=rv)
 
         with MockWrapper(results, mock_profile) as mock:
+            if not props.no_scan and args.shell_cmd is None:
+                # first rebuild the given SRPM
+                mock.init()
+
+                # install the copied SRPM into the chroot
+                srpm_in = "/builddir/%s" % srpm_base
+                mock.exec_mock_cmd(["--copyin", srpm_dup, srpm_in])
+                mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_in)
+
+                # rebuild the given SRPM (and rename to match the original one)
+                mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
+/builddir/build/SRPMS && eval mv -v *.src.rpm %s || :'"
+                        % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
+
+                # use the rebuilt SRPM to get the dependency list
+                mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
+                props.install_pkgs += deplist_from_srpm(results, srpm_dup)
+
             # run 'mock --init' and 'mock --install'
             mock.init_and_install(props.install_pkgs)
 
@@ -777,16 +798,6 @@ cd %%s*/\n\
                     mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
                     # make the installed SRPM accessible (if the maintainer did not)
                     mock.exec_chroot_cmd("chmod -R +r /builddir")
-
-                    # rebuild the given SRPM (and rename to match the original one)
-                    mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
-/builddir/build/SRPMS && eval mv -v *.src.rpm %s || :'"
-                            % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
-
-                    # use the rebuilt SRPM to install arch-specific dependencies
-                    mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
-                    mock.exec_mock_cmd(["--installdeps", "-v", srpm_dup])
-                    find_missing_pkgs(props.install_pkgs, results, mock)
 
                 # run fixups scripts
                 mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
