@@ -395,9 +395,6 @@ class MockWrapper:
                     strlist_to_shell_cmd(missing_deps))
             return False
 
-    def init(self):
-       return self.init_and_install([])
-
 class ScanProps:
     def __init__(self):
         self.install_pkgs = []
@@ -751,7 +748,7 @@ def do_scan(props, output, skip_patches):
         with MockWrapper(results, mock_profile) as mock:
             if not props.no_scan and props.shell_cmd_to_build is None:
                 # first rebuild the given SRPM
-                mock.init()
+                mock.init_and_install(["python"])
 
                 # install the copied SRPM into the chroot
                 srpm_in = "/builddir/%s" % srpm_base
