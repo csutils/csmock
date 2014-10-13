@@ -418,6 +418,7 @@ class ScanProps:
         self.cswrap_timeout = default_cswrap_timeout
         self.no_scan = False
         self.need_rpm_bi = False
+        self.shell_cmd_to_build = None
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -671,6 +672,7 @@ props = ScanProps()
 props.keep_going = args.keep_going
 props.cswrap_timeout = args.cswrap_timeout
 props.no_scan = args.no_scan
+props.shell_cmd_to_build = args.shell_cmd
 
 # initialize the %{_smp_mflags} RPM macro
 mflags_rpmm = "_smp_mflags"
@@ -694,7 +696,7 @@ if not props.no_scan:
 if srpm is not None:
     # resolve NVR
     srpm_base = os.path.basename(srpm)
-    if args.shell_cmd is None:
+    if props.shell_cmd_to_build is None:
         nvr = re.sub("\.src\.rpm$", "", srpm_base)
     else:
         nvr = re.sub("\.tar$", "", re.sub("\.[^.]*$", "", srpm_base))
@@ -724,7 +726,7 @@ def do_scan(props, output, skip_patches):
                 % results.dbgdir, shell=True)
 
         if not props.no_scan:
-            if args.shell_cmd is None:
+            if props.shell_cmd_to_build is None:
                 # check the given SRPM
                 if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
                     results.fatal_error("failed to open SRPM: %s" % srpm)
@@ -747,7 +749,7 @@ def do_scan(props, output, skip_patches):
                 results.error("pre-mock hook failed", ec=rv)
 
         with MockWrapper(results, mock_profile) as mock:
-            if not props.no_scan and args.shell_cmd is None:
+            if not props.no_scan and props.shell_cmd_to_build is None:
                 # first rebuild the given SRPM
                 mock.init()
 
@@ -768,14 +770,14 @@ def do_scan(props, output, skip_patches):
             # run 'mock --init' and 'mock --install'
             mock.init_and_install(props.install_pkgs)
 
-            if args.shell_cmd is not None:
+            if props.shell_cmd_to_build is not None:
                 # prepare a build script in our tmp dir
                 build_script = "%s/build.sh" % results.tmpdir
                 results.exec_cmd("printf '#!/bin/sh\n\
 cd /builddir/build/BUILD || exit $?\n\
 cd %%s*/\n\
 %%s' '%s' '%s' | tee '%s' >&2\n" % (nvr,
-                args.shell_cmd, build_script), shell=True)
+                props.shell_cmd_to_build, build_script), shell=True)
                 props.copy_in_files += [build_script]
 
             # copy required files into the chroot
@@ -793,7 +795,7 @@ cd %%s*/\n\
                     results.error("post-depinst hook failed", ec=rv)
 
             if not props.no_scan:
-                if args.shell_cmd is None:
+                if props.shell_cmd_to_build is None:
                     # install the copied SRPM into the chroot
                     mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
                     # make the installed SRPM accessible (if the maintainer did not)
@@ -803,7 +805,7 @@ cd %%s*/\n\
                 mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
 | xargs -n1 sh -x" % csmock_datadir)
 
-                if args.shell_cmd is None:
+                if props.shell_cmd_to_build is None:
                     # run %prep phase without pluggin-in any static analyzers
                     ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s %s"
                             % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
@@ -818,7 +820,7 @@ cd %%s*/\n\
                 if (ec != 0):
                     results.error("%prep failed", ec=ec)
 
-                if args.shell_cmd is None:
+                if props.shell_cmd_to_build is None:
                     # run %build phase with static analyzers plugged-in
                     build_cmd = "rpmbuild -bc --nodeps --short-circuit %s %s" \
                             % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
@@ -837,6 +839,8 @@ cd %%s*/\n\
                     results.error("%build failed", ec=ec)
 
                 if props.need_rpm_bi:
+                    if props.shell_cmd_to_build is not None:
+                        results.fatal_error("SRPM is required by a plug-in")
                     cmd = "rpmbuild -bi --nodeps --short-circuit %s %s" \
                         % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
                     ec = mock.exec_mockbuild_cmd(cmd)

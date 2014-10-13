@@ -51,6 +51,9 @@ class Plugin:
         if not self.enabled:
             return
 
+        if props.shell_cmd_to_build is not None:
+            parser.error("The shellcheck plug-in works only with SRPMs")
+
         props.install_pkgs += ["ShellCheck"]
         props.copy_in_files += [run_shellcheck_sh]
         props.need_rpm_bi = True
