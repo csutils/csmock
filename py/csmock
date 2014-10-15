@@ -295,6 +295,7 @@ class MockWrapper:
         self.lock_file = "/tmp/.csmock-%s.lock" % mock_profile
         self.meta_lock_file = "/tmp/.csmock-%s.metalock" % mock_profile
         self.pid = os.getpid()
+        self.init_done = False
 
     def __enter__(self):
         cmd = "flock -w15 '%s' -c \"test ! -f '%s' && echo %d > '%s'\"" % (
@@ -354,15 +355,15 @@ class MockWrapper:
         for scrub_root in [False, True]:
             if scrub_root:
                 self.exec_mock_cmd(["--scrub=root-cache"])
+                if self.exec_mock_cmd(["--init"]) != 0:
+                    self.results.fatal_error("failed to init mock profile: %s"
+                            % self.mock_profile)
 
-            if self.exec_mock_cmd(["--init"]) != 0:
-                if not scrub_root:
-                    # try --scrub=root-cache
-                    continue
+            elif not self.init_done and self.exec_mock_cmd(["--init"]) != 0:
+                # try --scrub=root-cache
+                continue
 
-                self.results.fatal_error("failed to init mock profile: %s"
-                        % self.mock_profile)
-
+            self.init_done = True
             if len(pkgs) == 0:
                 return True
 
