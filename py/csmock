@@ -242,12 +242,20 @@ class ScanResults:
         self.error(msg, err_prefix="fatal ", ec=ec)
         sys.exit(ec)
 
-    def exec_cmd(self, cmd, shell=False):
+    def exec_cmd(self, cmd, shell=False, emul_pty=False):
+        if emul_pty:
+            # workaround for bug https://bugzilla.redhat.com/1166609
+            sh_cmd = strlist_to_shell_cmd(cmd, escape_special=True)
+            cmd = ["script", "-feqc", sh_cmd]
+
         self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
         self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd,
                 shell=shell)
         rv = self.p.wait()
         self.log_fd.write("\n")
+        if 128 <= rv:
+            # if the child has been signalled, signal self with the same signal
+            os.kill(os.getpid(), rv - 128)
         return rv
 
     def get_cmd_output(self, cmd, input=None, shell=True):
@@ -296,6 +304,7 @@ class MockWrapper:
         self.meta_lock_file = "/tmp/.csmock-%s.metalock" % mock_profile
         self.pid = os.getpid()
         self.init_done = False
+        self.emul_pty = False
 
     def __enter__(self):
         cmd = "flock -w15 '%s' -c \"test ! -f '%s' && echo %d > '%s'\"" % (
@@ -324,6 +333,11 @@ class MockWrapper:
         if (self.results.get_cmd_output("mock --help | grep package_state")[0] == 0):
             self.def_cmd += ["--disable-plugin=package_state"]
 
+        if (self.results.get_cmd_output("mock --version | grep ^1.2.")[0] == 0) \
+            and (self.results.get_cmd_output("script -ec true 2>/dev/null")[0] == 0):
+            # workaround for bug https://bugzilla.redhat.com/1166609
+            self.emul_pty = True
+
         return self
 
     def __exit__(self, type, value, bt):
@@ -335,7 +349,8 @@ class MockWrapper:
         return self.def_cmd + args
 
     def exec_mock_cmd(self, args):
-        return self.results.exec_cmd(self.get_mock_cmd(args))
+        cmd = self.get_mock_cmd(args)
+        return self.results.exec_cmd(cmd, emul_pty=self.emul_pty)
 
     def exec_chroot_cmd(self, cmd):
         return self.exec_mock_cmd(["--chroot", cmd])
