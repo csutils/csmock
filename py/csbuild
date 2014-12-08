@@ -1,0 +1,281 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2014 Red Hat, Inc.
+#
+# This file is part of csmock.
+#
+# csmock is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# csmock is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with csmock.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import git
+import os
+import shutil
+import sys
+import tempfile
+
+run_scan_sh = "/usr/share/csbuild/scripts/run-scan.sh"
+
+default_cswrap_timeout = 30
+
+tool_name = sys.argv[0]
+
+class StatusWriter:
+    def __init__(self):
+        self.color_n = ""
+        self.color_r = ""
+        self.color_g = ""
+        self.color_y = ""
+        self.color_b = ""
+
+    def enable_colors(self):
+        self.color_n = "\033[0m"
+        self.color_r = "\033[1;31m"
+        self.color_g = "\033[1;32m"
+        self.color_y = "\033[1;33m"
+        self.color_b = "\033[1;34m"
+
+    def die(self, msg):
+        sys.stderr.write("%s: fatal error: %s%s%s\n" \
+                % (tool_name, self.color_r, msg, self.color_n))
+        sys.exit(1)
+
+    def emit_warning(self, msg):
+        sys.stderr.write("%s: warning: %s%s%s\n" \
+                % (tool_name, self.color_y, msg, self.color_n))
+
+    def emit_status(self, msg):
+        sys.stderr.write("%s: status: %s%s%s\n" \
+                % (tool_name, self.color_g, msg, self.color_n))
+
+    def print_defects_if_any(self, err_file, title):
+        if os.path.getsize(err_file) <= 0:
+            return
+
+        hline = "=" * len(title)
+        print "\n%s%s\n%s%s" % (self.color_b, title, hline, self.color_n)
+
+        # TODO: pass the --[no-]color option to csgrep once implemented
+        os.system("csgrep \"%s\"" % err_file)
+
+# FIXME: global instance
+sw = StatusWriter()
+
+# FIXME: copy/paste from csmock
+def shell_quote(str_in):
+    str_out = ""
+    for i in range(0, len(str_in)):
+        c = str_in[i]
+        if c == "\\":
+            str_out += "\\\\"
+        elif c == "\"":
+            str_out += "\\\""
+        else:
+            str_out += c
+    return "\"" + str_out + "\""
+
+def scan_or_die(cmd, what):
+    sw.emit_status("running %s..." % what)
+    sys.stderr.write("+ %s\n" % cmd)
+    ret = os.system(cmd)
+
+    signal = os.WTERMSIG(ret)
+    if signal != 0:
+        sw.die("%s signalled by signal %d" % (what, signal))
+
+    status = os.WEXITSTATUS(ret)
+    if status == 125:
+        sw.die("%s failed: %s" % (what, cmd))
+    if status not in [0, 7]:
+        sw.die("%s failed with exit code %d" % (what, status))
+
+    sw.emit_status("%s succeeded" % what)
+    return status
+
+def stable_commit_ref(repo, ref):
+    commit = repo.rev_parse(ref)
+    if "HEAD" in ref:
+        # if HEAD is used in ref, we have have to checkout by hash (because
+        # HEAD is going to change after checkout or git-bisect, which would
+        # invalidate ref)
+        return commit
+    else:
+        return ref
+
+def do_git_checkout(repo, commit):
+    sw.emit_status("checking out %s" % commit)
+    repo.git.checkout(commit)
+
+# argparse._VersionAction would write to stderr, which breaks help2man
+class VersionPrinter(argparse.Action):
+    def __init__(self, option_strings, dest=None, default=None, help=None):
+        super(VersionPrinter, self).__init__(option_strings=option_strings,
+                dest=dest, default=default, nargs=0, help=help)
+    def __call__(self, parser, namespace, values, option_string=None):
+        print("@VERSION@")
+        sys.exit(0)
+
+def add_paired_flag(parser, name, help):
+    help_no = "disables --" + name
+    arg = parser.add_argument("--" + name, action="store_const", const=True,
+            help=help)
+    parser.add_argument(   "--no-" + name, action="store_const", const=False,
+            help=help_no, dest=arg.dest)
+
+# initialize argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument("-c", "--shell_cmd", required=True,
+        help="shell command used to build the sources (runs in $PWD)")
+
+#optional arguments
+parser.add_argument("-g", "--git-commit-range",
+        help="range of git revisions for a differential scan")
+
+parser.add_argument("--git-bisect", action="store_true",
+        help="if a new defect is added, use git-bisect to identify the cause")
+
+parser.add_argument("--added-exit-code", type=int, default=0,
+        help="exit code to return if there is any defect added in the new version")
+
+add_paired_flag(parser, "print-current",
+        help="print all defects in the current version (default unless -g is given)")
+
+add_paired_flag(parser, "print-added",
+        help="print defects added in the new version (default if -g is given)")
+
+add_paired_flag(parser, "print-fixed",
+        help="print defects fixed in the new version")
+
+add_paired_flag(parser, "clean",
+        help="clean the temporary directory with results on exit (default)")
+
+parser.add_argument("--cswrap-timeout", type=int, default=default_cswrap_timeout,
+        help="maximal amount of time taken by analysis of a single module [s]")
+
+add_paired_flag(parser, "color",
+        help="use colorized console output (default if connected to a tty)")
+
+# needed for help2man
+parser.add_argument("--version", action=VersionPrinter,
+        help="print the version of csbuild and exit")
+
+# parse command-line arguments
+args = parser.parse_args()
+
+# initialize color escape sequences if enabled
+if args.color is None:
+    args.color = sys.stdout.isatty() and sys.stderr.isatty()
+if args.color:
+    sw.enable_colors()
+
+diff_scan = args.git_commit_range is not None
+if diff_scan:
+    # parse git commit range
+    tokenized = args.git_commit_range.split("...")
+    if len(tokenized) != 2:
+        tokenized = args.git_commit_range.split("..")
+    if len(tokenized) != 2:
+        parser.error("not a range of git revisions: " + args.git_commit_range)
+
+    try:
+        repo = git.Repo(".")
+    except:
+        parser.error("failed to open git repository: .")
+
+    try:
+        old_commit = stable_commit_ref(repo, tokenized[0])
+        new_commit = stable_commit_ref(repo, tokenized[1])
+    except:
+        parser.error("failed to resolve the range of git revisions: " \
+                + args.git_commit_range)
+
+    if repo.is_dirty():
+        sw.emit_warning("git repository is dirty: .")
+
+# initialize defaults where necessary
+if args.print_current is None:
+    args.print_current = not diff_scan
+if args.print_added is None:
+    args.print_added = diff_scan
+if args.print_fixed is None:
+    args.print_fixed = False
+if args.clean is None:
+    args.clean = True
+
+# check for possible conflict of command-line options
+if not diff_scan:
+    if args.git_bisect or (args.added_exit_code != 0) \
+            or args.print_added or args.print_fixed:
+        parser.error("options --git-bisect, --added-exit-code, --print-added, \
+and --print-fixed make sense only with --git-commit-range")
+
+# create a temporary directory for the results
+res_dir = tempfile.mkdtemp(prefix="csbuild")
+
+# prepare template for running the run-scan.sh script
+cmd = "CSWRAP_TIMEOUT=%d CSWRAP_TIMEOUT_FOR=clang:clang++:cppcheck %s %s %s" \
+        % (args.cswrap_timeout, run_scan_sh,
+                shell_quote(res_dir),
+                shell_quote(args.shell_cmd))
+
+if diff_scan:
+    # scan base revision first
+    # TODO: handle checkout failures
+    do_git_checkout(repo, old_commit)
+    ret = scan_or_die(cmd, "base scan")
+    base = "%s/base.err" % res_dir
+    shutil.move("%s/current.err" % res_dir, base)
+    cmd += " %s" % shell_quote(base)
+    do_git_checkout(repo, new_commit)
+
+# scan the current version
+ret = scan_or_die(cmd, "scan")
+
+# acknowledge the overall status
+if diff_scan:
+    if ret == 0:
+        sw.emit_status("no new defects found!")
+    else:
+        sw.emit_warning("new defects found!")
+
+res_added = "%s/added.err" % res_dir
+if args.git_bisect and 0 < os.path.getsize(res_added):
+    # new defects found and we are asked to git-bisect the cause
+    res_dir_gb = "%s/git-bisect" % res_dir
+    os.mkdir(res_dir_gb)
+    cmd = cmd.replace(res_dir, res_dir_gb, 1)
+    sw.emit_status("running git-bisect...")
+    cmd = "git bisect start %s %s \
+&& git bisect run $SHELL -c %s \
+&& git bisect reset" \
+            % (new_commit, old_commit, shell_quote(cmd))
+    sys.stderr.write("+ %s\n" % cmd)
+    os.system(cmd)
+
+# print the results selected by the command-line options
+if args.print_current:
+    sw.print_defects_if_any("%s/current.err" % res_dir, "CURRENT DEFECTS")
+if args.print_fixed:
+    sw.print_defects_if_any("%s/fixed.err" % res_dir, "FIXED DEFECTS")
+if args.print_added:
+    sw.print_defects_if_any(res_added, "ADDED DEFECTS")
+
+if args.clean:
+    # purge the temporary directory
+    shutil.rmtree(res_dir)
+else:
+    print "\nScan results: %s\n" % res_dir
+
+if ret != 0:
+    # return the required exit code if new defects were found
+    sys.exit(args.added_exit_code)

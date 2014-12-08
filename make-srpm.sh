@@ -91,6 +91,17 @@ BuildArch: noarch
 %description
 This is a metapackage pulling in csmock-common and basic csmock plug-ins.
 
+%package -n csbuild
+Summary: Tool for plugging static analyzers into the build process
+Requires: GitPython
+Requires: cscppc
+Requires: csclng
+Requires: csdiff
+Requires: cswrap
+
+%description -n csbuild
+Tool for plugging static analyzers into the build process, free of mock.
+
 %package -n csmock-common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
 Requires: csdiff
@@ -146,7 +157,7 @@ install -p -m0755 cov-{diff,mock}build bin/
 sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
 sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' \\
     -e 's|@PLUGIN_DIR@|%{python2_sitelib}/csmock/plugins|' \\
-    -i py/csmock
+    -i py/{csbuild,csmock}
 
 help2man --no-info --section 1 --name \\
     "DEPRECATED - please use csmock instead!" \\
@@ -156,13 +167,17 @@ help2man --no-info --section 1 --name \\
     "DEPRECATED - please use 'csmock --diff-patches' instead!" \\
     bin/cov-diffbuild > man/cov-diffbuild.1
 
-help2man --no-info --section 1 --include doc/csmock.h2m \\
-    py/csmock > man/csmock.1
+for tool in csbuild csmock; do
+    help2man --no-info --section 1 --include doc/\$tool.h2m \\
+        py/\$tool > man/\$tool.1
+done
 
 %install
 install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{_bindir}" \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
+    "\$RPM_BUILD_ROOT%{_datadir}/csbuild" \\
+    "\$RPM_BUILD_ROOT%{_datadir}/csbuild/scripts" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts" \\
     "\$RPM_BUILD_ROOT%{python2_sitelib}/" \\
@@ -170,21 +185,31 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
 
 install -p -m0755 \\
-    cov-{diff,mock}build rpmbuild-rawbuild py/csmock \\
+    cov-{diff,mock}build rpmbuild-rawbuild py/{csbuild,csmock} \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
-install -p -m0644 man/{csmock,cov-{diff,mock}build}.1 "\$RPM_BUILD_ROOT%{_mandir}/man1/"
+install -p -m0644 man/{csbuild,csmock,cov-{diff,mock}build}.1 \\
+    "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
 install -p -m0644 cwe-map.csv "\$RPM_BUILD_ROOT%{_datadir}/csmock/"
 
 install -p -m0644 py/plugins/*.py \\
     "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
 
-install -p -m0755 scripts/*.sh \\
+install -p -m0755 scripts/run-scan.sh \\
+    "\$RPM_BUILD_ROOT%{_datadir}/csbuild/scripts"
+
+install -p -m0755 scripts/{patch-rawbuild,run-{pylint,shellcheck}}.sh \\
     "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
 
 # needed to create the csmock RPM
 %files
+
+%files -n csbuild
+%{_bindir}/csbuild
+%{_mandir}/man1/csbuild.1*
+%{_datadir}/csbuild/scripts/run-scan.sh
+%doc COPYING
 
 %files -n csmock-common
 %{_bindir}/cov-diffbuild
