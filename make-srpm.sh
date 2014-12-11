@@ -125,7 +125,7 @@ Summary: csmock plug-in providing the support for Pylint.
 This package contains the pylint plug-in for csmock.
 
 %package -n csmock-plugin-shellcheck
-Summary: csmock plug-in providing the support for Pylint.
+Summary: csmock plug-in providing the support for ShellCheck.
 
 %description -n csmock-plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.
