@@ -150,22 +150,12 @@ This package contains the shellcheck plug-in for csmock.
 %setup -q
 
 %build
-mkdir -p bin man
+mkdir -p man
 
 # embed VERSION and PLUGIN_DIR version into the scripts
-install -p -m0755 cov-{diff,mock}build bin/
-sed -e 's/rpm -qf .SELF/echo %{version}/' -i bin/cov-{diff,mock}build
 sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' \\
     -e 's|@PLUGIN_DIR@|%{python2_sitelib}/csmock/plugins|' \\
     -i py/{csbuild,csmock}
-
-help2man --no-info --section 1 --name \\
-    "DEPRECATED - please use csmock instead!" \\
-    bin/cov-mockbuild > man/cov-mockbuild.1
-
-help2man --no-info --section 1 --name \\
-    "DEPRECATED - please use 'csmock --diff-patches' instead!" \\
-    bin/cov-diffbuild > man/cov-diffbuild.1
 
 for tool in csbuild csmock; do
     help2man --no-info --section 1 --include doc/\$tool.h2m \\
@@ -184,11 +174,10 @@ install -m0755 -d \\
     "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock" \\
     "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
 
-install -p -m0755 \\
-    cov-{diff,mock}build rpmbuild-rawbuild py/{csbuild,csmock} \\
+install -p -m0755  py/{csbuild,csmock} \\
     "\$RPM_BUILD_ROOT%{_bindir}"
 
-install -p -m0644 man/{csbuild,csmock,cov-{diff,mock}build}.1 \\
+install -p -m0644 man/{csbuild,csmock}.1 \\
     "\$RPM_BUILD_ROOT%{_mandir}/man1/"
 
 install -p -m0644 cwe-map.csv "\$RPM_BUILD_ROOT%{_datadir}/csmock/"
@@ -212,12 +201,7 @@ install -p -m0755 scripts/{patch-rawbuild,run-{pylint,shellcheck}}.sh \\
 %doc COPYING
 
 %files -n csmock-common
-%{_bindir}/cov-diffbuild
-%{_bindir}/cov-mockbuild
 %{_bindir}/csmock
-%{_bindir}/rpmbuild-rawbuild
-%{_mandir}/man1/cov-diffbuild.1*
-%{_mandir}/man1/cov-mockbuild.1*
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
