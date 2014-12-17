@@ -76,6 +76,8 @@ License:    GPLv3+
 URL:        https://git.fedorahosted.org/cgit/csmock.git
 Source0:    https://git.fedorahosted.org/cgit/csmock.git/snapshot/$SRC
 
+BuildRequires: GitPython
+BuildRequires: cmake
 BuildRequires: help2man
 BuildRequires: python-devel
 %if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
@@ -104,6 +106,7 @@ Tool for plugging static analyzers into the build process, free of mock.
 
 %package -n csmock-common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
+Requires: GitPython
 Requires: csdiff
 Requires: cswrap >= 1.0.4
 Requires: mock
@@ -150,46 +153,14 @@ This package contains the shellcheck plug-in for csmock.
 %setup -q
 
 %build
-mkdir -p man
-
-# embed VERSION and PLUGIN_DIR version into the scripts
-sed -e 's/@VERSION@/%{name}-%{version}-%{release}/' \\
-    -e 's|@PLUGIN_DIR@|%{python2_sitelib}/csmock/plugins|' \\
-    -i py/{csbuild,csmock}
-
-for tool in csbuild csmock; do
-    help2man --no-info --section 1 --include doc/\$tool.h2m \\
-        py/\$tool > man/\$tool.1
-done
+mkdir csmock_build
+cd csmock_build
+%cmake '-DVERSION=%{name}-%{version}-%{release}' ..
+make %{?_smp_mflags} VERBOSE=yes
 
 %install
-install -m0755 -d \\
-    "\$RPM_BUILD_ROOT%{_bindir}" \\
-    "\$RPM_BUILD_ROOT%{_mandir}/man1" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csbuild" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csbuild/scripts" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csmock" \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts" \\
-    "\$RPM_BUILD_ROOT%{python2_sitelib}/" \\
-    "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock" \\
-    "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
-
-install -p -m0755  py/{csbuild,csmock} \\
-    "\$RPM_BUILD_ROOT%{_bindir}"
-
-install -p -m0644 man/{csbuild,csmock}.1 \\
-    "\$RPM_BUILD_ROOT%{_mandir}/man1/"
-
-install -p -m0644 cwe-map.csv "\$RPM_BUILD_ROOT%{_datadir}/csmock/"
-
-install -p -m0644 py/plugins/*.py \\
-    "\$RPM_BUILD_ROOT%{python2_sitelib}/csmock/plugins"
-
-install -p -m0755 scripts/run-scan.sh \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csbuild/scripts"
-
-install -p -m0755 scripts/{patch-rawbuild,run-{pylint,shellcheck}}.sh \\
-    "\$RPM_BUILD_ROOT%{_datadir}/csmock/scripts"
+cd csmock_build
+make install DESTDIR="\$RPM_BUILD_ROOT"
 
 # needed to create the csmock RPM
 %files
