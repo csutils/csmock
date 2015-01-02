@@ -46,17 +46,17 @@ class StatusWriter:
         self.color_b = "\033[1;34m"
 
     def die(self, msg):
-        sys.stderr.write("%s: fatal error: %s%s%s\n" \
-                % (tool_name, self.color_r, msg, self.color_n))
+        sys.stderr.write("%s: %sfatal error%s: %s\n" \
+                % (tool_name, self.color_r, self.color_n, msg))
         sys.exit(1)
 
     def emit_warning(self, msg):
-        sys.stderr.write("%s: warning: %s%s%s\n" \
-                % (tool_name, self.color_y, msg, self.color_n))
+        sys.stderr.write("%s: %swarning%s: %s\n" \
+                % (tool_name, self.color_y, self.color_n, msg))
 
     def emit_status(self, msg):
-        sys.stderr.write("%s: status: %s%s%s\n" \
-                % (tool_name, self.color_g, msg, self.color_n))
+        sys.stderr.write("%s: %sstatus%s: %s\n" \
+                % (tool_name, self.color_g, self.color_n, msg))
 
     def print_defects_if_any(self, err_file, title):
         if os.path.getsize(err_file) <= 0:

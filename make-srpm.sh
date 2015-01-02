@@ -106,7 +106,6 @@ Tool for plugging static analyzers into the build process, free of mock.
 
 %package -n csmock-common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
-Requires: GitPython
 Requires: csdiff
 Requires: cswrap >= 1.0.4
 Requires: mock
