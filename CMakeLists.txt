@@ -27,9 +27,14 @@ if(NOT DEFINED SHARE_INSTALL_PREFIX)
     set(SHARE_INSTALL_PREFIX /usr/share)
 endif()
 
-install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/cwe-map.csv
-    DESTINATION ${SHARE_INSTALL_PREFIX}/csmock)
+option(ENABLE_CSBUILD "if enabled, install the csbuild tool" ON)
+option(ENABLE_CSMOCK  "if enabled, install the csmock tool"  ON)
+
+if(ENABLE_CSMOCK)
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/cwe-map.csv
+        DESTINATION ${SHARE_INSTALL_PREFIX}/csmock)
+endif()
 
 add_subdirectory(doc)
 add_subdirectory(scripts)

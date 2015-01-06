@@ -46,16 +46,21 @@ macro(install_executable FILE_NAME)
         PERMISSIONS ${PERM_EXECUTABLE})
 endmacro()
 
-install_executable(csbuild)
-install_executable(csmock)
+if(ENABLE_CSBUILD)
+    install_executable(csbuild)
+endif()
 
-macro(install_plugin PLUGIN_NAME)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/plugins/${PLUGIN_NAME}.py
-        DESTINATION ${PLUGIN_DIR})
-endmacro()
+if(ENABLE_CSMOCK)
+    install_executable(csmock)
 
-install_plugin(clang)
-install_plugin(cppcheck)
-install_plugin(gcc)
-install_plugin(pylint)
-install_plugin(shellcheck)
+    macro(install_plugin PLUGIN_NAME)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/plugins/${PLUGIN_NAME}.py
+            DESTINATION ${PLUGIN_DIR})
+    endmacro()
+
+    install_plugin(clang)
+    install_plugin(cppcheck)
+    install_plugin(gcc)
+    install_plugin(pylint)
+    install_plugin(shellcheck)
+endif()

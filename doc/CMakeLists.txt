@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+set(MAN_PAGES "")
+
 # macro to generate a man page from the corresponding binary
 macro(create_manpage BINARY)
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${BINARY}.1
@@ -27,14 +29,21 @@ macro(create_manpage BINARY)
         VERBATIM)
     install(FILES ${PROJECT_BINARY_DIR}/${BINARY}.1
         DESTINATION ${SHARE_INSTALL_PREFIX}/man/man1)
+    set(MAN_PAGES ${MAN_PAGES} ${PROJECT_BINARY_DIR}/${BINARY}.1)
 endmacro(create_manpage)
 
 # generate man pages using help2man if available
 find_program(HELP2MAN help2man)
 if(HELP2MAN)
-    create_manpage(csbuild)
-    create_manpage(csmock)
-    add_custom_target(doc ALL DEPENDS
-        ${PROJECT_BINARY_DIR}/csbuild.1
-        ${PROJECT_BINARY_DIR}/csmock.1)
+    if(ENABLE_CSBUILD)
+        create_manpage(csbuild)
+    endif()
+
+    if(ENABLE_CSMOCK)
+        create_manpage(csmock)
+    endif()
+
+    if(NOT "${MAN_PAGES}" STREQUAL "")
+        add_custom_target(doc ALL DEPENDS ${MAN_PAGES})
+    endif()
 endif()

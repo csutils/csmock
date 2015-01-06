@@ -15,14 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
-install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/run-scan.sh
-    DESTINATION ${SHARE_INSTALL_PREFIX}/csbuild/scripts
-    PERMISSIONS ${PERM_EXECUTABLE})
+if(ENABLE_CSBUILD)
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/run-scan.sh
+        DESTINATION ${SHARE_INSTALL_PREFIX}/csbuild/scripts
+        PERMISSIONS ${PERM_EXECUTABLE})
+endif()
 
-install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/patch-rawbuild.sh
-    ${CMAKE_CURRENT_SOURCE_DIR}/run-pylint.sh
-    ${CMAKE_CURRENT_SOURCE_DIR}/run-shellcheck.sh
-    DESTINATION ${SHARE_INSTALL_PREFIX}/csmock/scripts
-    PERMISSIONS ${PERM_EXECUTABLE})
+if(ENABLE_CSMOCK)
+    install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/patch-rawbuild.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}/run-pylint.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}/run-shellcheck.sh
+        DESTINATION ${SHARE_INSTALL_PREFIX}/csmock/scripts
+        PERMISSIONS ${PERM_EXECUTABLE})
+endif()
