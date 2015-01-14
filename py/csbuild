@@ -21,6 +21,7 @@ import argparse
 import git
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -103,7 +104,16 @@ def scan_or_die(cmd, what):
     return status
 
 def stable_commit_ref(repo, ref):
-    commit = repo.rev_parse(ref)
+    if hasattr(repo, "rev_parse"):
+        commit = repo.rev_parse(ref)
+    else:
+        # repo.rev_parse() is not implemented on Ubuntu 12.04.5 LTS
+        p = subprocess.Popen(["git", "rev-parse", ref], stdout=subprocess.PIPE)
+        (out, _) = p.communicate()
+        if p.returncode != 0:
+            raise "git rev-parse failed"
+        commit = out.strip()
+
     if "HEAD" in ref:
         # if HEAD is used in ref, we have have to checkout by hash (because
         # HEAD is going to change after checkout or git-bisect, which would
@@ -199,7 +209,7 @@ if diff_scan:
         parser.error("failed to resolve the range of git revisions: " \
                 + args.git_commit_range)
 
-    if repo.is_dirty():
+    if hasattr(repo.is_dirty, "__call__") and repo.is_dirty():
         sw.emit_warning("git repository is dirty: .")
 
 # initialize defaults where necessary
