@@ -10,6 +10,10 @@ warn() {
     printf "%s: warning: %s\n" "$SELF" "$*" >&2
 }
 
+warn_not_in_path() {
+    warn "$1 not found in \$PATH: $PATH"
+}
+
 RES_DIR="$1"
 test -d "$RES_DIR" || die "invalid RES_DIR given: $RES_DIR"
 
@@ -41,17 +45,25 @@ fi
 # plug csclng (if available)
 CSCLNG_LNK_DIR="$(csclng --print-path-to-wrap)"
 if test -d "$CSCLNG_LNK_DIR"; then
-    PATH="${CSCLNG_LNK_DIR}:$PATH"
+    if (set -x; clang --version); then
+        PATH="${CSCLNG_LNK_DIR}:$PATH"
+    else
+        warn_not_in_path clang
+    fi
 else
-    warn "csclng not found in \$PATH: $PATH"
+    warn_not_in_path csclng
 fi
 
 # plug cscppc (if available)
 CSCPPC_LNK_DIR="$(cscppc --print-path-to-wrap)"
 if test -d "$CSCPPC_LNK_DIR"; then
-    PATH="${CSCPPC_LNK_DIR}:$PATH"
+    if (set -x; cppcheck --version); then
+        PATH="${CSCPPC_LNK_DIR}:$PATH"
+    else
+        warn_not_in_path cppcheck
+    fi
 else
-    warn "cscppc not found in \$PATH: $PATH"
+    warn_not_in_path cscppc
 fi
 
 # run the specified BUILD_CMD
