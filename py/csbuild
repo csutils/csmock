@@ -102,7 +102,7 @@ def scan_or_die(cmd, what):
         sw.die("%s signalled by signal %d" % (what, signal))
 
     status = os.WEXITSTATUS(ret)
-    if status == 125:
+    if status == 125 or (what == "prep" and status != 0):
         sw.die("%s failed: %s" % (what, cmd))
     if status not in [0, 7]:
         sw.die("%s failed with exit code %d" % (what, status))
@@ -184,6 +184,8 @@ def gen_travis_yml(args):
 
     # script
     print_yml_section("script")
+    if args.prep_cmd is not None:
+        print_yml_item(args.prep_cmd)
     print_yml_item("csbuild --git-commit-range \"$TRAVIS_COMMIT_RANGE\"" \
             + encode_csbuild_args(args))
 
@@ -248,6 +250,9 @@ parser.add_argument("--gen-travis-yml", action="store_true",
 parser.add_argument("--install",
         help="space-separated list of packages to install with --gen-travis-yml")
 
+parser.add_argument("--prep-cmd",
+        help="shell command to run before the build (runs in $PWD)")
+
 # needed for help2man
 parser.add_argument("--version", action=VersionPrinter,
         help="print the version of csbuild and exit")
@@ -311,6 +316,10 @@ if not diff_scan:
             or args.print_added or args.print_fixed:
         parser.error("options --git-bisect, --added-exit-code, --print-added, \
 and --print-fixed make sense only with --git-commit-range")
+
+if args.prep_cmd is not None:
+    # run the command given by --prep-cmd
+    scan_or_die(args.prep_cmd, "prep")
 
 # create a temporary directory for the results
 res_dir = tempfile.mkdtemp(prefix="csbuild")
