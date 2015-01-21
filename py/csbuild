@@ -25,7 +25,12 @@ import subprocess
 import sys
 import tempfile
 
+csbuild_travis_mirror = \
+        "deb https://kdudka.fedorapeople.org/csbuild precise contrib"
+
 run_scan_sh = "/usr/share/csbuild/scripts/run-scan.sh"
+
+default_added_exit_code = 7
 
 default_cswrap_timeout = 30
 
@@ -128,6 +133,63 @@ def do_git_checkout(repo, commit):
     sw.emit_status("checking out %s" % commit)
     repo.git.checkout(commit)
 
+def encode_paired_flag(args, flag):
+    value = getattr(args, flag.replace("-", "_"))
+    if value is None:
+        return ""
+    elif value:
+        return " --" + flag
+    else:
+        return " --no-" + flag
+
+def encode_csbuild_args(args):
+    cmd = " -c %s" % shell_quote(args.build_cmd)
+    if args.git_bisect:
+        cmd += " --git-bisect"
+    cmd += " --added-exit-code %d" % args.added_exit_code
+    cmd += " --cswrap-timeout %d" % args.cswrap_timeout
+    cmd += encode_paired_flag(args, "print-current")
+    cmd += encode_paired_flag(args, "print-added")
+    cmd += encode_paired_flag(args, "print-fixed")
+    cmd += encode_paired_flag(args, "clean")
+    cmd += encode_paired_flag(args, "color")
+    return cmd
+
+def print_yml_pair(name, value):
+    print("%s: %s" % (name, value))
+
+def print_yml_section(name):
+    print("\n%s:" % name)
+
+def print_yml_item(item):
+    print("    - %s" % item)
+
+def gen_travis_yml(args):
+    print_yml_pair("language", "cpp")
+    print_yml_pair("compiler", "gcc")
+
+    # before_install
+    print_yml_section("before_install")
+    if "https://" in csbuild_travis_mirror:
+        print_yml_item("sudo apt-get update -qq")
+        print_yml_item("sudo apt-get install -qq apt-transport-https")
+    print_yml_item("echo \"%s\" | sudo tee -a /etc/apt/sources.list" \
+            % csbuild_travis_mirror)
+    print_yml_item("sudo apt-get update -qq")
+
+    # install
+    print_yml_section("install")
+    print_yml_item("sudo apt-get install -qq -y --force-yes csbuild")
+    print_yml_item("sudo apt-get install %s" % args.install)
+
+    # script
+    print_yml_section("script")
+    print_yml_item("csbuild --git-commit-range \"$TRAVIS_COMMIT_RANGE\"" \
+            + encode_csbuild_args(args))
+
+    # all OK
+    return 0
+
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
     def __init__(self, option_strings, dest=None, default=None, help=None):
@@ -157,7 +219,7 @@ parser.add_argument("--git-bisect", action="store_true",
         help="if a new defect is added, use git-bisect to identify the cause \
 WARNING: The given command must (re)compile all sources for this option to work!")
 
-parser.add_argument("--added-exit-code", type=int, default=0,
+parser.add_argument("--added-exit-code", type=int, default=default_added_exit_code,
         help="exit code to return if there is any defect added in the new version")
 
 add_paired_flag(parser, "print-current",
@@ -180,12 +242,28 @@ parser.add_argument("--cswrap-timeout", type=int, default=default_cswrap_timeout
 add_paired_flag(parser, "color",
         help="use colorized console output (default if connected to a tty)")
 
+parser.add_argument("--gen-travis-yml", action="store_true",
+        help="generate the .travis.yml file for Travis CI (requires --install)")
+
+parser.add_argument("--install",
+        help="space-separated list of packages to install with --gen-travis-yml")
+
 # needed for help2man
 parser.add_argument("--version", action=VersionPrinter,
         help="print the version of csbuild and exit")
 
 # parse command-line arguments
 args = parser.parse_args()
+
+if args.gen_travis_yml:
+    if args.install is None:
+        parser.error("--install is required with --gen-travis-yml")
+    if args.git_commit_range is not None:
+        parser.error("--git-commit-range makes no sense with --gen-travis-yml")
+    ret = gen_travis_yml(args)
+    sys.exit(ret)
+elif args.install is not None:
+    parser.error("--install makes sense only with --gen-travis-yml")
 
 # initialize color escape sequences if enabled
 if args.color is None:
@@ -229,7 +307,7 @@ if args.clean is None:
 
 # check for possible conflict of command-line options
 if not diff_scan:
-    if args.git_bisect or (args.added_exit_code != 0) \
+    if args.git_bisect or (args.added_exit_code != default_added_exit_code) \
             or args.print_added or args.print_fixed:
         parser.error("options --git-bisect, --added-exit-code, --print-added, \
 and --print-fixed make sense only with --git-commit-range")

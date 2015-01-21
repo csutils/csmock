@@ -55,7 +55,7 @@ else
 fi
 
 # run the specified BUILD_CMD
-"$SHELL" -c "$BUILD_CMD"
+"$SHELL" -xc "$BUILD_CMD"
 
 # check for possible build failure
 test "$?" = 0 || exit 125
