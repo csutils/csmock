@@ -147,24 +147,27 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--build-cmd", required=True,
         help="shell command used to build the sources (runs in $PWD)")
 
-#optional arguments
+# optional arguments
 parser.add_argument("-g", "--git-commit-range",
         help="range of git revisions for a differential scan")
 
 parser.add_argument("--git-bisect", action="store_true",
-        help="if a new defect is added, use git-bisect to identify the cause")
+        help="if a new defect is added, use git-bisect to identify the cause \
+WARNING: The given command must (re)compile all sources for this option to work!")
 
 parser.add_argument("--added-exit-code", type=int, default=0,
         help="exit code to return if there is any defect added in the new version")
 
 add_paired_flag(parser, "print-current",
-        help="print all defects in the current version (default unless -g is given)")
+        help="print all defects in the current version (default unless -g is given) \
+WARNING: The given command must (re)compile all sources for this option to work!")
 
 add_paired_flag(parser, "print-added",
         help="print defects added in the new version (default if -g is given)")
 
 add_paired_flag(parser, "print-fixed",
-        help="print defects fixed in the new version")
+        help="print defects fixed in the new version \
+WARNING: The given command must (re)compile all sources for this option to work!")
 
 add_paired_flag(parser, "clean",
         help="clean the temporary directory with results on exit (default)")
