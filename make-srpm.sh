@@ -1,6 +1,6 @@
 #/bin/bash
 
-# Copyright (C) 2012-2014 Red Hat, Inc.
+# Copyright (C) 2012-2015 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -98,7 +98,7 @@ Summary: Tool for plugging static analyzers into the build process
 Requires: GitPython
 Requires: cscppc
 Requires: csclng
-Requires: csdiff
+Requires: csdiff >= 1.1.2
 Requires: cswrap
 
 %description -n csbuild
@@ -107,7 +107,7 @@ Tool for plugging static analyzers into the build process, free of mock.
 %package -n csmock-common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
 Requires: csdiff
-Requires: cswrap >= 1.0.4
+Requires: cswrap
 Requires: mock
 Requires: rpm-build
 

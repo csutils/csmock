@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2014 Red Hat, Inc.
+# Copyright (C) 2014-2015 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -38,6 +38,7 @@ class StatusWriter:
         self.color_g = ""
         self.color_y = ""
         self.color_b = ""
+        self.color_opt = "--no-color"
 
     def enable_colors(self):
         self.color_n = "\033[0m"
@@ -45,6 +46,7 @@ class StatusWriter:
         self.color_g = "\033[1;32m"
         self.color_y = "\033[1;33m"
         self.color_b = "\033[1;34m"
+        self.color_opt = "--color"
 
     def die(self, msg):
         sys.stderr.write("%s: %sfatal error%s: %s\n" \
@@ -66,8 +68,8 @@ class StatusWriter:
         hline = "=" * len(title)
         print "\n%s%s\n%s%s" % (self.color_b, title, hline, self.color_n)
 
-        # TODO: pass the --[no-]color option to csgrep once implemented
-        os.system("csgrep \"%s\"" % err_file)
+        # pass the --[no-]color option to csgrep
+        os.system("csgrep %s \"%s\"" % (self.color_opt, err_file))
 
 # FIXME: global instance
 sw = StatusWriter()
