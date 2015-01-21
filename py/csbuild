@@ -144,7 +144,7 @@ def add_paired_flag(parser, name, help):
 
 # initialize argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("-c", "--shell_cmd", required=True,
+parser.add_argument("-c", "--build-cmd", required=True,
         help="shell command used to build the sources (runs in $PWD)")
 
 #optional arguments
@@ -236,7 +236,7 @@ res_dir = tempfile.mkdtemp(prefix="csbuild")
 cmd = "CSWRAP_TIMEOUT=%d CSWRAP_TIMEOUT_FOR=clang:clang++:cppcheck %s %s %s" \
         % (args.cswrap_timeout, run_scan_sh,
                 shell_quote(res_dir),
-                shell_quote(args.shell_cmd))
+                shell_quote(args.build_cmd))
 
 if diff_scan:
     # scan base revision first
