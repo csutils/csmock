@@ -330,18 +330,22 @@ cmd = "CSWRAP_TIMEOUT=%d CSWRAP_TIMEOUT_FOR=clang:clang++:cppcheck %s %s %s" \
                 shell_quote(res_dir),
                 shell_quote(args.build_cmd))
 
+curr = "%s/current.err" % res_dir
+
 if diff_scan:
     # scan base revision first
     # TODO: handle checkout failures
     do_git_checkout(repo, old_commit)
-    ret = scan_or_die(cmd, "base scan")
+    scan_or_die(cmd, "base scan")
+    os.system("csgrep --mode=stat \"%s\"" % curr)
     base = "%s/base.err" % res_dir
-    shutil.move("%s/current.err" % res_dir, base)
+    shutil.move(curr, base)
     cmd += " %s" % shell_quote(base)
     do_git_checkout(repo, new_commit)
 
 # scan the current version
 ret = scan_or_die(cmd, "scan")
+os.system("csgrep --mode=stat \"%s\"" % curr)
 
 # acknowledge the overall status
 if diff_scan:
