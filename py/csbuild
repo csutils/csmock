@@ -146,11 +146,19 @@ def encode_paired_flag(args, flag):
 
 def encode_csbuild_args(args):
     cmd = " -c %s" % shell_quote(args.build_cmd)
+
     if args.git_bisect:
         cmd += " --git-bisect"
-    cmd += " --added-exit-code %d" % args.added_exit_code
-    cmd += " --base-fail-exit-code %d" % args.base_fail_exit_code
-    cmd += " --cswrap-timeout %d" % args.cswrap_timeout
+
+    if args.added_exit_code != default_added_exit_code:
+        cmd += " --added-exit-code %d" % args.added_exit_code
+
+    if args.base_fail_exit_code != default_base_fail_exit_code:
+        cmd += " --base-fail-exit-code %d" % args.base_fail_exit_code
+
+    if args.cswrap_timeout != default_cswrap_timeout:
+        cmd += " --cswrap-timeout %d" % args.cswrap_timeout
+
     cmd += encode_paired_flag(args, "print-current")
     cmd += encode_paired_flag(args, "print-added")
     cmd += encode_paired_flag(args, "print-fixed")
