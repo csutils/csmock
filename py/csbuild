@@ -32,7 +32,7 @@ run_scan_sh = "/usr/share/csbuild/scripts/run-scan.sh"
 
 default_added_exit_code = 7
 
-default_base_fail_exit_code = 1
+default_base_fail_exit_code = 0
 
 default_cswrap_timeout = 30
 
@@ -197,7 +197,8 @@ def gen_travis_yml(args):
     print_yml_section("script")
     if args.prep_cmd is not None:
         print_yml_item(args.prep_cmd)
-    print_yml_item("csbuild --git-commit-range \"$TRAVIS_COMMIT_RANGE\"" \
+    print_yml_item("test -z \"$TRAVIS_COMMIT_RANGE\" \
+|| csbuild --git-commit-range \"$TRAVIS_COMMIT_RANGE\"" \
             + encode_csbuild_args(args))
 
     # all OK
