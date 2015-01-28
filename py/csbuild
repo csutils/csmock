@@ -32,6 +32,8 @@ run_scan_sh = "/usr/share/csbuild/scripts/run-scan.sh"
 
 default_added_exit_code = 7
 
+default_base_fail_exit_code = 1
+
 default_cswrap_timeout = 30
 
 tool_name = sys.argv[0]
@@ -53,10 +55,10 @@ class StatusWriter:
         self.color_b = "\033[1;34m"
         self.color_opt = "--color"
 
-    def die(self, msg):
+    def die(self, msg, ec=1):
         sys.stderr.write("%s: %sfatal error%s: %s\n" \
                 % (tool_name, self.color_r, self.color_n, msg))
-        sys.exit(1)
+        sys.exit(ec)
 
     def emit_warning(self, msg):
         sys.stderr.write("%s: %swarning%s: %s\n" \
@@ -92,7 +94,7 @@ def shell_quote(str_in):
             str_out += c
     return "\"" + str_out + "\""
 
-def scan_or_die(cmd, what):
+def scan_or_die(cmd, what, fail_exit_code=1):
     sw.emit_status("running %s..." % what)
     sys.stderr.write("+ %s\n" % cmd)
     ret = os.system(cmd)
@@ -103,7 +105,7 @@ def scan_or_die(cmd, what):
 
     status = os.WEXITSTATUS(ret)
     if status == 125 or (what == "prep" and status != 0):
-        sw.die("%s failed: %s" % (what, cmd))
+        sw.die("%s failed: %s" % (what, cmd), ec=fail_exit_code)
     if status not in [0, 7]:
         sw.die("%s failed with exit code %d" % (what, status))
 
@@ -147,6 +149,7 @@ def encode_csbuild_args(args):
     if args.git_bisect:
         cmd += " --git-bisect"
     cmd += " --added-exit-code %d" % args.added_exit_code
+    cmd += " --base-fail-exit-code %d" % args.base_fail_exit_code
     cmd += " --cswrap-timeout %d" % args.cswrap_timeout
     cmd += encode_paired_flag(args, "print-current")
     cmd += encode_paired_flag(args, "print-added")
@@ -223,6 +226,9 @@ WARNING: The given command must (re)compile all sources for this option to work!
 
 parser.add_argument("--added-exit-code", type=int, default=default_added_exit_code,
         help="exit code to return if there is any defect added in the new version")
+
+parser.add_argument("--base-fail-exit-code", type=int, default=default_base_fail_exit_code,
+        help="exit code to return if the base scan fails")
 
 add_paired_flag(parser, "print-current",
         help="print all defects in the current version (default unless -g is given) \
@@ -312,10 +318,12 @@ if args.clean is None:
 
 # check for possible conflict of command-line options
 if not diff_scan:
-    if args.git_bisect or (args.added_exit_code != default_added_exit_code) \
+    if args.git_bisect \
+            or (args.added_exit_code != default_added_exit_code) \
+            or (args.base_fail_exit_code != default_base_fail_exit_code) \
             or args.print_added or args.print_fixed:
         parser.error("options --git-bisect, --added-exit-code, --print-added, \
-and --print-fixed make sense only with --git-commit-range")
+--base-fail-exit-code, and --print-fixed make sense only with --git-commit-range")
 
 if args.prep_cmd is not None:
     # run the command given by --prep-cmd
@@ -336,7 +344,7 @@ if diff_scan:
     # scan base revision first
     # TODO: handle checkout failures
     do_git_checkout(repo, old_commit)
-    scan_or_die(cmd, "base scan")
+    scan_or_die(cmd, "base scan", fail_exit_code=args.base_fail_exit_code)
     os.system("csgrep --mode=stat \"%s\"" % curr)
     base = "%s/base.err" % res_dir
     shutil.move(curr, base)
