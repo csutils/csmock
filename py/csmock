@@ -47,6 +47,7 @@ default_jobs_cnt = 13
 default_rpm_opts = [
         "--define",     "_without_testsuite 1",
         "--define",     "apidocs 0",
+        "--define",     "check exit 0",
         "--define",     "libguestfs_runtests 0",
         "--define",     "runselftest 0",
         "--define",     "with_docs 0",
