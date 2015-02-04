@@ -81,7 +81,7 @@ csgrep --quiet --event 'error|warning' \
     | csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c' \
     | csgrep --invert-match --checker CLANG_WARNING --event error \
     | csgrep --invert-match --checker CLANG_WARNING \
-        --msg 'Value stored to '.*' is never read' \
+        --msg "Value stored to '.*' is never read" \
     | csgrep --invert-match --checker CPPCHECK_WARNING \
         --event 'preprocessorErrorDirective|syntaxError' \
     | cssort --key=path >"$CURR_ERR"
