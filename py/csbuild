@@ -46,6 +46,7 @@ class StatusWriter:
         self.color_y = ""
         self.color_b = ""
         self.color_opt = "--no-color"
+        self.csgrep_args = "--invert-match --event \"internal warning\""
 
     def enable_colors(self):
         self.color_n = "\033[0m"
@@ -68,6 +69,10 @@ class StatusWriter:
         sys.stderr.write("%s: %sstatus%s: %s\n" \
                 % (tool_name, self.color_g, self.color_n, msg))
 
+    def print_stats(self, err_file):
+        os.system("csgrep --mode=stat %s %s \"%s\"" \
+            % (self.csgrep_args, self.color_opt, err_file))
+
     def print_defects_if_any(self, err_file, title):
         if os.path.getsize(err_file) <= 0:
             return
@@ -76,7 +81,8 @@ class StatusWriter:
         print "\n%s%s\n%s%s" % (self.color_b, title, hline, self.color_n)
 
         # pass the --[no-]color option to csgrep
-        os.system("csgrep %s \"%s\"" % (self.color_opt, err_file))
+        os.system("csgrep %s %s \"%s\"" \
+                % (self.csgrep_args, self.color_opt, err_file))
 
 # FIXME: global instance
 sw = StatusWriter()
@@ -354,7 +360,7 @@ if diff_scan:
     # TODO: handle checkout failures
     do_git_checkout(repo, old_commit)
     scan_or_die(cmd, "base scan", fail_exit_code=args.base_fail_exit_code)
-    os.system("csgrep --mode=stat \"%s\"" % curr)
+    sw.print_stats(curr)
     base = "%s/base.err" % res_dir
     shutil.move(curr, base)
     cmd += " %s" % shell_quote(base)
@@ -362,7 +368,7 @@ if diff_scan:
 
 # scan the current version
 ret = scan_or_die(cmd, "scan")
-os.system("csgrep --mode=stat \"%s\"" % curr)
+sw.print_stats(curr)
 
 # acknowledge the overall status
 if diff_scan:

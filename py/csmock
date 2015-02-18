@@ -75,6 +75,9 @@ default_result_filters = [
         "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\.c$'",
         "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
 
+csgrep_final_filter_args = "--invert-match --event \"internal warning\" \
+--prune-events=1"
+
 def current_iso_date():
     now = datetime.datetime.now()
     return "%04u-%02u-%02u %02u:%02u:%02u" \
@@ -556,17 +559,18 @@ def deplist_from_srpm(results, srpm):
 def transform_results(js_file, results):
     err_file  = re.sub("\.js", ".err",  js_file)
     html_file = re.sub("\.js", ".html", js_file)
-    results.exec_cmd("csgrep --mode=grep --prune-events=1 '%s' > '%s'" \
-            % (js_file,  err_file), shell=True)
-    results.exec_cmd("csgrep --mode=json --prune-events=1 '%s' \
-| cshtml - > '%s'" % (js_file, html_file), shell=True)
+    results.exec_cmd("csgrep --mode=grep %s '%s' > '%s'" \
+            % (csgrep_final_filter_args, js_file,  err_file), shell=True)
+    results.exec_cmd("csgrep --mode=json %s '%s' | cshtml - > '%s'" \
+            % (csgrep_final_filter_args, js_file, html_file), shell=True)
     return (err_file, html_file)
 
 # transform scan-results.js to scan-results.{err,html} and write stats
 def finalize_results(js_file, results):
     (err_file, _) = transform_results(js_file, results)
     summary_file = "%s/scan-results-summary.txt" % results.resdir
-    cmd = "csgrep --mode=stat '%s' | tee '%s'" % (err_file, summary_file)
+    cmd = "csgrep --mode=stat %s '%s' | tee '%s'" \
+            % (csgrep_final_filter_args, err_file, summary_file)
     return results.exec_cmd(cmd, shell=True)
 
 # argparse._VersionAction would write to stderr, which breaks help2man
