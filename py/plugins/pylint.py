@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+import csmock.common.util
+
 run_pylint_sh = "/usr/share/csmock/scripts/run-pylint.sh"
 
 dirs_to_scan = "/builddir/build/BUILDROOT"
@@ -60,6 +62,8 @@ class Plugin:
         cmd = "%s %s > %s" % (run_pylint_sh, dirs_to_scan, pylint_capture)
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [pylint_capture]
+
+        csmock.common.util.install_default_toolver_hook(props, "pylint")
 
         def filter_hook(results):
             src = results.dbgdir_raw + pylint_capture

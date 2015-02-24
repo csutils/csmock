@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+import csmock.common.util
+
 run_shellcheck_sh = "/usr/share/csmock/scripts/run-shellcheck.sh"
 
 dirs_to_scan = "/builddir/build/BUILDROOT"
@@ -60,6 +62,8 @@ class Plugin:
         cmd = "%s %s > %s" % (run_shellcheck_sh, dirs_to_scan, shellcheck_capture)
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [shellcheck_capture]
+
+        csmock.common.util.install_default_toolver_hook(props, "ShellCheck")
 
         def filter_hook(results):
             src = results.dbgdir_raw + shellcheck_capture
