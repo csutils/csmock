@@ -17,8 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+import csmock.common.util
 import os
-import re
 import subprocess
 
 class PluginProps:
@@ -63,14 +63,4 @@ class Plugin:
         if os.path.exists("/usr/bin/csclng++"):
             props.copy_in_files += ["/usr/bin/csclng++"]
 
-        def store_clang_version_hook(results, mock):
-            cmd = "grep '^clang-[0-9]' %s/rpm-list-mock.txt" % results.dbgdir
-            (rc, nvr) = results.get_cmd_output(cmd)
-            if 0 != rc:
-                return rc
-
-            ver = re.sub("-[0-9].*$", "", re.sub("^clang-", "", nvr.strip()))
-            results.ini_writer.append("analyzer-version-clang", ver)
-            return 0
-
-        props.post_depinst_hooks += [store_clang_version_hook]
+        csmock.common.util.install_default_toolver_hook(props, "clang")

@@ -109,7 +109,6 @@ Summary: Core of csmock (a mock wrapper for Static Analysis tools)
 Requires: csdiff
 Requires: cswrap
 Requires: mock
-Requires: rpm-build
 
 %description -n csmock-common
 This package contains the csmock tool that allows to scan SRPMs by Static
@@ -118,7 +117,7 @@ Analysis tools in a fully automated way.
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
 Requires: csclng
-Requires: csmock-common
+Requires: csmock-common > 1.7.0
 
 %description -n csmock-plugin-clang
 This package contains the clang plug-in for csmock.
@@ -175,6 +174,9 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
+%{python2_sitelib}/csmock/__init__.py*
+%{python2_sitelib}/csmock/common/__init__.py*
+%{python2_sitelib}/csmock/common/util.py*
 %{python2_sitelib}/csmock/plugins/gcc.py*
 %doc COPYING README
 
