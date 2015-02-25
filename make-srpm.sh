@@ -87,6 +87,8 @@ BuildRequires: python-argparse
 Requires: csmock-common
 Requires: csmock-plugin-clang
 Requires: csmock-plugin-cppcheck
+Requires: csmock-plugin-pylint
+Requires: csmock-plugin-shellcheck
 
 BuildArch: noarch
 
@@ -190,11 +192,11 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 
 %files -n csmock-plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
-%{python2_sitelib}/csmock/plugins/pylint*
+%{python2_sitelib}/csmock/plugins/pylint.py*
 
 %files -n csmock-plugin-shellcheck
 %{_datadir}/csmock/scripts/run-shellcheck.sh
-%{python2_sitelib}/csmock/plugins/shellcheck*
+%{python2_sitelib}/csmock/plugins/shellcheck.py*
 EOF
 
 rpmbuild -bs "$SPEC"                            \
