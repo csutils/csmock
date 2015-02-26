@@ -102,6 +102,7 @@ Requires: cscppc
 Requires: csclng
 Requires: csdiff >= 1.1.2
 Requires: cswrap
+Requires: csmock-common > 1.7.1
 
 %description -n csbuild
 Tool for plugging static analyzers into the build process, free of mock.
@@ -119,7 +120,7 @@ Analysis tools in a fully automated way.
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
 Requires: csclng
-Requires: csmock-common > 1.7.0
+Requires: csmock-common >= 1.7.1
 
 %description -n csmock-plugin-clang
 This package contains the clang plug-in for csmock.
@@ -134,14 +135,14 @@ This package contains the cppcheck plug-in for csmock.
 
 %package -n csmock-plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
-Requires: csmock-common > 1.7.0
+Requires: csmock-common >= 1.7.1
 
 %description -n csmock-plugin-pylint
 This package contains the pylint plug-in for csmock.
 
 %package -n csmock-plugin-shellcheck
 Summary: csmock plug-in providing the support for ShellCheck.
-Requires: csmock-common > 1.7.0
+Requires: csmock-common >= 1.7.1
 
 %description -n csmock-plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.

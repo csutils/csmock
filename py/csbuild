@@ -25,6 +25,8 @@ import subprocess
 import sys
 import tempfile
 
+from csmock.common.cflags import flags_by_warning_level
+
 csbuild_travis_mirror = \
         "deb https://kdudka.fedorapeople.org/csbuild precise contrib"
 
@@ -274,6 +276,11 @@ parser.add_argument("--install",
 parser.add_argument("--prep-cmd",
         help="shell command to run before the build (runs in $PWD)")
 
+parser.add_argument("-w", "--gcc-warning-level", type=int, default=2,
+        help="Adjust GCC warning level.  -w0 means no additional warnings, \
+-w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
+(default).")
+
 # needed for help2man
 parser.add_argument("--version", action=VersionPrinter,
         help="print the version of csbuild and exit")
@@ -347,9 +354,23 @@ if args.prep_cmd is not None:
 # create a temporary directory for the results
 res_dir = tempfile.mkdtemp(prefix="csbuild")
 
+# prepare environment
+env = { }
+env["CSWRAP_TIMEOUT"] = "%d" % args.cswrap_timeout
+env["CSWRAP_TIMEOUT_FOR"] = "clang:clang++:cppcheck"
+
+# resolve compiler flags
+flags = flags_by_warning_level(args.gcc_warning_level)
+flags.write_to_env(env)
+
+# serialize environment
+cmd_prefix = ""
+for var in env:
+    cmd_prefix += "%s='%s' " % (var, env[var])
+
 # prepare template for running the run-scan.sh script
-cmd = "CSWRAP_TIMEOUT=%d CSWRAP_TIMEOUT_FOR=clang:clang++:cppcheck %s %s %s" \
-        % (args.cswrap_timeout, run_scan_sh,
+cmd = "%s %s %s %s" \
+        % (cmd_prefix, run_scan_sh,
                 shell_quote(res_dir),
                 shell_quote(args.build_cmd))
 
