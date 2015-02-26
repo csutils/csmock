@@ -22,7 +22,7 @@ add_flags_by_level_common = {
         1: set(["-Wall", "-Wextra"]),
         2: set(["-Wunreachable-code", "-Wundef", "-Wcast-align",
             "-Wpointer-arith", "-Wfloat-equal", "-Wshadow",
-            "-Wwrite-strings"])}
+            "-Wwrite-strings", "-Wformat=2"])}
 
 add_flags_by_level_c_only = {
         0: set(["-Wno-unknown-pragmas"]),
