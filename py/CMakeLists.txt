@@ -35,6 +35,14 @@ endif()
 set(PLUGIN_DIR ${PYTHON_SITELIB}/csmock/plugins)
 message(STATUS "PLUGIN_DIR: ${PLUGIN_DIR}")
 
+# install common python modules to the csmock/common subdirectory
+set(src_dir "${CMAKE_CURRENT_SOURCE_DIR}/common")
+set(dst_dir "${PYTHON_SITELIB}/csmock")
+install(FILES ${src_dir}/__init__.py DESTINATION ${dst_dir})
+install(FILES ${src_dir}/__init__.py DESTINATION ${dst_dir}/common)
+install(FILES ${src_dir}/cflags.py   DESTINATION ${dst_dir}/common)
+install(FILES ${src_dir}/util.py     DESTINATION ${dst_dir}/common)
+
 macro(install_executable FILE_NAME)
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/${FILE_NAME}
@@ -52,14 +60,6 @@ endif()
 
 if(ENABLE_CSMOCK)
     install_executable(csmock)
-
-    # install util.py
-    set(src_dir "${CMAKE_CURRENT_SOURCE_DIR}/common")
-    set(dst_dir "${PYTHON_SITELIB}/csmock")
-    install(FILES ${src_dir}/__init__.py DESTINATION ${dst_dir})
-    install(FILES ${src_dir}/__init__.py DESTINATION ${dst_dir}/common)
-    install(FILES ${src_dir}/cflags.py   DESTINATION ${dst_dir}/common)
-    install(FILES ${src_dir}/util.py     DESTINATION ${dst_dir}/common)
 
     macro(install_plugin PLUGIN_NAME)
         install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/plugins/${PLUGIN_NAME}.py

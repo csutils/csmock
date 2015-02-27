@@ -17,15 +17,25 @@
 
 set(MAN_PAGES "")
 
+# rules to create symlinks to local python packages
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/py/csmock
+    COMMAND mkdir -pv ${PROJECT_BINARY_DIR}/py/csmock VERBATIM)
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/py/csmock/common
+    COMMAND ln -fsv ${PROJECT_SOURCE_DIR}/py/common
+                    ${PROJECT_SOURCE_DIR}/py/common/__init__.py
+                    ${PROJECT_BINARY_DIR}/py/csmock/
+    DEPENDS ${PROJECT_BINARY_DIR}/py/csmock VERBATIM)
+
 # macro to generate a man page from the corresponding binary
 macro(create_manpage BINARY)
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${BINARY}.1
-        COMMAND ${HELP2MAN} --no-info --section 1
-        --include ${CMAKE_CURRENT_SOURCE_DIR}/${BINARY}.h2m
+        COMMAND PYTHONPATH=${PROJECT_BINARY_DIR}/py ${HELP2MAN} --no-info
+        --section 1 --include ${CMAKE_CURRENT_SOURCE_DIR}/${BINARY}.h2m
           ${PROJECT_BINARY_DIR}/${BINARY}
         > ${PROJECT_BINARY_DIR}/${BINARY}.1
         COMMENT "Generating ${BINARY} man page"
         DEPENDS ${PROJECT_BINARY_DIR}/${BINARY}
+                ${PROJECT_BINARY_DIR}/py/csmock/common
         VERBATIM)
     install(FILES ${PROJECT_BINARY_DIR}/${BINARY}.1
         DESTINATION ${SHARE_INSTALL_PREFIX}/man/man1)
