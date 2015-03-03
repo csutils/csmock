@@ -878,34 +878,33 @@ cd %%s*/\n\
                     if results.exec_cmd(cmd, shell=True) != 0:
                         results.error("field to get intermediate results from mock")
 
-                # TODO
+            if not props.no_scan:
+                if props.pick_cswrap_results(results) != 0:
+                    results.error("failed to pick cswrap results")
+
+                # run post-process hooks
+                for hook in props.post_process_hooks:
+                    rv = hook(results)
+                    if rv != 0:
+                        results.error("post-process hook failed", ec=rv)
+
+            # we are done with IniWriter
+            results.ini_writer.close()
+
+            # merge all results into a single file named scan-results-all.js
+            ini_file = "%s/scan.ini" % results.resdir
+            js_file = "%s/scan-results.js" % results.resdir
+            all_file = "%s/scan-results-all.js" % results.dbgdir
+            cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' $(ls %s/*.err) \
+> '%s'" % (cwe_list_file, ini_file, results.dbgdir_uni, all_file)
+            results.exec_cmd(cmd, shell=True)
 
             if not args.no_clean:
+                # clean up thhe mock root
                 if (mock.exec_mock_cmd(["--clean"]) != 0):
                     results.error("failed to clean mock profile", ec=0)
 
         # we are done with mock
-
-        if not props.no_scan:
-            if props.pick_cswrap_results(results) != 0:
-                results.error("failed to pick cswrap results")
-
-            # run post-process hooks
-            for hook in props.post_process_hooks:
-                rv = hook(results)
-                if rv != 0:
-                    results.error("post-process hook failed", ec=rv)
-
-        # we are done with IniWriter
-        results.ini_writer.close()
-
-        # merge all results into a single file named scan-results-all.js
-        ini_file = "%s/scan.ini" % results.resdir
-        js_file = "%s/scan-results.js" % results.resdir
-        all_file = "%s/scan-results-all.js" % results.dbgdir
-        cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' $(ls %s/*.err) \
-> '%s'" % (cwe_list_file, ini_file, results.dbgdir_uni, all_file)
-        results.exec_cmd(cmd, shell=True)
 
         # apply filters, sort the list and store the result as scan-results.js
         cmd = "cat '%s'" % all_file
