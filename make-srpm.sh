@@ -100,7 +100,7 @@ Summary: Tool for plugging static analyzers into the build process
 Requires: GitPython
 Requires: cscppc
 Requires: csclng
-Requires: csdiff >= 1.1.2
+Requires: csdiff > 1.2.0
 Requires: cswrap
 Requires: csmock-common > 1.7.1
 

@@ -281,6 +281,10 @@ parser.add_argument("-w", "--gcc-warning-level", type=int, default=2,
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
 (default).")
 
+parser.add_argument("-U", "--embed-context", type=int, default=3,
+        help="embed a number of lines of context from the source file for the \
+key event (defaults to 3).")
+
 # needed for help2man
 parser.add_argument("--version", action=VersionPrinter,
         help="print the version of csbuild and exit")
@@ -369,10 +373,11 @@ for var in env:
     cmd_prefix += "%s='%s' " % (var, env[var])
 
 # prepare template for running the run-scan.sh script
-cmd = "%s %s %s %s" \
+cmd = "%s %s %s %s %s" \
         % (cmd_prefix, run_scan_sh,
                 shell_quote(res_dir),
-                shell_quote(args.build_cmd))
+                shell_quote(args.build_cmd),
+                shell_quote("csgrep --embed-context %d" % args.embed_context))
 
 curr = "%s/current.err" % res_dir
 

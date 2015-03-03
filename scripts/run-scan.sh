@@ -20,7 +20,10 @@ test -d "$RES_DIR" || die "invalid RES_DIR given: $RES_DIR"
 BUILD_CMD="$2"
 test -n "$BUILD_CMD" || die "no BUILD_CMD given"
 
-BASE_ERR="$3"
+FILTER_CMD="$3"
+test -n "$FILTER_CMD" || FILTER_CMD=cat
+
+BASE_ERR="$4"
 if test -n "$BASE_ERR"; then
     test -r "$BASE_ERR" || die "invalid BASE_ERR given: $BASE_ERR"
 fi
@@ -84,7 +87,8 @@ csgrep --quiet --event 'error|warning' \
         --msg "Value stored to '.*' is never read" \
     | csgrep --invert-match --checker CPPCHECK_WARNING \
         --event 'preprocessorErrorDirective|syntaxError' \
-    | cssort --key=path >"$CURR_ERR"
+    | cssort --key=path \
+    | $FILTER_CMD >"$CURR_ERR"
 
 # compare the results with base (if we got one)
 ADDED_ERR="${RES_DIR}/added.err"
