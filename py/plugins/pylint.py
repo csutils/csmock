@@ -26,9 +26,7 @@ dirs_to_scan = "/builddir/build/BUILDROOT"
 pylint_capture = "/builddir/pylint-capture.err"
 
 filter_cmd = "csgrep --quiet '%s' " \
-        "| sed 's|^/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|' " \
         "| csgrep --event '^W[0-9]+' " \
-        "| cssort " \
         "> '%s'"
 
 class PluginProps:

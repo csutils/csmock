@@ -26,9 +26,7 @@ dirs_to_scan = "/builddir/build/BUILDROOT"
 shellcheck_capture = "/builddir/shellcheck-capture.err"
 
 filter_cmd = "csgrep --quiet '%s' " \
-        "| sed 's|^/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|' " \
         "| csgrep --invert-match --event '^note$' " \
-        "| cssort " \
         "> '%s'"
 
 class PluginProps:

@@ -872,6 +872,8 @@ cd %%s*/\n\
                     ec = mock.exec_mockbuild_cmd(cmd)
                     if (ec != 0):
                         results.error("%install failed", ec=ec)
+                    props.result_filters = ["sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"] \
+                            + props.result_filters
 
                 # execute post-build commands in the chroot
                 for cmd in props.post_build_chroot_cmds:
