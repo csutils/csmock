@@ -698,7 +698,7 @@ props.shell_cmd_to_build = args.shell_cmd
 
 if 0 < args.embed_context:
     # we need 'csgrep --embed-context' to work in the chroot
-    props.install_pkgs += ["csdiff > 1.2.0"]
+    props.install_pkgs += ["csdiff >= 1.2.1"]
 
 # initialize the %{_smp_mflags} RPM macro
 mflags_rpmm = "_smp_mflags"
