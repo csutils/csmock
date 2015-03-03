@@ -899,11 +899,16 @@ cd %%s*/\n\
         # we are done with IniWriter
         results.ini_writer.close()
 
-        # merge all results into a single file named scan-results.js
+        # merge all results into a single file named scan-results-all.js
         ini_file = "%s/scan.ini" % results.resdir
         js_file = "%s/scan-results.js" % results.resdir
-        cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' $(ls %s/*.err)" \
-                % (cwe_list_file, ini_file, results.dbgdir_uni)
+        all_file = "%s/scan-results-all.js" % results.dbgdir
+        cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' $(ls %s/*.err) \
+> '%s'" % (cwe_list_file, ini_file, results.dbgdir_uni, all_file)
+        results.exec_cmd(cmd, shell=True)
+
+        # apply filters, sort the list and store the result as scan-results.js
+        cmd = "cat '%s'" % all_file
         for filt in props.result_filters:
             cmd += " | %s" % filt
         cmd += " | cssort --key=path > '%s'" % js_file
