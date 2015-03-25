@@ -538,6 +538,14 @@ class PluginManager:
         plugin = self.plug_by_name[plugin_name]
         plugin.enable()
 
+    def enable_all(self):
+        cnt = 0
+        for prio in sorted(self.plug_by_prio):
+            plugin = self.plug_by_prio[prio]
+            plugin.enable()
+            cnt = cnt + 1
+        return cnt
+
     def init_parser(self, parser):
         for prio in sorted(self.plug_by_prio):
             plugin = self.plug_by_prio[prio]
@@ -614,7 +622,12 @@ parser.add_argument("-r", "--root", dest="mock_profile", default="default",
         help="mock profile to use (defaults to mock's default)")
 
 parser.add_argument("-t", "--tools", action="append", default=[],
-        help="comma-spearated list of tools to enable")
+        help="comma-spearated list of tools to enable \
+(use --list-available-tools to see the list of available tools)")
+
+parser.add_argument("-a", "--all-tools", action="store_true",
+        help="enable all available tools \
+(use --list-available-tools to see the list of available tools)")
 
 parser.add_argument("-l", "--list-available-tools", action=ToolsPrinter,
         help="list available tools and exit")
@@ -666,7 +679,8 @@ plugins.init_parser(parser)
 # parse command-line arguments
 args = parser.parse_args()
 
-# check that only available tools are requested
+# check that only available tools are requested (and enable them)
+any_tool = False
 for i in args.tools:
     for j in i.split(","):
         tool = j.strip()
@@ -675,8 +689,19 @@ for i in args.tools:
         if tool in plugin_list:
             # explicitly enable this tool
             plugins.enable(tool)
+            any_tool = True
         else:
             parser.error("tool not available: %s" % tool)
+
+if args.all_tools:
+    # enable all available tools
+    if 0 < plugins.enable_all():
+        any_tool = True
+
+if not any_tool:
+    # no tool enabled
+    sys.stderr.write("warning: no tools are enabled, only trying to build \
+the package (you can use --tools or --all-tools to enable them)\n")
 
 srpm = args.SRPM
 output = args.output
