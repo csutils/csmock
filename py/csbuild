@@ -26,6 +26,7 @@ import sys
 import tempfile
 
 from csmock.common.cflags import flags_by_warning_level
+from csmock.common.util   import add_paired_flag
 
 csbuild_travis_mirror = \
         "deb https://kdudka.fedorapeople.org/csbuild precise contrib"
@@ -220,13 +221,6 @@ class VersionPrinter(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print("@VERSION@")
         sys.exit(0)
-
-def add_paired_flag(parser, name, help):
-    help_no = "disables --" + name
-    arg = parser.add_argument("--" + name, action="store_const", const=True,
-            help=help)
-    parser.add_argument(   "--no-" + name, action="store_const", const=False,
-            help=help_no, dest=arg.dest)
 
 # initialize argument parser
 parser = argparse.ArgumentParser()

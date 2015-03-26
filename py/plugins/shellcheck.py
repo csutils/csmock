@@ -21,8 +21,6 @@ import csmock.common.util
 
 run_shellcheck_sh = "/usr/share/csmock/scripts/run-shellcheck.sh"
 
-dirs_to_scan = "/builddir/build/BUILDROOT"
-
 shellcheck_capture = "/builddir/shellcheck-capture.err"
 
 filter_cmd = "csgrep --quiet '%s' " \
@@ -44,8 +42,7 @@ class Plugin:
         self.enabled = True
 
     def init_parser(self, parser):
-        # TODO
-        pass
+        csmock.common.util.install_script_scan_opts(parser, "shellcheck")
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
@@ -53,6 +50,10 @@ class Plugin:
 
         if props.shell_cmd_to_build is not None:
             parser.error("The shellcheck plug-in works only with SRPMs")
+
+        # which directories are we going to scan (build and/or install)
+        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(parser, args,
+                "shellcheck")
 
         props.install_pkgs += ["ShellCheck"]
         props.copy_in_files += [run_shellcheck_sh]

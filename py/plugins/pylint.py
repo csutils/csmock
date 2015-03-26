@@ -21,8 +21,6 @@ import csmock.common.util
 
 run_pylint_sh = "/usr/share/csmock/scripts/run-pylint.sh"
 
-dirs_to_scan = "/builddir/build/BUILDROOT"
-
 pylint_capture = "/builddir/pylint-capture.err"
 
 filter_cmd = "csgrep --quiet '%s' " \
@@ -44,8 +42,7 @@ class Plugin:
         self.enabled = True
 
     def init_parser(self, parser):
-        # TODO
-        pass
+        csmock.common.util.install_script_scan_opts(parser, "pylint")
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
@@ -53,6 +50,10 @@ class Plugin:
 
         if props.shell_cmd_to_build is not None:
             parser.error("The pylint plug-in works only with SRPMs")
+
+        # which directories are we going to scan (build and/or install)
+        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(parser, args,
+                "pylint")
 
         props.install_pkgs += ["pylint"]
         props.copy_in_files += [run_pylint_sh]

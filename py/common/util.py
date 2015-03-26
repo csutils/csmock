@@ -31,3 +31,38 @@ def install_default_toolver_hook(props, tool):
         return 0
 
     props.post_depinst_hooks += [toolver_by_rpmlist_hook]
+
+def add_paired_flag(parser, name, help):
+    help_no = "disables --" + name
+    arg = parser.add_argument("--" + name, action="store_const", const=True,
+            help=help)
+    parser.add_argument(   "--no-" + name, action="store_const", const=False,
+            help=help_no, dest=arg.dest)
+
+def install_script_scan_opts(parser, tool):
+    # render help text
+    help_tpl = "make %s scan files in the %s directory (%s by default) "
+    help_build   = help_tpl % (tool, "build",  "disabled")
+    help_install = help_tpl % (tool, "install", "enabled")
+
+    # add 2x2 options
+    add_paired_flag(parser, tool + "-scan-build", help=help_build)
+    add_paired_flag(parser, tool + "-scan-install", help=help_install)
+
+def dirs_to_scan_by_args(parser, args, tool):
+    scan_build   = getattr(args, tool + "_scan_build",  False)
+    scan_install = getattr(args, tool + "_scan_install", True)
+    if not scan_build and not scan_install:
+        parser.error("either %s-scan-build or %s-scan-install must be enabled" \
+                % (tool, tool))
+
+    dirs_to_scan = ""
+    if scan_build:
+        dirs_to_scan += "/builddir/build/BUILD"
+        if scan_install:
+            dirs_to_scan += " "
+
+    if scan_install:
+        dirs_to_scan += "/builddir/build/BUILDROOT"
+
+    return dirs_to_scan
