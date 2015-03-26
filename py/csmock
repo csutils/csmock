@@ -938,7 +938,7 @@ cd %%s*/\n\
                 # embed context lines from source program files
                 tmp_file = "%s.tmp" % all_file
                 cmd = strlist_to_shell_cmd( mock.get_mock_cmd(["--shell",
-                    "csgrep --embed-context %d" % args.embed_context]))
+                    "csgrep --mode=json --embed-context %d" % args.embed_context]))
                 cmd += " < '%s' > '%s'" % (all_file, tmp_file)
                 if (0 == results.exec_cmd(cmd, shell=True)):
                     shutil.move(tmp_file, all_file)
