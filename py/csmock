@@ -250,7 +250,7 @@ class ScanResults:
         if emul_pty:
             # workaround for bug https://bugzilla.redhat.com/1166609
             sh_cmd = strlist_to_shell_cmd(cmd, escape_special=True)
-            cmd = ["script", "-feqc", sh_cmd]
+            cmd = ["script", "-a/dev/null", "-feqc", sh_cmd]
 
         self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
         self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd,
@@ -338,7 +338,8 @@ class MockWrapper:
             self.def_cmd += ["--disable-plugin=package_state"]
 
         if (self.results.get_cmd_output("mock --version | grep ^1.2.")[0] == 0) \
-            and (self.results.get_cmd_output("script -ec true 2>/dev/null")[0] == 0):
+            and (self.results.get_cmd_output(
+                "script -a/dev/null -ec true 2>/dev/null")[0] == 0):
             # workaround for bug https://bugzilla.redhat.com/1166609
             self.emul_pty = True
 
