@@ -421,6 +421,7 @@ class MockWrapper:
 class ScanProps:
     def __init__(self):
         self.install_pkgs = []
+        self.install_opt_pkgs = []
         self.copy_in_files = []
         self.pre_mock_hooks = []
         self.post_depinst_hooks = []
@@ -735,8 +736,8 @@ props.print_defects         = args.print_defects
 props.shell_cmd_to_build    = args.shell_cmd
 
 if 0 < args.embed_context:
-    # we need 'csgrep --embed-context' to work in the chroot
-    props.install_pkgs += ["csdiff >= 1.2.1"]
+    # we need 'csgrep --embed-context' to work in the chroot for --embed-context
+    props.install_opt_pkgs += ["csdiff >= 1.2.1"]
 
 # initialize the %{_smp_mflags} RPM macro
 mflags_rpmm = "_smp_mflags"
@@ -833,6 +834,10 @@ def do_scan(props, output, skip_patches):
 
             # run 'mock --init' and 'mock --install'
             mock.init_and_install(props.install_pkgs)
+
+            # install optional packages (if any)
+            if 0 < len(props.install_opt_pkgs):
+                mock.exec_mock_cmd(["--install"] + props.install_opt_pkgs)
 
             if props.shell_cmd_to_build is not None:
                 # prepare a build script in our tmp dir
