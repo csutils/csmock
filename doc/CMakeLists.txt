@@ -33,6 +33,7 @@ macro(create_manpage BINARY)
         --section 1 --include ${CMAKE_CURRENT_SOURCE_DIR}/${BINARY}.h2m
           ${PROJECT_BINARY_DIR}/${BINARY}
         > ${PROJECT_BINARY_DIR}/${BINARY}.1
+        || rm -f ${PROJECT_BINARY_DIR}/${BINARY}.1
         COMMENT "Generating ${BINARY} man page"
         DEPENDS ${PROJECT_BINARY_DIR}/${BINARY}
                 ${PROJECT_BINARY_DIR}/py/csmock/common
