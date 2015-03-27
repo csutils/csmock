@@ -654,9 +654,9 @@ parser.add_argument("-j", "--jobs", type=int, default=default_jobs_cnt,
 parser.add_argument("--cswrap-timeout", type=int, default=default_cswrap_timeout,
         help="maximal amount of time taken by analysis of a single module [s]")
 
-parser.add_argument("-U", "--embed-context", type=int, default=0,
+parser.add_argument("-U", "--embed-context", type=int, default=3,
         help="embed a number of lines of context from the source file for the \
-key event (disabled by default).")
+key event (defaults to 3).")
 
 parser.add_argument("-k", "--keep-going", action="store_true",
         help="continue as much as possible after an error")
