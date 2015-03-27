@@ -50,10 +50,16 @@ def install_script_scan_opts(parser, tool):
     add_paired_flag(parser, tool + "-scan-install", help=help_install)
 
 def dirs_to_scan_by_args(parser, args, tool):
-    scan_build   = getattr(args, tool + "_scan_build",  False)
-    scan_install = getattr(args, tool + "_scan_install", True)
+    scan_build   = getattr(args, tool + "_scan_build")
+    if scan_build is None:
+        scan_build = False
+
+    scan_install = getattr(args, tool + "_scan_install")
+    if scan_install is None:
+        scan_install = True;
+
     if not scan_build and not scan_install:
-        parser.error("either %s-scan-build or %s-scan-install must be enabled" \
+        parser.error("either --%s-scan-build or --%s-scan-install must be enabled" \
                 % (tool, tool))
 
     dirs_to_scan = ""
