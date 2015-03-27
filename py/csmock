@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+import csmock.common.util
+
 import argparse
 import codecs
 import copy
@@ -575,12 +577,15 @@ def transform_results(js_file, results):
     return (err_file, html_file)
 
 # transform scan-results.js to scan-results.{err,html} and write stats
-def finalize_results(js_file, results):
+def finalize_results(js_file, results, print_defects):
     (err_file, _) = transform_results(js_file, results)
     summary_file = "%s/scan-results-summary.txt" % results.resdir
     cmd = "csgrep --mode=stat %s '%s' | tee '%s'" \
             % (csgrep_final_filter_args, err_file, summary_file)
-    return results.exec_cmd(cmd, shell=True)
+    ec = results.exec_cmd(cmd, shell=True)
+    if print_defects:
+        os.system("csgrep '%s'" % err_file)
+    return ec
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -661,6 +666,9 @@ parser.add_argument("--no-clean", action="store_true",
 parser.add_argument("--no-scan", action="store_true",
         help="do not analyze any package, just check versions of the analyzers")
 
+csmock.common.util.add_paired_flag(parser, "print-defects",
+        help="print the resulting list of defects (default if connected to a tty)")
+
 # --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
 group = parser.add_mutually_exclusive_group()
 group.add_argument("--skip-patches", action="store_true",
@@ -679,6 +687,9 @@ plugins.init_parser(parser)
 
 # parse command-line arguments
 args = parser.parse_args()
+
+if args.print_defects is None:
+    args.print_defects = sys.stdout.isatty()
 
 # check that only available tools are requested (and enable them)
 any_tool = False
@@ -717,10 +728,11 @@ if args.no_scan and args.shell_cmd is not None:
     parser.error("--shell-cmd makes no sense with --no-scan")
 
 props = ScanProps()
-props.keep_going = args.keep_going
-props.cswrap_timeout = args.cswrap_timeout
-props.no_scan = args.no_scan
-props.shell_cmd_to_build = args.shell_cmd
+props.cswrap_timeout        = args.cswrap_timeout
+props.keep_going            = args.keep_going
+props.no_scan               = args.no_scan
+props.print_defects         = args.print_defects
+props.shell_cmd_to_build    = args.shell_cmd
 
 if 0 < args.embed_context:
     # we need 'csgrep --embed-context' to work in the chroot
@@ -958,7 +970,7 @@ cd %%s*/\n\
         cmd += " | cssort --key=path > '%s'" % js_file
         results.exec_cmd(cmd, shell=True)
 
-        finalize_results(js_file, results)
+        finalize_results(js_file, results, props.print_defects)
         return results.ec
 
 def do_diff_scan(props, output):
@@ -986,7 +998,7 @@ def do_diff_scan(props, output):
                 % (run0_file, run1_file, ini_file, js_file), shell=True):
             results.error("csdiff failed")
 
-        finalize_results(js_file, results)
+        finalize_results(js_file, results, props.print_defects)
         return results.ec
 
 if args.diff_patches:
