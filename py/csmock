@@ -711,11 +711,6 @@ if args.all_tools:
     if 0 < plugins.enable_all():
         any_tool = True
 
-if not any_tool:
-    # no tool enabled
-    sys.stderr.write("warning: no tools are enabled, only trying to build \
-the package (you can use --tools or --all-tools to enable them)\n")
-
 srpm = args.SRPM
 output = args.output
 if srpm is None:
@@ -785,6 +780,11 @@ def do_scan(props, output, skip_patches):
 
     with ScanResults(output, props.keep_going) as results:
         results.ini_writer.append("mock-config", mock_profile)
+
+        if not any_tool:
+            # no tool enabled
+            results.error("No tools are enabled, only trying to build \
+the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
         # dump list of RPMs installed on the host (for debugging purposes)
         results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-host.txt'"
