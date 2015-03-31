@@ -543,12 +543,9 @@ class PluginManager:
         plugin.enable()
 
     def enable_all(self):
-        cnt = 0
         for prio in sorted(self.plug_by_prio):
             plugin = self.plug_by_prio[prio]
             plugin.enable()
-            cnt = cnt + 1
-        return cnt
 
     def init_parser(self, parser):
         for prio in sorted(self.plug_by_prio):
@@ -559,6 +556,14 @@ class PluginManager:
         for prio in sorted(self.plug_by_prio):
             plugin = self.plug_by_prio[prio]
             plugin.handle_args(parser, args, props)
+
+    def num_enabled(self):
+        cnt = 0
+        for prio in sorted(self.plug_by_prio):
+            plugin = self.plug_by_prio[prio]
+            if getattr(plugin, "enabled", False):
+                cnt = cnt + 1
+        return cnt
 
 def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
@@ -693,7 +698,6 @@ if args.print_defects is None:
     args.print_defects = sys.stdout.isatty()
 
 # check that only available tools are requested (and enable them)
-any_tool = False
 for i in args.tools:
     for j in i.split(","):
         tool = j.strip()
@@ -702,14 +706,12 @@ for i in args.tools:
         if tool in plugin_list:
             # explicitly enable this tool
             plugins.enable(tool)
-            any_tool = True
         else:
             parser.error("tool not available: %s" % tool)
 
 if args.all_tools:
     # enable all available tools
-    if 0 < plugins.enable_all():
-        any_tool = True
+    plugins.enable_all()
 
 srpm = args.SRPM
 output = args.output
@@ -772,6 +774,7 @@ if os.path.exists(output) and not args.force:
 
 # poll plug-ins to reflect themselves in ScanProps
 plugins.handle_args(parser, args, props)
+any_tool = (0 < plugins.num_enabled())
 
 def do_scan(props, output, skip_patches):
     if skip_patches:
