@@ -841,6 +841,8 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
             # install optional packages (if any)
             if 0 < len(props.install_opt_pkgs):
                 mock.exec_mock_cmd(["--install"] + props.install_opt_pkgs)
+                # just to update rpm-list-mock.txt
+                find_missing_pkgs([], results, mock)
 
             if props.shell_cmd_to_build is not None:
                 # prepare a build script in our tmp dir
