@@ -55,7 +55,13 @@ printf "%s: preparing a release of \033[1;32m%s\033[0m\n" "$SELF" "$NV"
 
 TMP="`mktemp -d`"
 trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
-test -d "$TMP" || die "mktemp failed"
+cd "$TMP" >/dev/null || die "mktemp failed"
+
+# clone the repository
+git clone "$REPO" "$PKG"                || die "git clone failed"
+cd "$PKG"                               || die "git clone failed"
+
+make -j5 distcheck CTEST='ctest -j5'    || die "'make distcheck' has failed"
 
 SRC_TAR="${NV}.tar"
 SRC="${SRC_TAR}.xz"
