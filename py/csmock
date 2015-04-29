@@ -336,6 +336,11 @@ class MockWrapper:
             # fallback to any mock in $PATH (e.g. /usr/local/bin/mock)
             mock = "mock"
         self.def_cmd = [mock, "-r", self.mock_profile]
+
+        # make csmock work in case the 'tmpfs' plug-in is enabled
+        # (see <https://bugzilla.redhat.com/1190100> for details)
+        self.def_cmd += ["--plugin-option=tmpfs:keep_mounted=True"]
+
         if (self.results.get_cmd_output("mock --help | grep package_state")[0] == 0):
             self.def_cmd += ["--disable-plugin=package_state"]
 
