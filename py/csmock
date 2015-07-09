@@ -922,6 +922,10 @@ cd %%s*/\n\
                         results.fatal_error("SRPM is required by a plug-in")
                     cmd = "rpmbuild -bi --nodeps --short-circuit %s %s" \
                         % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
+
+                    # initialize environment variables according to ScanProps
+                    cmd = props.wrap_shell_cmd_by_env(cmd)
+
                     ec = mock.exec_mockbuild_cmd(cmd)
                     if (ec != 0):
                         results.error("%install failed", ec=ec)
