@@ -75,9 +75,19 @@ else
     warn_not_in_path cscppc
 fi
 
+# plug Coverity Analysis (if available in $PATH)
+msg "Looking for Coverity Analysis..."
+BUILD_CMD_WRAP=
+COV_INT_DIR=
+if (set -x; cov-build --ident && cov-analyze --ident && cov-format-errors --ident)
+then
+    COV_INT_DIR="${RES_DIR}/cov"
+    BUILD_CMD_WRAP="cov-build --dir=${COV_INT_DIR}"
+fi
+
 # run the specified BUILD_CMD
 msg "Running the build!"
-(set -x; "$SHELL" -xc "$BUILD_CMD")
+(set -x; $BUILD_CMD_WRAP "$SHELL" -xc "$BUILD_CMD")
 
 # check for possible build failure
 test "$?" = 0 || exit 125
@@ -92,6 +102,15 @@ RAW_CURR_ERR="${RES_DIR}/raw-current.err"
     | csgrep --invert-match --checker CPPCHECK_WARNING \
         --event 'preprocessorErrorDirective|syntaxError' \
     > "$RAW_CURR_ERR")
+
+# run Coverity Analysis (if anything has been captured)
+if test -n "$COV_INT_DIR" && test -e "${COV_INT_DIR}/emit/"*/emit-db.write-lock
+then
+    msg "Running Coverity Analysis..."
+    (set -x; cov-analyze "--dir=${COV_INT_DIR}" \
+        && cov-format-errors "--dir=${COV_INT_DIR}" --emacs-style \
+        | csgrep --prune-events=1 >> "$RAW_CURR_ERR")
+fi
 
 # process the given filters and sort the results
 CURR_ERR="${RES_DIR}/current.err"
