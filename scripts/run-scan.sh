@@ -83,17 +83,21 @@ msg "Running the build!"
 test "$?" = 0 || exit 125
 
 # process the resulting capture
-CURR_ERR="${RES_DIR}/current.err"
+RAW_CURR_ERR="${RES_DIR}/raw-current.err"
 (set -x; csgrep --quiet --event 'error|warning' \
-    --path "^${PWD}/" --strip-path-prefix "${PWD}/" \
     --remove-duplicates "${CSWRAP_CAP_FILE}" \
-    | csgrep --invert-match --path '^ksh-.*[0-9]+\.c$' \
-    | csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c' \
     | csgrep --invert-match --checker CLANG_WARNING --event error \
     | csgrep --invert-match --checker CLANG_WARNING \
         --msg "Value stored to '.*' is never read" \
     | csgrep --invert-match --checker CPPCHECK_WARNING \
         --event 'preprocessorErrorDirective|syntaxError' \
+    > "$RAW_CURR_ERR")
+
+# process the given filters and sort the results
+CURR_ERR="${RES_DIR}/current.err"
+(set -x; csgrep --path "^${PWD}/" --strip-path-prefix "${PWD}/" <"$RAW_CURR_ERR" \
+    | csgrep --invert-match --path '^ksh-.*[0-9]+\.c$' \
+    | csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c' \
     | cssort --key=path \
     | $FILTER_CMD >"$CURR_ERR")
 
