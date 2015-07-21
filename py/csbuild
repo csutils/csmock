@@ -39,6 +39,10 @@ default_base_fail_exit_code = 0
 
 default_cswrap_timeout = 30
 
+default_embed_context = 3
+
+default_gcc_warning_level = 2
+
 tool_name = sys.argv[0]
 
 class StatusWriter:
@@ -168,6 +172,12 @@ def encode_csbuild_args(args):
     if args.cswrap_timeout != default_cswrap_timeout:
         cmd += " --cswrap-timeout %d" % args.cswrap_timeout
 
+    if args.embed_context != default_embed_context:
+        cmd += " -U%d" % args.embed_context
+
+    if args.gcc_warning_level != default_gcc_warning_level:
+        cmd += " -w%d" % args.gcc_warning_level
+
     cmd += encode_paired_flag(args, "print-current")
     cmd += encode_paired_flag(args, "print-added")
     cmd += encode_paired_flag(args, "print-fixed")
@@ -270,12 +280,12 @@ parser.add_argument("--install",
 parser.add_argument("--prep-cmd",
         help="shell command to run before the build (runs in $PWD)")
 
-parser.add_argument("-w", "--gcc-warning-level", type=int, default=2,
+parser.add_argument("-w", "--gcc-warning-level", type=int, default=default_gcc_warning_level,
         help="Adjust GCC warning level.  -w0 means no additional warnings, \
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
 (default).")
 
-parser.add_argument("-U", "--embed-context", type=int, default=3,
+parser.add_argument("-U", "--embed-context", type=int, default=default_embed_context,
         help="embed a number of lines of context from the source file for the \
 key event (defaults to 3).")
 
