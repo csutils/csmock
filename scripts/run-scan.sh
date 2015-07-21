@@ -1,13 +1,17 @@
 #!/bin/sh
 SELF="$0"
 
+msg() {
+    printf "\n%s: %s\n" "$SELF" "$*" >&2
+}
+
 die() {
-    printf "%s: error: %s\n" "$SELF" "$*" >&2
+    msg "error: %s" "$*"
     exit 1
 }
 
 warn() {
-    printf "%s: warning: %s\n" "$SELF" "$*" >&2
+    msg "warning: %s" "$*"
 }
 
 warn_not_in_path() {
@@ -46,6 +50,7 @@ then
 fi
 
 # plug csclng (if available)
+msg "Looking for csclng..."
 CSCLNG_LNK_DIR="$(csclng --print-path-to-wrap)"
 if test -d "$CSCLNG_LNK_DIR"; then
     if (set -x; clang --version); then
@@ -58,6 +63,7 @@ else
 fi
 
 # plug cscppc (if available)
+msg "Looking for cscppc..."
 CSCPPC_LNK_DIR="$(cscppc --print-path-to-wrap)"
 if test -d "$CSCPPC_LNK_DIR"; then
     if (set -x; cppcheck --version); then
@@ -70,14 +76,15 @@ else
 fi
 
 # run the specified BUILD_CMD
-"$SHELL" -xc "$BUILD_CMD"
+msg "Running the build!"
+(set -x; "$SHELL" -xc "$BUILD_CMD")
 
 # check for possible build failure
 test "$?" = 0 || exit 125
 
 # process the resulting capture
 CURR_ERR="${RES_DIR}/current.err"
-csgrep --quiet --event 'error|warning' \
+(set -x; csgrep --quiet --event 'error|warning' \
     --path "^${PWD}/" --strip-path-prefix "${PWD}/" \
     --remove-duplicates "${CSWRAP_CAP_FILE}" \
     | csgrep --invert-match --path '^ksh-.*[0-9]+\.c$' \
@@ -88,7 +95,7 @@ csgrep --quiet --event 'error|warning' \
     | csgrep --invert-match --checker CPPCHECK_WARNING \
         --event 'preprocessorErrorDirective|syntaxError' \
     | cssort --key=path \
-    | $FILTER_CMD >"$CURR_ERR"
+    | $FILTER_CMD >"$CURR_ERR")
 
 # compare the results with base (if we got one)
 ADDED_ERR="${RES_DIR}/added.err"
