@@ -181,14 +181,16 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %doc COPYING
 
 %files -n csmock-common
+%dir %{_datadir}/csmock
+%dir %{_datadir}/csmock/scripts
+%dir %{python2_sitelib}/csmock
+%dir %{python2_sitelib}/csmock/plugins
 %{_bindir}/csmock
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
 %{python2_sitelib}/csmock/__init__.py*
-%{python2_sitelib}/csmock/common/__init__.py*
-%{python2_sitelib}/csmock/common/cflags.py*
-%{python2_sitelib}/csmock/common/util.py*
+%{python2_sitelib}/csmock/common
 %{python2_sitelib}/csmock/plugins/gcc.py*
 %doc COPYING README
 
