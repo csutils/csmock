@@ -1004,20 +1004,27 @@ def do_diff_scan(props, output):
         if 0 != ec:
             results.error("regular scan failed", ec=ec)
 
+        # diff and process fixed defects
+        run0_file = "%s/scan-results.js" % run0
+        run1_file = "%s/scan-results.js" % run1
+        js_file_fixed = "%s/scan-results-fixed.js" % results.resdir
+        if 0 != results.exec_cmd("csdiff --fixed %s %s > %s" \
+                % (run0_file, run1_file, js_file_fixed), shell=True):
+            results.error("csdiff --fixed failed")
+        transform_results(js_file_fixed, results)
+
         # finalize scan.ini
         results.ini_writer.append("title", "%s - Defects in Patches" % nvr)
         results.ini_writer.close()
         ini_file = "%s/scan.ini" % results.resdir
 
-        # diff both runs and serialize the result using the JSON format
-        run0_file = "%s/scan-results.js" % run0
-        run1_file = "%s/scan-results.js" % run1
+        # diff and process added defects
         js_file = "%s/scan-results.js" % results.resdir
         if 0 != results.exec_cmd("csdiff %s %s | cslinker --inifile %s - > %s" \
                 % (run0_file, run1_file, ini_file, js_file), shell=True):
             results.error("csdiff failed")
-
         finalize_results(js_file, results, props.print_defects)
+
         return results.ec
 
 if args.diff_patches:
