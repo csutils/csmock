@@ -682,6 +682,12 @@ parser.add_argument("--no-scan", action="store_true",
 csmock.common.util.add_paired_flag(parser, "print-defects",
         help="print the resulting list of defects (default if connected to a tty)")
 
+parser.add_argument("--base-srpm",
+        help="perform a differential scan against the specified base pacakge")
+
+parser.add_argument("--base-root", dest="base_mock_profile",
+        help="mock profile to use for the base scan (use only with --base-srpm)")
+
 # --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
 group = parser.add_mutually_exclusive_group()
 group.add_argument("--skip-patches", action="store_true",
@@ -731,6 +737,13 @@ if args.SRPM is None:
 if args.no_scan and args.shell_cmd is not None:
     parser.error("--shell-cmd makes no sense with --no-scan")
 
+if args.base_srpm is None:
+    if args.base_mock_profile is not None:
+        parser.error("--base-root makes no sense without --base-srpm")
+else:
+    if args.diff_patches:
+        parser.error("options --diff-patches and --base-scan are mutually exclusive")
+
 props = ScanProps()
 props.cswrap_timeout        = args.cswrap_timeout
 props.keep_going            = args.keep_going
@@ -738,6 +751,7 @@ props.no_scan               = args.no_scan
 props.print_defects         = args.print_defects
 props.shell_cmd_to_build    = args.shell_cmd
 props.srpm                  = args.SRPM
+props.base_srpm             = args.base_srpm
 
 if 0 < args.embed_context:
     # we need 'csgrep --embed-context' to work in the chroot for --embed-context
@@ -753,6 +767,11 @@ props.rpm_opts += ["--define", mflags_rpmm]
 # make sure that we have a configuration for the selected mock profile
 props.mock_profile = args.mock_profile
 require_file(parser, "/etc/mock/%s.cfg" % props.mock_profile)
+if args.base_mock_profile is None:
+    props.base_mock_profile = props.mock_profile
+else:
+    props.base_mock_profile = args.base_mock_profile
+    require_file(parser, "/etc/mock/%s.cfg" % props.base_mock_profile)
 
 if args.list_of_pkgs is not None:
     # append the list of packages to install specified on command-line
@@ -994,15 +1013,26 @@ cd %%s*/\n\
         finalize_results(js_file, results, props.print_defects)
         return results.ec
 
-def do_diff_scan(props, output):
+def do_diff_scan(props, output, skip_patches, diff_patches):
     with ScanResults(output, props.keep_going, create_dbgdir=False) as results:
+        run0_props = copy.deepcopy(props)
+        if diff_patches:
+            # we are looking for defects in patches
+            assert not skip_patches
+            title = "%s - Defects in Patches" % nvr
+        else:
+            # this is a version-diff-build
+            run0_props.srpm         = run0_props.base_srpm
+            run0_props.mock_profile = run0_props.base_mock_profile
+            title = "%s - Defects not detected in %s" % (nvr, props.base_srpm)
+
         run0 = "%s/run0" % results.resdir
-        ec = do_scan(copy.deepcopy(props), run0, skip_patches=True)
+        ec = do_scan(run0_props, run0, skip_patches=(skip_patches or diff_patches))
         if 0 != ec:
-            results.error("vanilla scan failed", ec=ec)
+            results.error("base scan failed", ec=ec)
 
         run1 = "%s/run1" % results.resdir
-        ec = do_scan(props, run1, skip_patches=False)
+        ec = do_scan(props, run1, skip_patches=skip_patches)
         if 0 != ec:
             results.error("regular scan failed", ec=ec)
 
@@ -1016,7 +1046,7 @@ def do_diff_scan(props, output):
         transform_results(js_file_fixed, results)
 
         # finalize scan.ini
-        results.ini_writer.append("title", "%s - Defects in Patches" % nvr)
+        results.ini_writer.append("title", title)
         results.ini_writer.close()
         ini_file = "%s/scan.ini" % results.resdir
 
@@ -1030,7 +1060,9 @@ def do_diff_scan(props, output):
         return results.ec
 
 if args.diff_patches:
-    ec = do_diff_scan(props, output)
+    ec = do_diff_scan(props, output, args.skip_patches, diff_patches=True)
+elif args.base_srpm is not None:
+    ec = do_diff_scan(props, output, args.skip_patches, diff_patches=False)
 else:
     ec = do_scan(props, output, args.skip_patches)
 
