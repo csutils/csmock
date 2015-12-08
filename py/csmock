@@ -143,9 +143,10 @@ def find_missing_pkgs(pkgs, results, mock):
     return missing
 
 class ScanResults:
-    def __init__(self, output, keep_going=False):
+    def __init__(self, output, keep_going=False, create_dbgdir=True):
         self.output = output
         self.keep_going = keep_going
+        self.create_dbgdir = create_dbgdir
         self.use_xz = False
         self.use_tar = False
         self.dirname = os.path.basename(output)
@@ -184,14 +185,13 @@ class ScanResults:
                     "error: failed to create output directory: %s\n" % e)
             sys.exit(1)
 
-        self.dbgdir = "%s/debug" % self.resdir
-        os.mkdir(self.dbgdir)
-
-        self.dbgdir_raw = "%s/raw-results" % self.dbgdir
-        os.mkdir(self.dbgdir_raw)
-
-        self.dbgdir_uni = "%s/uni-results" % self.dbgdir
-        os.mkdir(self.dbgdir_uni)
+        if self.create_dbgdir:
+            self.dbgdir = "%s/debug" % self.resdir
+            self.dbgdir_raw = "%s/raw-results" % self.dbgdir
+            self.dbgdir_uni = "%s/uni-results" % self.dbgdir
+            os.mkdir(self.dbgdir)
+            os.mkdir(self.dbgdir_raw)
+            os.mkdir(self.dbgdir_uni)
 
         tee = ["tee", "%s/scan.log" % self.resdir]
         self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE,
@@ -993,7 +993,7 @@ cd %%s*/\n\
         return results.ec
 
 def do_diff_scan(props, output):
-    with ScanResults(output, props.keep_going) as results:
+    with ScanResults(output, props.keep_going, create_dbgdir=False) as results:
         run0 = "%s/run0" % results.resdir
         ec = do_scan(copy.deepcopy(props), run0, skip_patches=True)
         if 0 != ec:
