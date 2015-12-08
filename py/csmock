@@ -445,6 +445,8 @@ class ScanProps:
         self.no_scan = False
         self.need_rpm_bi = False
         self.shell_cmd_to_build = None
+        self.srpm = None
+        self.mock_profile = None
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -718,9 +720,8 @@ if args.all_tools:
     # enable all available tools
     plugins.enable_all()
 
-srpm = args.SRPM
 output = args.output
-if srpm is None:
+if args.SRPM is None:
     if args.no_scan:
         if output is None:
             parser.error("unable to infer --output (despite --no-scan was given)")
@@ -736,6 +737,7 @@ props.keep_going            = args.keep_going
 props.no_scan               = args.no_scan
 props.print_defects         = args.print_defects
 props.shell_cmd_to_build    = args.shell_cmd
+props.srpm                  = args.SRPM
 
 if 0 < args.embed_context:
     # we need 'csgrep --embed-context' to work in the chroot for --embed-context
@@ -749,8 +751,8 @@ if props.keep_going:
 props.rpm_opts += ["--define", mflags_rpmm]
 
 # make sure that we have a configuration for the selected mock profile
-mock_profile = args.mock_profile
-require_file(parser, "/etc/mock/%s.cfg" % mock_profile)
+props.mock_profile = args.mock_profile
+require_file(parser, "/etc/mock/%s.cfg" % props.mock_profile)
 
 if args.list_of_pkgs is not None:
     # append the list of packages to install specified on command-line
@@ -758,11 +760,11 @@ if args.list_of_pkgs is not None:
 
 if not props.no_scan:
     # make sure that 'srpm' is a file (it can be a tar archive instead of SRPM)
-    require_file(parser, srpm)
+    require_file(parser, props.srpm)
 
-if srpm is not None:
+if props.srpm is not None:
     # resolve NVR
-    srpm_base = os.path.basename(srpm)
+    srpm_base = os.path.basename(props.srpm)
     if props.shell_cmd_to_build is None:
         nvr = re.sub("\.src\.rpm$", "", srpm_base)
     else:
@@ -787,7 +789,7 @@ def do_scan(props, output, skip_patches):
         props.rpm_opts += rawbuild_rpm_opts
 
     with ScanResults(output, props.keep_going) as results:
-        results.ini_writer.append("mock-config", mock_profile)
+        results.ini_writer.append("mock-config", props.mock_profile)
 
         if not any_tool:
             # no tool enabled
@@ -801,18 +803,18 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
         if not props.no_scan:
             if props.shell_cmd_to_build is None:
                 # check the given SRPM
-                if (results.get_cmd_output("rpm -pq '%s'" % srpm)[0] != 0):
-                    results.fatal_error("failed to open SRPM: %s" % srpm)
+                if (results.get_cmd_output("rpm -pq '%s'" % props.srpm)[0] != 0):
+                    results.fatal_error("failed to open SRPM: %s" % props.srpm)
                 (ec, spec) = results.get_cmd_output("rpm -lpq '%s' | grep '\.spec$'"
-                        % srpm)
+                        % props.srpm)
                 if ec != 0:
-                    results.fatal_error("no specfile found in SRPM: %s" % srpm)
+                    results.fatal_error("no specfile found in SRPM: %s" % props.srpm)
                 spec = spec.rstrip()
                 spec_in = "/builddir/build/SPECS/%s" % spec
 
             # copy the given SRPM into our tmp dir
             srpm_dup = "%s/%s" % (results.tmpdir, srpm_base)
-            shutil.copyfile(srpm, srpm_dup)
+            shutil.copyfile(props.srpm, srpm_dup)
             props.copy_in_files += [srpm_dup]
 
         # run pre-mock hooks
@@ -821,7 +823,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
             if rv != 0:
                 results.error("pre-mock hook failed", ec=rv)
 
-        with MockWrapper(results, mock_profile) as mock:
+        with MockWrapper(results, props.mock_profile) as mock:
             if not props.no_scan and props.shell_cmd_to_build is None:
                 # first rebuild the given SRPM
                 mock.init_and_install(["python"])
