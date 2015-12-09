@@ -1016,6 +1016,7 @@ cd %%s*/\n\
 def do_diff_scan(props, output, skip_patches, diff_patches):
     with ScanResults(output, props.keep_going, create_dbgdir=False) as results:
         run0_props = copy.deepcopy(props)
+        csdiff = "csdiff"
         if diff_patches:
             # we are looking for defects in patches
             assert not skip_patches
@@ -1024,6 +1025,7 @@ def do_diff_scan(props, output, skip_patches, diff_patches):
             # this is a version-diff-build
             run0_props.srpm         = run0_props.base_srpm
             run0_props.mock_profile = run0_props.base_mock_profile
+            csdiff += " --ignore-path"
             title = "%s - Defects not detected in %s" % (nvr, props.base_srpm)
 
         run0 = "%s/run0" % results.resdir
@@ -1040,8 +1042,8 @@ def do_diff_scan(props, output, skip_patches, diff_patches):
         run0_file = "%s/scan-results.js" % run0
         run1_file = "%s/scan-results.js" % run1
         js_file_fixed = "%s/scan-results-fixed.js" % results.resdir
-        if 0 != results.exec_cmd("csdiff --fixed %s %s > %s" \
-                % (run0_file, run1_file, js_file_fixed), shell=True):
+        if 0 != results.exec_cmd("%s --fixed %s %s > %s" \
+                % (csdiff, run0_file, run1_file, js_file_fixed), shell=True):
             results.error("csdiff --fixed failed")
         transform_results(js_file_fixed, results)
 
@@ -1052,8 +1054,8 @@ def do_diff_scan(props, output, skip_patches, diff_patches):
 
         # diff and process added defects
         js_file = "%s/scan-results.js" % results.resdir
-        if 0 != results.exec_cmd("csdiff %s %s | cslinker --inifile %s - > %s" \
-                % (run0_file, run1_file, ini_file, js_file), shell=True):
+        if 0 != results.exec_cmd("%s %s %s | cslinker --inifile %s - > %s" \
+                % (csdiff, run0_file, run1_file, ini_file, js_file), shell=True):
             results.error("csdiff failed")
         finalize_results(js_file, results, props.print_defects)
 
