@@ -93,6 +93,8 @@ def shell_quote(str_in):
             str_out += "\\\\"
         elif c == "\"":
             str_out += "\\\""
+        elif c == "$":
+            str_out += "\\$"
         else:
             str_out += c
     return "\"" + str_out + "\""
@@ -490,19 +492,16 @@ class ScanProps:
         return cmd_out
 
     def wrap_shell_cmd_by_env(self, cmd_in):
-        # merge self.env with self.path
-        merged_env = copy.deepcopy(self.env)
+        # serialize self.path
         path_str = ""
         for p in self.path:
             path_str += p + ":"
-        path_str += "$PATH"
-        assert "PATH" not in merged_env
-        merged_env["PATH"] = path_str
+        cmd_out = "PATH=%s$PATH " % path_str
 
-        # serialize all environment variables
-        cmd_out = ""
-        for var in merged_env:
-            cmd_out += "%s='%s' " % (var, merged_env[var])
+        # serialize self.env
+        assert "PATH" not in self.env
+        for var in self.env:
+            cmd_out += "%s='%s' " % (var, self.env[var])
 
         # run a new instance of shell for the specified command
         cmd_out += "sh -c %s" % shell_quote(cmd_in)
