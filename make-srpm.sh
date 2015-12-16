@@ -118,6 +118,9 @@ Summary: Core of csmock (a mock wrapper for Static Analysis tools)
 Requires: csdiff
 Requires: cswrap
 Requires: mock
+%if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
+Requires: python-argparse
+%endif
 
 %description -n csmock-common
 This package contains the csmock tool that allows to scan SRPMs by Static
