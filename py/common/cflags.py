@@ -16,7 +16,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 del_flags_by_level_common = {
-        0: set(["-Werror", "-fdiagnostics-color", "-fdiagnostics-color=always"])}
+        0: set(["-Werror*", "-fdiagnostics-color*"])}
 
 add_flags_by_level_common = {
         1: set(["-Wall", "-Wextra"]),
