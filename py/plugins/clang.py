@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (C) 2014 Red Hat, Inc.
 #
 # This file is part of csmock.
