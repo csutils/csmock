@@ -49,18 +49,22 @@ def install_script_scan_opts(parser, tool):
     add_paired_flag(parser, tool + "-scan-build", help=help_build)
     add_paired_flag(parser, tool + "-scan-install", help=help_install)
 
-def dirs_to_scan_by_args(parser, args, tool):
+def dirs_to_scan_by_args(parser, args, props, tool):
     scan_build   = getattr(args, tool + "_scan_build")
     if scan_build is None:
-        scan_build = False
+        scan_build = (props.shell_cmd_to_build is not None)
 
     scan_install = getattr(args, tool + "_scan_install")
     if scan_install is None:
-        scan_install = True;
+        scan_install = (props.shell_cmd_to_build is None)
 
     if not scan_build and not scan_install:
         parser.error("either --%s-scan-build or --%s-scan-install must be enabled" \
                 % (tool, tool))
+
+    if scan_install and (props.shell_cmd_to_build is not None):
+        parser.error("--shell-cmd and --%s-scan-install cannot be used together" \
+                % tool)
 
     dirs_to_scan = ""
     if scan_build:
@@ -70,5 +74,6 @@ def dirs_to_scan_by_args(parser, args, tool):
 
     if scan_install:
         dirs_to_scan += "/builddir/build/BUILDROOT"
+        props.need_rpm_bi = True
 
     return dirs_to_scan

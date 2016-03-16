@@ -46,16 +46,12 @@ class Plugin:
         if not self.enabled:
             return
 
-        if props.shell_cmd_to_build is not None:
-            parser.error("The pylint plug-in works only with SRPMs")
-
         # which directories are we going to scan (build and/or install)
         dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(parser, args,
-                "pylint")
+                props, "pylint")
 
         props.install_pkgs += ["pylint"]
         props.copy_in_files += [run_pylint_sh]
-        props.need_rpm_bi = True
         cmd = "%s %s > %s" % (run_pylint_sh, dirs_to_scan, pylint_capture)
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [pylint_capture]
