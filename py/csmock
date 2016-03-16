@@ -874,7 +874,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 build_script = "%s/build.sh" % results.tmpdir
                 results.exec_cmd("printf '#!/bin/sh\n\
 cd /builddir/build/BUILD || exit $?\n\
-cd %%s*/\n\
+cd %%s*/ || cd *\n\
 %%s' '%s' '%s' | tee '%s' >&2\n" % (nvr,
                 props.shell_cmd_to_build, build_script), shell=True)
                 props.copy_in_files += [build_script]
@@ -910,8 +910,14 @@ cd %%s*/\n\
                             % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
                 else:
                     # extract the given archive (we got instead of SRPM)
-                    ec = mock.exec_mockbuild_cmd(
-                            "tar -xvf '%s' -C /builddir/build/BUILD" % srpm_dup)
+                    if re.match("^.*\\.zip$", srpm_dup):
+                        # ZIP archive
+                        prep_cmd_tpl = "unzip -d '%s' '%s'"
+                    else:
+                        # assume TAR
+                        prep_cmd_tpl = "tar -C '%s' -xvf '%s'"
+                    prep_cmd = prep_cmd_tpl % ("/builddir/build/BUILD", srpm_dup)
+                    ec = mock.exec_mockbuild_cmd(prep_cmd)
 
                 # make the unpacked contents accessible (if the maintainer did not)
                 mock.exec_chroot_cmd("chmod -R +r /builddir/build")
