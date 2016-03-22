@@ -608,6 +608,16 @@ class VersionPrinter(argparse.Action):
         print("@VERSION@")
         sys.exit(0)
 
+# provide a more user-friendly error message in case a plug-in is not installed
+class FileNameParser(argparse.Action):
+    def __call__(self, parser, namespace, val, os=None):
+        if (val.startswith("--")):
+            parser.error("File name '%s' starts with '--', which looks like \
+option.  Are you sure, you have necessary plug-ins installed?  If it really \
+is a file name, please use the './' prefix." % val)
+        else:
+            setattr(namespace, self.dest, val)
+
 def require_file(parser, name):
     """Print an error and exit unsuccessfully if 'name' is not a file"""
     if not os.path.isfile(name):
@@ -632,7 +642,7 @@ class ToolsPrinter(argparse.Action):
 
 # initialize argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("SRPM", nargs="?",
+parser.add_argument("SRPM", nargs="?", action=FileNameParser,
         help="source RPM package to be scanned by static analyzers")
 
 # define optional arguments
