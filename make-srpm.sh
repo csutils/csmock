@@ -90,11 +90,11 @@ BuildRequires: python-devel
 BuildRequires: python-argparse
 %endif
 
-Requires: csmock-common
-Requires: csmock-plugin-clang
-Requires: csmock-plugin-cppcheck
-Requires: csmock-plugin-pylint
-Requires: csmock-plugin-shellcheck
+Requires: csmock-common                 >= %{version}-%{release}
+Requires: csmock-plugin-clang           >= %{version}-%{release}
+Requires: csmock-plugin-cppcheck        >= %{version}-%{release}
+Requires: csmock-plugin-pylint          >= %{version}-%{release}
+Requires: csmock-plugin-shellcheck      >= %{version}-%{release}
 
 BuildArch: noarch
 
