@@ -611,7 +611,7 @@ class VersionPrinter(argparse.Action):
 # provide a more user-friendly error message in case a plug-in is not installed
 class FileNameParser(argparse.Action):
     def __call__(self, parser, namespace, val, os=None):
-        if (val.startswith("--")):
+        if (isinstance(val, str) and val.startswith("--")):
             parser.error("File name '%s' starts with '--', which looks like \
 option.  Are you sure, you have necessary plug-ins installed?  If it really \
 is a file name, please use the './' prefix." % val)
