@@ -134,7 +134,7 @@ def stable_commit_ref(repo, ref):
         (out, _) = p.communicate()
         if p.returncode != 0:
             raise "git rev-parse failed"
-        commit = out.strip()
+        commit = out.decode("utf8").strip()
 
     if "HEAD" in ref:
         # if HEAD is used in ref, we have have to checkout by hash (because

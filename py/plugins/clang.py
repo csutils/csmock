@@ -53,7 +53,7 @@ class Plugin:
         cmd = ["csclng", "--print-path-to-wrap"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = p.communicate()
-        csclng_path = out.strip()
+        csclng_path = out.decode("utf8").strip()
 
         props.path = [csclng_path] + props.path
         props.copy_in_files += \

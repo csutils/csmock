@@ -464,7 +464,7 @@ class ScanProps:
         cmd = ["cswrap", "--print-path-to-wrap"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = p.communicate()
-        cswrap_path = out.strip()
+        cswrap_path = out.decode("utf8").strip()
 
         self.copy_in_files += ["/usr/bin/cswrap", cswrap_path]
         self.path = [cswrap_path] + self.path
