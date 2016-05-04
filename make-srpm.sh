@@ -90,6 +90,22 @@ BuildRequires: python-devel
 BuildRequires: python-argparse
 %endif
 
+# force using Python 3 Fedora 23+
+%global force_py3 ((7 < 0%{?rhel}) || (22 < 0%{?fedora}))
+%if %{force_py3}
+BuildRequires: python3-GitPython
+BuildRequires: python3-devel
+%global csmock_python_executable %{__python3}
+%global csmock_python_sitelib %{python3_sitelib}
+%else
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{!?__python2: %global __python2 /usr/bin/python2}
+%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%endif
+%global csmock_python_executable %{__python2}
+%global csmock_python_sitelib %{python2_sitelib}
+%endif
+
 Requires: csmock-common                 >= %{version}-%{release}
 Requires: csmock-plugin-clang           >= %{version}-%{release}
 Requires: csmock-plugin-cppcheck        >= %{version}-%{release}
@@ -103,7 +119,11 @@ This is a metapackage pulling in csmock-common and basic csmock plug-ins.
 
 %package -n csbuild
 Summary: Tool for plugging static analyzers into the build process
+%if %{force_py3}
+Requires: python3-GitPython
+%else
 Requires: GitPython
+%endif
 Requires: cscppc
 Requires: csclng
 Requires: csdiff >= 1.2.1
@@ -156,18 +176,21 @@ Requires: csmock-common >= 1.8.0
 %description -n csmock-plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.
 
-%if 0%{?rhel} && 0%{?rhel} <= 6
-%{!?__python2: %global __python2 /usr/bin/python2}
-%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%endif
-
 %prep
 %setup -q
+
+# force using Python 3 Fedora 23+
+%if %{force_py3}
+sed -e '1s/python$/python3/' -i py/cs{build,mock}
+%endif
 
 %build
 mkdir csmock_build
 cd csmock_build
-%cmake '-DVERSION=%{name}-%{version}-%{release}' ..
+%cmake \
+    -DVERSION='%{name}-%{version}-%{release}' \
+    -DPYTHON_EXECUTABLE='%{csmock_python_executable}' \
+    ..
 make %{?_smp_mflags} VERBOSE=yes
 
 %install
@@ -186,30 +209,46 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %files -n csmock-common
 %dir %{_datadir}/csmock
 %dir %{_datadir}/csmock/scripts
-%dir %{python2_sitelib}/csmock
-%dir %{python2_sitelib}/csmock/plugins
+%dir %{csmock_python_sitelib}/csmock
+%dir %{csmock_python_sitelib}/csmock/plugins
 %{_bindir}/csmock
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
-%{python2_sitelib}/csmock/__init__.py*
-%{python2_sitelib}/csmock/common
-%{python2_sitelib}/csmock/plugins/gcc.py*
+%{csmock_python_sitelib}/csmock/__init__.py*
+%{csmock_python_sitelib}/csmock/common
+%{csmock_python_sitelib}/csmock/plugins/gcc.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/__pycache__/__init__.*
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/gcc.*
+%endif
 %doc COPYING README
 
 %files -n csmock-plugin-clang
-%{python2_sitelib}/csmock/plugins/clang.py*
+%{csmock_python_sitelib}/csmock/plugins/clang.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/clang.*
+%endif
 
 %files -n csmock-plugin-cppcheck
-%{python2_sitelib}/csmock/plugins/cppcheck.py*
+%{csmock_python_sitelib}/csmock/plugins/cppcheck.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/cppcheck.*
+%endif
 
 %files -n csmock-plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
-%{python2_sitelib}/csmock/plugins/pylint.py*
+%{csmock_python_sitelib}/csmock/plugins/pylint.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/pylint.*
+%endif
 
 %files -n csmock-plugin-shellcheck
 %{_datadir}/csmock/scripts/run-shellcheck.sh
-%{python2_sitelib}/csmock/plugins/shellcheck.py*
+%{csmock_python_sitelib}/csmock/plugins/shellcheck.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/shellcheck.*
+%endif
 EOF
 
 rpmbuild -bs "$SPEC"                            \
