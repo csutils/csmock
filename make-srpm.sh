@@ -120,6 +120,7 @@ This is a metapackage pulling in csmock-common and basic csmock plug-ins.
 %package -n csbuild
 Summary: Tool for plugging static analyzers into the build process
 %if %{force_py3}
+Requires: csmock-common(python3)
 Requires: python3-GitPython
 %else
 Requires: GitPython
@@ -141,6 +142,9 @@ Requires: mock
 %if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
 Requires: python-argparse
 %endif
+%if %{force_py3}
+Provides: csmock-common(python3) = %{version}-%{release}
+%endif
 
 %description -n csmock-common
 This package contains the csmock tool that allows to scan SRPMs by Static
@@ -150,6 +154,9 @@ Analysis tools in a fully automated way.
 Summary: csmock plug-in providing the support for Clang
 Requires: csclng
 Requires: csmock-common >= 1.7.1
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
 
 %description -n csmock-plugin-clang
 This package contains the clang plug-in for csmock.
@@ -158,6 +165,9 @@ This package contains the clang plug-in for csmock.
 Summary: csmock plug-in providing the support for Cppcheck
 Requires: cscppc >= 1.0.4
 Requires: csmock-common
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
 
 %description -n csmock-plugin-cppcheck
 This package contains the cppcheck plug-in for csmock.
@@ -165,6 +175,9 @@ This package contains the cppcheck plug-in for csmock.
 %package -n csmock-plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
 Requires: csmock-common >= 1.8.0
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
 
 %description -n csmock-plugin-pylint
 This package contains the pylint plug-in for csmock.
@@ -172,6 +185,9 @@ This package contains the pylint plug-in for csmock.
 %package -n csmock-plugin-shellcheck
 Summary: csmock plug-in providing the support for ShellCheck.
 Requires: csmock-common >= 1.8.0
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
 
 %description -n csmock-plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.
