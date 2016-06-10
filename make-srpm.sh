@@ -203,9 +203,9 @@ sed -e '1s/python$/python3/' -i py/cs{build,mock}
 %build
 mkdir csmock_build
 cd csmock_build
-%cmake \
-    -DVERSION='%{name}-%{version}-%{release}' \
-    -DPYTHON_EXECUTABLE='%{csmock_python_executable}' \
+%cmake \\
+    -DVERSION='%{name}-%{version}-%{release}' \\
+    -DPYTHON_EXECUTABLE='%{csmock_python_executable}' \\
     ..
 make %{?_smp_mflags} VERBOSE=yes
 
