@@ -350,8 +350,7 @@ class MockWrapper:
         if (self.results.get_cmd_output("%s --help | grep package_state" % mock)[0] == 0):
             self.def_cmd += ["--disable-plugin=package_state"]
 
-        if (self.results.get_cmd_output("%s --version | grep ^1.2." % mock)[0] == 0) \
-            and (self.results.get_cmd_output(
+        if (self.results.get_cmd_output( \
                 "script -aec true /dev/null 2>/dev/null")[0] == 0):
             # workaround for bug https://bugzilla.redhat.com/1166609
             self.emul_pty = True
