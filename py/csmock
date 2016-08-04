@@ -260,7 +260,10 @@ class ScanResults:
             sh_cmd = strlist_to_shell_cmd(cmd, escape_special=True)
             cmd = ["script", "-aefqc", sh_cmd, "/dev/null"]
 
-        self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
+        if shell:
+            self.print_with_ts(shell_quote(cmd))
+        else:
+            self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
         self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd,
                 shell=shell)
         rv = self.p.wait()
