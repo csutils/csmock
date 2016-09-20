@@ -867,7 +867,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
                     mock.exec_mock_cmd(["--copyin", srpm_dup, srpm_in])
-                    mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_in)
+                    mock.exec_mockbuild_cmd("rpm -Uvh --nodeps '%s'" % srpm_in)
 
                     # rebuild the given SRPM (and rename to match the original one)
                     mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
