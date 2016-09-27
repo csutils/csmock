@@ -254,16 +254,17 @@ class ScanResults:
         self.error(msg, err_prefix="fatal ", ec=ec)
         raise FatalError(ec)
 
-    def exec_cmd(self, cmd, shell=False, emul_pty=False):
+    def exec_cmd(self, cmd, shell=False, emul_pty=False, echo=True):
         if emul_pty:
             # workaround for bug https://bugzilla.redhat.com/1166609
             sh_cmd = strlist_to_shell_cmd(cmd, escape_special=True)
             cmd = ["script", "-aefqc", sh_cmd, "/dev/null"]
 
-        if shell:
-            self.print_with_ts(shell_quote(cmd))
-        else:
-            self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
+        if echo:
+            if shell:
+                self.print_with_ts(shell_quote(cmd))
+            else:
+                self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
         self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd,
                 shell=shell)
         rv = self.p.wait()
