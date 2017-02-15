@@ -79,8 +79,8 @@ Summary:    A mock wrapper for Static Analysis tools
 
 Group:      Development/Tools
 License:    GPLv3+
-URL:        https://git.fedorahosted.org/cgit/csmock.git
-Source0:    https://git.fedorahosted.org/cgit/csmock.git/snapshot/$SRC
+URL:        https://github.com/kdudka/%{name}
+Source0:    https://github.com/kdudka/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.xz
 
 BuildRequires: GitPython
 BuildRequires: cmake

@@ -3,13 +3,10 @@ csmock
 csmock is a tool for scanning SRPMs by Static Analysis tools in a fully
 automated way.  You can find the up2date sources in the following repository:
 
-    https://git.fedorahosted.org/cgit/csmock.git
+    https://github.com/kdudka/csmock
 
-Please report bugs and feature requests to the following mailing-list:
-
-    https://fedorahosted.org/mailman/listinfo/csmock-devel
-
-csmock is licensed under GPLv3+, see COPYING for details.
+csmock is licensed under GPLv3+, see COPYING for details.  Please report bugs
+and feature requests on GitHub using the above URL.
 
 
 Dependences
