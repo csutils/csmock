@@ -113,6 +113,10 @@ def strlist_to_shell_cmd(cmd_in, escape_special=False):
         cmd_out += " " + translate_one(i)
     return cmd_out.lstrip()
 
+def is_ignored_dep(pkg):
+    # we do not install/check this kind of dependencies
+    return re.match("^.*(/|rpmlib\\(.*\\))", pkg) is not None
+
 def find_missing_pkgs(pkgs, results, mock):
     # dump list of RPMs installed in the chroot (for debugging purposes)
     tmp_var_lib = "%s/var/lib" % results.tmpdir
@@ -136,8 +140,7 @@ def find_missing_pkgs(pkgs, results, mock):
             pkg = re.sub(" .*$", "", l.strip())
             installed.add(pkg)
     for dep in pkgs:
-        if re.match("^.*(/|rpmlib\\(.*\\))", dep) is not None:
-            # FIXME: we do not check this kind of dependencies
+        if is_ignored_dep(dep):
             continue
         pkg = re.sub(" .*$", "", dep)
         if pkg not in installed:
@@ -584,7 +587,10 @@ def deplist_from_srpm(results, srpm):
     raw_deps = filter(None, deps.split("\n"))
     deps = []
     for d in raw_deps:
-        deps += [d.strip()]
+        pkg = d.strip()
+        if is_ignored_dep(pkg):
+            continue
+        deps += [pkg]
     return deps
 
 def transform_results(js_file, results):
