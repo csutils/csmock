@@ -326,8 +326,17 @@ class MockWrapper:
         self.emul_pty = False
 
     def __enter__(self):
-        cmd = "flock -w15 '%s' -c \"test ! -f '%s' && echo %d > '%s'\"" % (
-                self.meta_lock_file, self.lock_file, self.pid, self.lock_file)
+        cmd = "flock -w15 '%s' -c '\
+lock_file=\"%s\" \n\
+self_pid=\"%d\" \n\
+if test -e \"$lock_file\"; then \n\
+    test -e /proc/\"$self_pid\"     || exit $? \n\
+    read pid < \"$lock_file\"       || exit $? \n\
+    test ! -e /proc/\"$pid\"        || exit $? \n\
+    echo \"warning: purging stray lock file $lock_file (PID $pid)\" >&2 \n\
+fi \n\
+echo \"$self_pid\" > \"$lock_file\"'" \
+            % (self.meta_lock_file, self.lock_file, self.pid)
         while (os.system(cmd) != 0):
             f = open(self.lock_file)
             other_pid = ""
