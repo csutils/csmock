@@ -316,13 +316,14 @@ class IniWriter:
         self.write("%s = %s\n" % (key, value))
 
 class MockWrapper:
-    def __init__(self, results, mock_profile):
+    def __init__(self, results, mock_profile, skip_init=False):
         self.results = results
         self.mock_profile = mock_profile
         self.lock_file = "/tmp/.csmock-%s.lock" % mock_profile
         self.meta_lock_file = "/tmp/.csmock-%s.metalock" % mock_profile
         self.pid = os.getpid()
-        self.init_done = False
+        self.skip_init = skip_init
+        self.init_done = skip_init
         self.emul_pty = False
 
     def __enter__(self):
@@ -427,7 +428,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                     "hard to install dependencies (%s), still trying..." % \
                     strlist_to_shell_cmd(missing_deps), ec=0)
 
-            if not scrub_root:
+            if not scrub_root and not self.skip_init:
                 # try --scrub=root-cache
                 continue
 
@@ -705,6 +706,10 @@ key event (defaults to 3).")
 parser.add_argument("-k", "--keep-going", action="store_true",
         help="continue as much as possible after an error")
 
+parser.add_argument("--skip-init", action="store_true",
+        help="do not run 'mock --init' before the scan \
+(may lead to unpredictable scan results)")
+
 parser.add_argument("--no-clean", action="store_true",
         help="do not clean chroot when it becomes unused")
 
@@ -875,7 +880,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 if rv != 0:
                     results.error("pre-mock hook failed", ec=rv)
 
-            with MockWrapper(results, props.mock_profile) as mock:
+            with MockWrapper(results, props.mock_profile, args.skip_init) as mock:
                 if not props.no_scan and props.shell_cmd_to_build is None:
                     # first rebuild the given SRPM
                     mock.init_and_install(["python"])
