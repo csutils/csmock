@@ -32,6 +32,7 @@ class PluginProps:
 class Plugin:
     def __init__(self):
         self.enabled = False
+        self.description = "A static analysis tool that gives warnings and suggestions for bash/sh shell scripts."
 
     def get_props(self):
         return PluginProps()

@@ -30,6 +30,7 @@ class Plugin:
     def __init__(self):
         self.enabled = False
         self.flags = flags_by_default()
+        self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
 
     def get_props(self):
         return PluginProps()

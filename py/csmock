@@ -562,6 +562,16 @@ class PluginManager:
                 continue
             self.try_load(parts[0], path=plugin_dir)
 
+    # Print description of each available plugin in format TOOL [:indent:] DESCRIPTION
+    def print_plugin_descriptions(self):
+        max_key_len = max(map(len, self.plug_by_name.keys()))
+        min_indent_len = 8
+        description_indent = max_key_len + min_indent_len
+        for key, plugin in sorted(self.plug_by_name.items()):
+            desc = getattr(plugin, "description", "")
+            sys.stdout.write("{}{}{}\n".format(key, " " * (description_indent - len(key)),
+                                               desc.replace('\n', '\n%s' % (" " * description_indent))))
+
     def get_name_list(self):
         return sorted(self.plug_by_name.keys())
 
@@ -659,9 +669,8 @@ class ToolsPrinter(argparse.Action):
         super(ToolsPrinter, self).__init__(option_strings=option_strings,
                 dest=dest, default=default, nargs=0, help=help)
     def __call__(self, parser, namespace, values, option_string=None):
-        for i in plugin_list:
-            # TODO: print description?
-            sys.stdout.write("%s\n" % i)
+        sys.stdout.write('Tools list: \n')
+        plugins.print_plugin_descriptions()
         sys.exit(0)
 
 # initialize argument parser

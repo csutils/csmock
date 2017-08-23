@@ -32,6 +32,8 @@ class PluginProps:
 class Plugin:
     def __init__(self):
         self.enabled = False
+        self.description = "Python source code analyzer which looks for programming errors.\n" \
+                           "Helps enforcing a coding standard and sniffs for some code smells."
 
     def get_props(self):
         return PluginProps()

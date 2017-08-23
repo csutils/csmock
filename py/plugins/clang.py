@@ -26,6 +26,7 @@ class PluginProps:
 class Plugin:
     def __init__(self):
         self.enabled = False
+        self.description = "Source code analysis tool that finds bugs in C, C++, and Objective-C programs."
 
     def get_props(self):
         return PluginProps()
