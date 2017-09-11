@@ -27,6 +27,8 @@ class Plugin:
     def __init__(self):
         self.enabled = False
         self.use_host_cppcheck = False
+        self.description = "Static analysis tool for C/C++ code.\n" \
+                           "Note: does NOT detect syntax errors in the code."
 
     def get_props(self):
         return PluginProps()
