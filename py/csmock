@@ -562,13 +562,15 @@ class PluginManager:
                 continue
             self.try_load(parts[0], path=plugin_dir)
 
-    # Print description of each available plugin in format name [:space:]+ description
+    # Print description of each available plugin in format TOOL [:indent:] DESCRIPTION
     def print_plugin_descriptions(self):
-        max_indent = max(map(len, self.plug_by_name.keys()))
+        max_key_len = max(map(len, self.plug_by_name.keys()))
+        min_indent_len = 8
+        description_indent = max_key_len + min_indent_len
         for key, plugin in sorted(self.plug_by_name.items()):
             desc = getattr(plugin, "description", "")
-            sys.stdout.write("{}{}{}\n".format(key, " "*(max_indent-len(key)+4),
-                                               desc.replace('\n', '\n%s' % (" "*(max_indent+4)))))
+            sys.stdout.write("{}{}{}\n".format(key, " " * (description_indent - len(key)),
+                                               desc.replace('\n', '\n%s' % (" " * description_indent))))
 
     def get_name_list(self):
         return sorted(self.plug_by_name.keys())
