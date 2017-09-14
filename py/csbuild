@@ -29,7 +29,7 @@ from csmock.common.cflags import flags_by_warning_level
 from csmock.common.util   import add_paired_flag
 
 csbuild_travis_mirror = \
-        "deb https://kdudka.fedorapeople.org/csbuild precise contrib"
+        "deb https://kdudka.fedorapeople.org/csbuild trusty contrib"
 
 run_scan_sh = "/usr/share/csbuild/scripts/run-scan.sh"
 
