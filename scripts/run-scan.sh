@@ -37,7 +37,7 @@ CSWRAP_LNK_DIR="$(cswrap --print-path-to-wrap)"
 test -d "$CSWRAP_LNK_DIR" || die "cswrap not found in \$PATH: $PATH"
 export PATH="${CSWRAP_LNK_DIR}:$PATH"
 export CSWRAP_CAP_FILE="${RES_DIR}/cswrap-capture.txt"
->"$CSWRAP_CAP_FILE" || die "write failed: $CSWRAP_CAP_FILE"
+true >"$CSWRAP_CAP_FILE" || die "write failed: $CSWRAP_CAP_FILE"
 
 if test -z "$CSWRAP_DEL_CFLAGS" && test -z "$CSWRAP_DEL_CXXFLAGS" \
     && test -z "$CSWRAP_ADD_CFLAGS" && test -z "$CSWRAP_ADD_CXXFLAGS"
