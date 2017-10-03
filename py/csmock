@@ -115,7 +115,7 @@ def strlist_to_shell_cmd(cmd_in, escape_special=False):
 
 def is_ignored_dep(pkg):
     # we do not install/check this kind of dependencies
-    return re.match("^.*(/|rpmlib\\(.*\\))", pkg) is not None
+    return re.match("^.*rpmlib\\(.*\\)", pkg) is not None
 
 def find_missing_pkgs(pkgs, results, mock):
     # dump list of RPMs installed in the chroot (for debugging purposes)
@@ -140,7 +140,7 @@ def find_missing_pkgs(pkgs, results, mock):
             pkg = re.sub(" .*$", "", l.strip())
             installed.add(pkg)
     for dep in pkgs:
-        if is_ignored_dep(dep):
+        if is_ignored_dep(dep) or '/' in dep:
             continue
         pkg = re.sub(" .*$", "", dep)
         if pkg not in installed:
