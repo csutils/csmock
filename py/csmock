@@ -432,8 +432,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 # try --scrub=root-cache
                 continue
 
-            # try to install the packages one by one
-            for pkg in pkgs:
+            # try to install the missing packages one by one
+            for pkg in missing_deps:
                 self.try_install(pkg)
 
             # check that all dependencies are installed
