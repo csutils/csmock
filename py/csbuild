@@ -17,14 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+# standard imports
 import argparse
-import git
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 
+# external imports
+import git
+
+# local imports
 from csmock.common.cflags import flags_by_warning_level
 from csmock.common.util   import add_paired_flag
 

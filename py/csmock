@@ -17,8 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
-import csmock.common.util
-
+# standard imports
 import argparse
 import codecs
 import copy
@@ -33,6 +32,9 @@ import subprocess
 import sys
 import tempfile
 import time
+
+# local imports
+import csmock.common.util
 
 csmock_datadir = "/usr/share/csmock"
 
