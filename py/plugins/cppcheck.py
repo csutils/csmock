@@ -36,8 +36,9 @@ class Plugin:
         self.enabled = True
 
     def init_parser(self, parser):
-        parser.add_argument("--use-host-cppcheck", action="store_true",
-                help="use host's Cppcheck instead of the one in chroot \
+        parser.add_argument(
+            "--use-host-cppcheck", action="store_true",
+            help="use host's Cppcheck instead of the one in chroot \
 (automatically enables the Cppcheck plug-in)")
 
     def handle_args(self, parser, args, props):

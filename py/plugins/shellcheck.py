@@ -48,8 +48,8 @@ class Plugin:
             return
 
         # which directories are we going to scan (build and/or install)
-        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(parser, args,
-                props, "shellcheck")
+        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(
+            parser, args, props, "shellcheck")
 
         props.install_pkgs += ["ShellCheck"]
         props.copy_in_files += [run_shellcheck_sh]

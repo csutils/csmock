@@ -230,72 +230,90 @@ def gen_travis_yml(args):
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
     def __init__(self, option_strings, dest=None, default=None, help=None):
-        super(VersionPrinter, self).__init__(option_strings=option_strings,
-                dest=dest, default=default, nargs=0, help=help)
+        super(VersionPrinter, self).__init__(
+            option_strings=option_strings, dest=dest, default=default, nargs=0,
+            help=help)
     def __call__(self, parser, namespace, values, option_string=None):
         print("@VERSION@")
         sys.exit(0)
 
 # initialize argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("-c", "--build-cmd", required=True,
-        help="shell command used to build the sources (runs in $PWD)")
+parser.add_argument(
+    "-c", "--build-cmd", required=True,
+    help="shell command used to build the sources (runs in $PWD)")
 
 # optional arguments
-parser.add_argument("-g", "--git-commit-range",
-        help="range of git revisions for a differential scan")
+parser.add_argument(
+    "-g", "--git-commit-range",
+    help="range of git revisions for a differential scan")
 
-parser.add_argument("--git-bisect", action="store_true",
-        help="if a new defect is added, use git-bisect to identify the cause \
+parser.add_argument(
+    "--git-bisect", action="store_true",
+    help="if a new defect is added, use git-bisect to identify the cause \
 WARNING: The given command must (re)compile all sources for this option to work!")
 
-parser.add_argument("--added-exit-code", type=int, default=default_added_exit_code,
-        help="exit code to return if there is any defect added in the new version")
+parser.add_argument(
+    "--added-exit-code", type=int, default=default_added_exit_code,
+    help="exit code to return if there is any defect added in the new version")
 
-parser.add_argument("--base-fail-exit-code", type=int, default=default_base_fail_exit_code,
-        help="exit code to return if the base scan fails")
+parser.add_argument(
+    "--base-fail-exit-code", type=int, default=default_base_fail_exit_code,
+    help="exit code to return if the base scan fails")
 
-add_paired_flag(parser, "print-current",
-        help="print all defects in the current version (default unless -g is given) \
+add_paired_flag(
+    parser, "print-current",
+    help="print all defects in the current version (default unless -g is given) \
 WARNING: The given command must (re)compile all sources for this option to work!")
 
-add_paired_flag(parser, "print-added",
-        help="print defects added in the new version (default if -g is given)")
+add_paired_flag(
+    parser, "print-added",
+    help="print defects added in the new version (default if -g is given)")
 
-add_paired_flag(parser, "print-fixed",
-        help="print defects fixed in the new version \
+add_paired_flag(
+    parser, "print-fixed",
+    help="print defects fixed in the new version \
 WARNING: The given command must (re)compile all sources for this option to work!")
 
-add_paired_flag(parser, "clean",
-        help="clean the temporary directory with results on exit (default)")
+add_paired_flag(
+    parser, "clean",
+    help="clean the temporary directory with results on exit (default)")
 
-parser.add_argument("--cswrap-timeout", type=int, default=default_cswrap_timeout,
-        help="maximal amount of time taken by analysis of a single module [s]")
+parser.add_argument(
+    "--cswrap-timeout", type=int, default=default_cswrap_timeout,
+    help="maximal amount of time taken by analysis of a single module [s]")
 
-add_paired_flag(parser, "color",
-        help="use colorized console output (default if connected to a tty)")
+add_paired_flag(
+    parser, "color",
+    help="use colorized console output (default if connected to a tty)")
 
-parser.add_argument("--gen-travis-yml", action="store_true",
-        help="generate the .travis.yml file for Travis CI (requires --install)")
+parser.add_argument(
+    "--gen-travis-yml", action="store_true",
+    help="generate the .travis.yml file for Travis CI (requires --install)")
 
-parser.add_argument("--install",
-        help="space-separated list of packages to install with --gen-travis-yml")
+parser.add_argument(
+    "--install",
+    help="space-separated list of packages to install with --gen-travis-yml")
 
-parser.add_argument("--prep-cmd",
-        help="shell command to run before the build (runs in $PWD)")
+parser.add_argument(
+    "--prep-cmd",
+    help="shell command to run before the build (runs in $PWD)")
 
-parser.add_argument("-w", "--gcc-warning-level", type=int, default=default_gcc_warning_level,
-        help="Adjust GCC warning level.  -w0 means no additional warnings, \
+parser.add_argument(
+    "-w", "--gcc-warning-level", type=int, default=default_gcc_warning_level,
+    help="Adjust GCC warning level.  -w0 means no additional warnings, \
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
 (default).")
 
-parser.add_argument("-U", "--embed-context", type=int, default=default_embed_context,
-        help="embed a number of lines of context from the source file for the \
+parser.add_argument(
+    "-U", "--embed-context", type=int, default=default_embed_context,
+    help="embed a number of lines of context from the source file for the \
 key event (defaults to 3).")
 
 # needed for help2man
-parser.add_argument("--version", action=VersionPrinter,
-        help="print the version of csbuild and exit")
+parser.add_argument(
+    "--version", action=VersionPrinter,
+    help="print the version of csbuild and exit")
 
 # parse command-line arguments
 args = parser.parse_args()
@@ -367,7 +385,7 @@ if args.prep_cmd is not None:
 res_dir = tempfile.mkdtemp(prefix="csbuild")
 
 # prepare environment
-env = { }
+env = {}
 env["CSWRAP_TIMEOUT"] = "%d" % args.cswrap_timeout
 env["CSWRAP_TIMEOUT_FOR"] = "clang:clang++:cppcheck"
 
@@ -381,11 +399,11 @@ for var in env:
     cmd_prefix += "%s='%s' " % (var, env[var])
 
 # prepare template for running the run-scan.sh script
-cmd = "%s %s %s %s %s" \
-        % (cmd_prefix, run_scan_sh,
-                shell_quote(res_dir),
-                shell_quote(args.build_cmd),
-                shell_quote("csgrep --embed-context %d" % args.embed_context))
+cmd = "%s %s %s %s %s" % (
+    cmd_prefix, run_scan_sh,
+    shell_quote(res_dir),
+    shell_quote(args.build_cmd),
+    shell_quote("csgrep --embed-context %d" % args.embed_context))
 
 curr = "%s/current.err" % res_dir
 

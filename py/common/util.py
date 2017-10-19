@@ -34,10 +34,11 @@ def install_default_toolver_hook(props, tool):
 
 def add_paired_flag(parser, name, help):
     help_no = "disables --" + name
-    arg = parser.add_argument("--" + name, action="store_const", const=True,
-            help=help)
-    parser.add_argument(   "--no-" + name, action="store_const", const=False,
-            help=help_no, dest=arg.dest)
+    arg = parser.add_argument(
+        "--" + name, action="store_const", const=True, help=help)
+    parser.add_argument(
+        "--no-" + name, action="store_const", const=False, help=help_no,
+        dest=arg.dest)
 
 def install_script_scan_opts(parser, tool):
     # render help text
@@ -50,7 +51,7 @@ def install_script_scan_opts(parser, tool):
     add_paired_flag(parser, tool + "-scan-install", help=help_install)
 
 def dirs_to_scan_by_args(parser, args, props, tool):
-    scan_build   = getattr(args, tool + "_scan_build")
+    scan_build = getattr(args, tool + "_scan_build")
     if scan_build is None:
         scan_build = (props.shell_cmd_to_build is not None)
 

@@ -42,42 +42,42 @@ patch_rawbuild = csmock_datadir + "/scripts/patch-rawbuild.sh"
 
 cwe_list_file = csmock_datadir + "/cwe-map.csv"
 
-plugin_dir= "@PLUGIN_DIR@"
+plugin_dir = "@PLUGIN_DIR@"
 
 default_cswrap_timeout = 30
 
 default_jobs_cnt = 13
 
 default_rpm_opts = [
-        "--define",     "_without_testsuite 1",
-        "--define",     "apidocs 0",
-        "--define",     "check\\\n%%check\\\nexit 0",
-        "--define",     "libguestfs_runtests 0",
-        "--define",     "runselftest 0",
-        "--define",     "with_docs 0",
-        "--define",     "with_publican 0",
-        "--without",    "binfilter",
-        "--without",    "langpacks"]
+    "--define", "_without_testsuite 1",
+    "--define", "apidocs 0",
+    "--define", "check\\\n%%check\\\nexit 0",
+    "--define", "libguestfs_runtests 0",
+    "--define", "runselftest 0",
+    "--define", "with_docs 0",
+    "--define", "with_publican 0",
+    "--without", "binfilter",
+    "--without", "langpacks"]
 
 rawbuild_rpm_opts = [
-        "--define",     "__patch " + patch_rawbuild,
-        "--define",     "_rawbuild -b _RAWBUILD",
-        "--define",     "nofips 1",
-        "--define",     "nopam 1",
-        "--define",     "norunuser 1",
-        "--define",     "noselinux 1",
-        "--define",     "_with_vanilla 1"]
+    "--define", "__patch " + patch_rawbuild,
+    "--define", "_rawbuild -b _RAWBUILD",
+    "--define", "nofips 1",
+    "--define", "nopam 1",
+    "--define", "norunuser 1",
+    "--define", "noselinux 1",
+    "--define", "_with_vanilla 1"]
 
 default_cswrap_filters = [
-        "csgrep --quiet --path '^/builddir/build/BUILD/' \
+    "csgrep --quiet --path '^/builddir/build/BUILD/' \
 --event='error|warning' --remove-duplicates"]
 
 # remember to use --mode=json for csgrep (TODO: improve csgrep's interface)
 default_result_filters = [
-        "csgrep --mode=json --path '^/builddir/build/BUILD/' \
+    "csgrep --mode=json --path '^/builddir/build/BUILD/' \
 --strip-path-prefix /builddir/build/BUILD/",
-        "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\.c$'",
-        "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
+    "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\.c$'",
+    "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
 
 csgrep_final_filter_args = "--invert-match --event \"internal warning\" \
 --prune-events=1"
@@ -129,9 +129,12 @@ def find_missing_pkgs(pkgs, results, mock):
     tmp_rpm = "%s/rpm" % tmp_var_lib
     installed = "%s/rpm-list-mock.txt" % results.dbgdir
     provides = "%s/rpm-list-mock-provides.txt" % results.tmpdir
-    results.exec_cmd("chmod -w '%s' && rpm -qa --root '%s' | sort -V \
-> '%s' && rpm -qa --provides --root '%s' > '%s' && chmod u+w '%s'" % (tmp_rpm,
-        results.tmpdir, installed, results.tmpdir, provides, tmp_rpm),
+    cmd_tpl = "chmod -w '%s' && rpm -qa --root '%s' | sort -V \
+> '%s' && rpm -qa --provides --root '%s' > '%s' && chmod u+w '%s'"
+    results.exec_cmd(
+        cmd_tpl % (
+            tmp_rpm, results.tmpdir, installed, results.tmpdir, provides,
+            tmp_rpm),
         shell=True)
 
     missing = []
@@ -176,9 +179,8 @@ class ScanResults:
 
     def utf8_wrap(self, fd):
         # the following hack is needed to support both Python 2 and 3
-        return codecs.StreamReaderWriter(fd,
-                self.codec.streamreader,
-                self.codec.streamwriter)
+        return codecs.StreamReaderWriter(
+            fd, self.codec.streamreader, self.codec.streamwriter)
 
     def __enter__(self):
         self.tmpdir = tempfile.mkdtemp(prefix="csmock")
@@ -193,7 +195,7 @@ class ScanResults:
             os.mkdir(self.resdir)
         except OSError as e:
             sys.stderr.write(
-                    "error: failed to create output directory: %s\n" % e)
+                "error: failed to create output directory: %s\n" % e)
             raise FatalError(1)
 
         if self.create_dbgdir:
@@ -205,8 +207,8 @@ class ScanResults:
             os.mkdir(self.dbgdir_uni)
 
         tee = ["tee", "%s/scan.log" % self.resdir]
-        self.log_pid = subprocess.Popen(tee, stdin=subprocess.PIPE,
-                preexec_fn=os.setsid)
+        self.log_pid = subprocess.Popen(
+            tee, stdin=subprocess.PIPE, preexec_fn=os.setsid)
         self.log_fd = self.utf8_wrap(self.log_pid.stdin)
 
         def signal_handler(signal, frame):
@@ -235,11 +237,12 @@ class ScanResults:
             tar_opts = "-c"
             if self.use_xz:
                 tar_opts += "J"
-            tar_cmd = "tar %s -f '%s' -C '%s' '%s'" % (tar_opts,
-                    self.output, self.tmpdir, self.dirname)
+            tar_cmd = "tar %s -f '%s' -C '%s' '%s'" % (
+                tar_opts, self.output, self.tmpdir, self.dirname)
             if os.system(tar_cmd) != 0:
-                self.fatal_error("failed to write '%s', not removing '%s'..."
-                        % (self.output, self.tmpdir))
+                self.fatal_error(
+                    "failed to write '%s', not removing '%s'..." % (
+                        self.output, self.tmpdir))
 
         sys.stderr.write("Wrote: %s\n\n" % self.output)
         shutil.rmtree(self.tmpdir)
@@ -270,8 +273,8 @@ class ScanResults:
                 self.print_with_ts(shell_quote(cmd))
             else:
                 self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
-        self.p = subprocess.Popen(cmd, stdout=self.log_fd, stderr=self.log_fd,
-                shell=shell)
+        self.p = subprocess.Popen(
+            cmd, stdout=self.log_fd, stderr=self.log_fd, shell=shell)
         rv = self.p.wait()
         self.log_fd.write("\n")
         if 128 <= rv:
@@ -280,8 +283,8 @@ class ScanResults:
         return rv
 
     def get_cmd_output(self, cmd, input=None, shell=True):
-        self.p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                stderr=self.log_fd, shell=shell)
+        self.p = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=self.log_fd, shell=shell)
         (out, _) = self.p.communicate()
         out = out.decode("utf8")
         return (self.p.returncode, out)
@@ -379,7 +382,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
     def __exit__(self, type, value, bt):
         cmd = "test -r '%s' && test %d = \"$(<%s)\" && rm -f '%s'" % (
-                self.lock_file, self.pid, self.lock_file, self.lock_file)
+            self.lock_file, self.pid, self.lock_file, self.lock_file)
         os.system(cmd)
 
     def get_mock_cmd(self, args):
@@ -393,8 +396,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return self.exec_mock_cmd(["--chroot", cmd])
 
     def exec_mockbuild_cmd(self, cmd):
-        return self.exec_chroot_cmd("/bin/su mockbuild -c %s"
-                % shell_quote(cmd))
+        return self.exec_chroot_cmd(
+            "/bin/su mockbuild -c %s" % shell_quote(cmd))
 
     def copy_out(self, args):
         cmd = ["--disable-plugin=selinux", "--copyout"] + args
@@ -408,8 +411,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             if scrub_root:
                 self.exec_mock_cmd(["--scrub=root-cache"])
                 if self.exec_mock_cmd(["--init"]) != 0:
-                    self.results.fatal_error("failed to init mock profile: %s"
-                            % self.mock_profile)
+                    self.results.fatal_error(
+                        "failed to init mock profile: %s" % self.mock_profile)
 
             elif not self.init_done and self.exec_mock_cmd(["--init"]) != 0:
                 # try --scrub=root-cache
@@ -427,7 +430,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 return True
 
             self.results.error(
-                    "hard to install dependencies (%s), still trying..." % \
+                "hard to install dependencies (%s), still trying..." % \
                     strlist_to_shell_cmd(missing_deps), ec=0)
 
             if not scrub_root and not self.skip_init:
@@ -457,7 +460,7 @@ class ScanProps:
         self.post_depinst_hooks = []
         self.rpm_opts = default_rpm_opts
         self.path = []
-        self.env = { }
+        self.env = {}
         self.copy_out_files = []
         self.cswrap_enabled = False
         self.cswrap_filters = default_cswrap_filters
@@ -532,8 +535,8 @@ class ScanProps:
 
 class PluginManager:
     def __init__(self):
-        self.plug_by_prio = { }
-        self.plug_by_name = { }
+        self.plug_by_prio = {}
+        self.plug_by_name = {}
 
     def try_load(self, modname, path):
         fp, pathname, description = imp.find_module(modname, [path])
@@ -638,8 +641,9 @@ def finalize_results(js_file, results, print_defects):
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
     def __init__(self, option_strings, dest=None, default=None, help=None):
-        super(VersionPrinter, self).__init__(option_strings=option_strings,
-                dest=dest, default=default, nargs=0, help=help)
+        super(VersionPrinter, self).__init__(
+            option_strings=option_strings, dest=dest, default=default, nargs=0,
+            help=help)
     def __call__(self, parser, namespace, values, option_string=None):
         print("@VERSION@")
         sys.exit(0)
@@ -668,8 +672,9 @@ plugin_list = plugins.get_name_list()
 # FIXME: --list-available-tools takes precedence over --help and --version
 class ToolsPrinter(argparse.Action):
     def __init__(self, option_strings, dest=None, default=None, help=None):
-        super(ToolsPrinter, self).__init__(option_strings=option_strings,
-                dest=dest, default=default, nargs=0, help=help)
+        super(ToolsPrinter, self).__init__(
+            option_strings=option_strings, dest=dest, default=default, nargs=0,
+            help=help)
     def __call__(self, parser, namespace, values, option_string=None):
         sys.stdout.write('Tools list: \n')
         plugins.print_plugin_descriptions()
@@ -677,77 +682,99 @@ class ToolsPrinter(argparse.Action):
 
 # initialize argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("SRPM", nargs="?", action=FileNameParser,
-        help="source RPM package to be scanned by static analyzers")
+parser.add_argument(
+    "SRPM", nargs="?", action=FileNameParser,
+    help="source RPM package to be scanned by static analyzers")
 
 # define optional arguments
-parser.add_argument("-r", "--root", dest="mock_profile", default="default",
-        help="mock profile to use (defaults to mock's default)")
+parser.add_argument(
+    "-r", "--root", dest="mock_profile", default="default",
+    help="mock profile to use (defaults to mock's default)")
 
-parser.add_argument("-t", "--tools", action="append", default=[],
-        help="comma-spearated list of tools to enable \
+parser.add_argument(
+    "-t", "--tools", action="append", default=[],
+    help="comma-spearated list of tools to enable \
 (use --list-available-tools to see the list of available tools)")
 
-parser.add_argument("-a", "--all-tools", action="store_true",
-        help="enable all available tools \
+parser.add_argument(
+    "-a", "--all-tools", action="store_true",
+    help="enable all available tools \
 (use --list-available-tools to see the list of available tools)")
 
-parser.add_argument("-l", "--list-available-tools", action=ToolsPrinter,
-        help="list available tools and exit")
+parser.add_argument(
+    "-l", "--list-available-tools", action=ToolsPrinter,
+    help="list available tools and exit")
 
-parser.add_argument("--install", dest="list_of_pkgs",
-        help="space-separated list of packages to install into the chroot")
+parser.add_argument(
+    "--install", dest="list_of_pkgs",
+    help="space-separated list of packages to install into the chroot")
 
-parser.add_argument("-o", "--output",
-        help="name of the tarball or directory to put the results to")
+parser.add_argument(
+    "-o", "--output",
+    help="name of the tarball or directory to put the results to")
 
-parser.add_argument("-f", "--force", action="store_true",
-        help="overwrite the resulting file or directory if it exists already")
+parser.add_argument(
+    "-f", "--force", action="store_true",
+    help="overwrite the resulting file or directory if it exists already")
 
-parser.add_argument("-j", "--jobs", type=int, default=default_jobs_cnt,
-        help="maximal number of jobs running in parallel (passed to 'make')")
+parser.add_argument(
+    "-j", "--jobs", type=int, default=default_jobs_cnt,
+    help="maximal number of jobs running in parallel (passed to 'make')")
 
-parser.add_argument("--cswrap-timeout", type=int, default=default_cswrap_timeout,
-        help="maximal amount of time taken by analysis of a single module [s]")
+parser.add_argument(
+    "--cswrap-timeout", type=int, default=default_cswrap_timeout,
+    help="maximal amount of time taken by analysis of a single module [s]")
 
-parser.add_argument("-U", "--embed-context", type=int, default=3,
-        help="embed a number of lines of context from the source file for the \
+parser.add_argument(
+    "-U", "--embed-context", type=int, default=3,
+    help="embed a number of lines of context from the source file for the \
 key event (defaults to 3).")
 
-parser.add_argument("-k", "--keep-going", action="store_true",
-        help="continue as much as possible after an error")
+parser.add_argument(
+    "-k", "--keep-going", action="store_true",
+    help="continue as much as possible after an error")
 
-parser.add_argument("--skip-init", action="store_true",
-        help="do not run 'mock --init' before the scan \
+parser.add_argument(
+    "--skip-init", action="store_true",
+    help="do not run 'mock --init' before the scan \
 (may lead to unpredictable scan results)")
 
-parser.add_argument("--no-clean", action="store_true",
-        help="do not clean chroot when it becomes unused")
+parser.add_argument(
+    "--no-clean", action="store_true",
+    help="do not clean chroot when it becomes unused")
 
-parser.add_argument("--no-scan", action="store_true",
-        help="do not analyze any package, just check versions of the analyzers")
+parser.add_argument(
+    "--no-scan", action="store_true",
+    help="do not analyze any package, just check versions of the analyzers")
 
-csmock.common.util.add_paired_flag(parser, "print-defects",
-        help="print the resulting list of defects (default if connected to a tty)")
+csmock.common.util.add_paired_flag(
+    parser, "print-defects",
+    help="print the resulting list of defects (default if connected to a tty)")
 
-parser.add_argument("--base-srpm",
-        help="perform a differential scan against the specified base pacakge")
+parser.add_argument(
+    "--base-srpm",
+    help="perform a differential scan against the specified base pacakge")
 
-parser.add_argument("--base-root", dest="base_mock_profile",
-        help="mock profile to use for the base scan (use only with --base-srpm)")
+parser.add_argument(
+    "--base-root", dest="base_mock_profile",
+    help="mock profile to use for the base scan (use only with --base-srpm)")
 
 # --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
 group = parser.add_mutually_exclusive_group()
-group.add_argument("--skip-patches", action="store_true",
-        help="skip patches not annotated by %%{?_rawbuild} (vanilla build)")
-group.add_argument("--diff-patches", action="store_true",
-        help="scan with/without patches and diff the lists of defects")
-group.add_argument("-c", "--shell-cmd",
-        help="use shell command to build the given tarball (instead of SRPM)")
+group.add_argument(
+    "--skip-patches", action="store_true",
+    help="skip patches not annotated by %%{?_rawbuild} (vanilla build)")
+group.add_argument(
+    "--diff-patches", action="store_true",
+    help="scan with/without patches and diff the lists of defects")
+group.add_argument(
+    "-c", "--shell-cmd",
+    help="use shell command to build the given tarball (instead of SRPM)")
 
 # needed for help2man
-parser.add_argument("--version", action=VersionPrinter,
-        help="print the version of csmock and exit")
+parser.add_argument(
+    "--version", action=VersionPrinter,
+    help="print the version of csmock and exit")
 
 # add command-line options handled by plugins
 plugins.init_parser(parser)
@@ -865,16 +892,17 @@ def do_scan(props, output, skip_patches):
 the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
             # dump list of RPMs installed on the host (for debugging purposes)
-            results.exec_cmd("rpm -qa | sort -V > '%s/rpm-list-host.txt'"
-                    % results.dbgdir, shell=True)
+            results.exec_cmd(
+                "rpm -qa | sort -V > '%s/rpm-list-host.txt'" % results.dbgdir,
+                shell=True)
 
             if not props.no_scan:
                 if props.shell_cmd_to_build is None:
                     # check the given SRPM
                     if (results.get_cmd_output("rpm -pq '%s'" % props.srpm)[0] != 0):
                         results.fatal_error("failed to open SRPM: %s" % props.srpm)
-                    (ec, spec) = results.get_cmd_output("rpm -lpq '%s' | grep '\.spec$'"
-                            % props.srpm)
+                    (ec, spec) = results.get_cmd_output(
+                        "rpm -lpq '%s' | grep '\.spec$'" % props.srpm)
                     if ec != 0:
                         results.fatal_error("no specfile found in SRPM: %s" % props.srpm)
                     spec = spec.rstrip()
@@ -902,9 +930,10 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     mock.exec_mockbuild_cmd("rpm -Uvh --nodeps '%s'" % srpm_in)
 
                     # rebuild the given SRPM (and rename to match the original one)
-                    mock.exec_mockbuild_cmd("rpmbuild -bs --nodeps %s %s && sh -c 'cd \
+                    cmd_tpl = "rpmbuild -bs --nodeps %s %s && sh -c 'cd \
 /builddir/build/SRPMS && eval mv -v *.src.rpm %s || :'"
-                            % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
+                    mock.exec_mockbuild_cmd(
+                        cmd_tpl % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
 
                     # use the rebuilt SRPM to get the dependency list
                     mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
@@ -922,11 +951,13 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 if props.shell_cmd_to_build is not None:
                     # prepare a build script in our tmp dir
                     build_script = "%s/build.sh" % results.tmpdir
-                    results.exec_cmd("printf '#!/bin/sh\n\
+                    cmd_tpl = "printf '#!/bin/sh\n\
 cd /builddir/build/BUILD || exit $?\n\
 cd %%s*/ || cd *\n\
-%%s' '%s' '%s' | tee '%s' >&2\n" % (nvr,
-                    props.shell_cmd_to_build, build_script), shell=True)
+%%s' '%s' '%s' | tee '%s' >&2\n"
+                    results.exec_cmd(
+                        cmd_tpl % (nvr, props.shell_cmd_to_build, build_script),
+                        shell=True)
                     props.copy_in_files += [build_script]
 
                 # copy required files into the chroot
@@ -934,7 +965,7 @@ cd %%s*/ || cd *\n\
                 cmd += strlist_to_shell_cmd(props.copy_in_files)
                 cmd += " | "
                 cmd += strlist_to_shell_cmd(
-                        mock.get_mock_cmd(["--shell", "tar -xC/"]))
+                    mock.get_mock_cmd(["--shell", "tar -xC/"]))
                 results.exec_cmd(cmd, shell=True)
 
                 # run post-depinst hooks
@@ -956,8 +987,9 @@ cd %%s*/ || cd *\n\
 
                     if props.shell_cmd_to_build is None:
                         # run %prep phase without pluggin-in any static analyzers
-                        ec = mock.exec_mockbuild_cmd("rpmbuild -bp --nodeps %s %s"
-                                % (spec_in, strlist_to_shell_cmd(props.rpm_opts)))
+                        ec = mock.exec_mockbuild_cmd(
+                            "rpmbuild -bp --nodeps %s %s" % (
+                                spec_in, strlist_to_shell_cmd(props.rpm_opts)))
                     else:
                         # extract the given archive (we got instead of SRPM)
                         if re.match("^.*\\.zip$", srpm_dup):
@@ -1014,8 +1046,10 @@ cd %%s*/ || cd *\n\
 
                     # get the (intermediate) results out of the chroot
                     if len(props.copy_out_files) > 0:
-                        cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell",
-                            "tar -c " + strlist_to_shell_cmd(props.copy_out_files)]))
+                        cmd = strlist_to_shell_cmd(
+                            mock.get_mock_cmd(
+                                ["--shell", "tar -c " + strlist_to_shell_cmd(
+                                    props.copy_out_files)]))
 
                         cmd += " | tar -xC '%s'" % results.dbgdir_raw
                         if results.exec_cmd(cmd, shell=True) != 0:
@@ -1045,8 +1079,9 @@ cd %%s*/ || cd *\n\
                 if 0 < args.embed_context:
                     # embed context lines from source program files
                     tmp_file = "%s.tmp" % all_file
-                    cmd = strlist_to_shell_cmd( mock.get_mock_cmd(["--shell",
-                        "csgrep --mode=json --embed-context %d" % args.embed_context]))
+                    cmd = strlist_to_shell_cmd(
+                        mock.get_mock_cmd(
+                            ["--shell", "csgrep --mode=json --embed-context %d" % args.embed_context]))
                     cmd += " < '%s' > '%s'" % (all_file, tmp_file)
                     if (0 == results.exec_cmd(cmd, shell=True)):
                         shutil.move(tmp_file, all_file)

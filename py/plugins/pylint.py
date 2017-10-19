@@ -43,8 +43,9 @@ class Plugin:
 
     def init_parser(self, parser):
         csmock.common.util.install_script_scan_opts(parser, "pylint")
-        parser.add_argument("--pylint-evt-filter", default="^W[0-9]+",
-                help="filter out Pylint defects whose key event matches the given regex \
+        parser.add_argument(
+            "--pylint-evt-filter", default="^W[0-9]+",
+            help="filter out Pylint defects whose key event matches the given regex \
 (defaults to '^W[0-9]+', use '.*' to get all defects detected by Pylint)")
 
     def handle_args(self, parser, args, props):
@@ -52,8 +53,8 @@ class Plugin:
             return
 
         # which directories are we going to scan (build and/or install)
-        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(parser, args,
-                props, "pylint")
+        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(
+            parser, args, props, "pylint")
 
         props.install_pkgs += ["pylint"]
         props.copy_in_files += [run_pylint_sh]
