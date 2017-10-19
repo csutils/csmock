@@ -145,8 +145,8 @@ def stable_commit_ref(repo, ref):
         # HEAD is going to change after checkout or git-bisect, which would
         # invalidate ref)
         return commit
-    else:
-        return ref
+
+    return ref
 
 def do_git_checkout(repo, commit):
     sw.emit_status("checking out %s" % commit)
@@ -156,10 +156,9 @@ def encode_paired_flag(args, flag):
     value = getattr(args, flag.replace("-", "_"))
     if value is None:
         return ""
-    elif value:
+    if value:
         return " --" + flag
-    else:
-        return " --no-" + flag
+    return " --no-" + flag
 
 def encode_csbuild_args(args):
     cmd = " -c %s" % shell_quote(args.build_cmd)

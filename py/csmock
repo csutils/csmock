@@ -105,8 +105,7 @@ def strlist_to_shell_cmd(cmd_in, escape_special=False):
     def translate_one(i):
         if escape_special:
             return shell_quote(i)
-        else:
-            return "'%s'" % i
+        return "'%s'" % i
 
     if type(cmd_in) is str:
         return "sh -c %s" % translate_one(cmd_in)
@@ -167,6 +166,17 @@ class ScanResults:
         self.codec = codecs.lookup('utf8')
         self.ec = 0
 
+        # just to silence pylint, will be initialized in __enter__()
+        self.tmpdir = None
+        self.resdir = None
+        self.dbgdir = None
+        self.dbgdir_raw = None
+        self.dbgdir_uni = None
+        self.log_pid = None
+        self.log_fd = None
+        self.ini_writer = None
+        self.subproc = None
+
         m = re.match("^(.*)\\.xz$", self.dirname)
         if m is not None:
             self.use_xz = True
@@ -222,11 +232,11 @@ class ScanResults:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.ini_writer.close()
-        if hasattr(self, "p") and self.p.returncode is None:
+        if self.subproc is not None and self.subproc.returncode is None:
             # FIXME: TOCTOU race
             try:
-                os.kill(self.p.pid, signal.SIGTERM)
-                self.p.wait()
+                os.kill(self.subproc.pid, signal.SIGTERM)
+                self.subproc.wait()
             except Exception:
                 pass
         self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix="<<< ")
@@ -273,9 +283,9 @@ class ScanResults:
                 self.print_with_ts(shell_quote(cmd))
             else:
                 self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
-        self.p = subprocess.Popen(
+        self.subproc = subprocess.Popen(
             cmd, stdout=self.log_fd, stderr=self.log_fd, shell=shell)
-        rv = self.p.wait()
+        rv = self.subproc.wait()
         self.log_fd.write("\n")
         if rv >= 128:
             # if the child has been signalled, signal self with the same signal
@@ -283,11 +293,11 @@ class ScanResults:
         return rv
 
     def get_cmd_output(self, cmd, shell=True):
-        self.p = subprocess.Popen(
+        self.subproc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=self.log_fd, shell=shell)
-        (out, _) = self.p.communicate()
+        (out, _) = self.subproc.communicate()
         out = out.decode("utf8")
-        return (self.p.returncode, out)
+        return self.subproc.returncode, out
 
     def open_res_file(self, rel_path):
         abs_path = "%s/%s" % (self.resdir, rel_path)
@@ -330,6 +340,8 @@ class MockWrapper:
         self.skip_init = skip_init
         self.init_done = skip_init
         self.emul_pty = False
+        # just to silence pylint, will be initialized in __enter__()
+        self.def_cmd = None
 
     def __enter__(self):
         cmd = "flock -w15 '%s' -c '\
@@ -419,13 +431,13 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 continue
 
             self.init_done = True
-            if len(pkgs) == 0:
+            if not pkgs:
                 return True
 
             # install required packages (all at once)
             self.exec_mock_cmd(["--install"] + pkgs)
             missing_deps = find_missing_pkgs(pkgs, self.results, self)
-            if len(missing_deps) == 0:
+            if not missing_deps:
                 # no misssing dependencies
                 return True
 
@@ -443,7 +455,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
             # check that all dependencies are installed
             missing_deps = find_missing_pkgs(pkgs, self.results, self)
-            if len(missing_deps) == 0:
+            if not missing_deps:
                 # no missing dependencies
                 return True
 
@@ -471,10 +483,13 @@ class ScanProps:
         self.keep_going = False
         self.cswrap_timeout = DEFAULT_CSWRAP_TIMEOUT
         self.no_scan = False
+        self.print_defects = False
         self.need_rpm_bi = False
         self.shell_cmd_to_build = None
         self.srpm = None
+        self.base_srpm = None
         self.mock_profile = None
+        self.base_mock_profile = None
         self.any_tool = False
         self.nvr = None
 
@@ -486,8 +501,8 @@ class ScanProps:
 
         # resolve cswrap_path by querying cswrap binary
         cmd = ["cswrap", "--print-path-to-wrap"]
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = p.communicate()
+        subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, _) = subproc.communicate()
         cswrap_path = out.decode("utf8").strip()
 
         self.copy_in_files += ["/usr/bin/cswrap", cswrap_path]
@@ -576,8 +591,9 @@ class PluginManager:
         description_indent = max_key_len + min_indent_len
         for key, plugin in sorted(self.plug_by_name.items()):
             desc = getattr(plugin, "description", "")
-            sys.stdout.write("{}{}{}\n".format(key, " " * (description_indent - len(key)),
-                                               desc.replace('\n', '\n%s' % (" " * description_indent))))
+            sys.stdout.write("{}{}{}\n".format(
+                key, " " * (description_indent - len(key)),
+                desc.replace('\n', '\n%s' % (" " * description_indent))))
 
     def get_name_list(self):
         return sorted(self.plug_by_name.keys())
@@ -627,7 +643,7 @@ def transform_results(js_file, results):
             % (CSGREP_FINAL_FILTER_ARGS, js_file,  err_file), shell=True)
     results.exec_cmd("csgrep --mode=json %s '%s' | cshtml - > '%s'" \
             % (CSGREP_FINAL_FILTER_ARGS, js_file, html_file), shell=True)
-    return (err_file, html_file)
+    return err_file, html_file
 
 # transform scan-results.js to scan-results.{err,html} and write stats
 def finalize_results(js_file, results, print_defects):
@@ -792,7 +808,7 @@ key event (defaults to 3).")
     for i in args.tools:
         for j in i.split(","):
             tool = j.strip()
-            if len(tool) == 0:
+            if not tool:
                 continue
             if tool in plugin_list:
                 # explicitly enable this tool
@@ -1058,7 +1074,7 @@ cd %%s*/ || cd *\n\
                         mock.exec_chroot_cmd(cmd)
 
                     # get the (intermediate) results out of the chroot
-                    if len(props.copy_out_files) > 0:
+                    if props.copy_out_files:
                         cmd = strlist_to_shell_cmd(
                             mock.get_mock_cmd(
                                 ["--shell", "tar -c " + strlist_to_shell_cmd(

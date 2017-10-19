@@ -57,8 +57,8 @@ class Plugin:
 
         # resolve cscppc_path by querying csmock binary
         cmd = ["cscppc", "--print-path-to-wrap"]
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = p.communicate()
+        subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = subproc.communicate()
         cscppc_path = out.decode("utf8").strip()
 
         props.path = [cscppc_path] + props.path
