@@ -16,20 +16,20 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 del_flags_by_level_common = {
-        0: set(["-Werror*", "-fdiagnostics-color*"])}
+    0: set(["-Werror*", "-fdiagnostics-color*"])}
 
 add_flags_by_level_common = {
-        1: set(["-Wall", "-Wextra"]),
-        2: set(["-Wunreachable-code", "-Wundef", "-Wcast-align",
+    1: set(["-Wall", "-Wextra"]),
+    2: set(["-Wunreachable-code", "-Wundef", "-Wcast-align",
             "-Wpointer-arith", "-Wfloat-equal", "-Wshadow",
             "-Wwrite-strings", "-Wformat=2"])}
 
 add_flags_by_level_c_only = {
-        0: set(["-Wno-unknown-pragmas"]),
-        2: set(["-Wstrict-prototypes"])}
+    0: set(["-Wno-unknown-pragmas"]),
+    2: set(["-Wstrict-prototypes"])}
 
 add_flags_by_level_cxx_only = {
-        2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
+    2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
 
 def serialize_flags(flags):
     str = ""
