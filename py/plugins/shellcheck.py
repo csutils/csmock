@@ -17,11 +17,11 @@
 
 import csmock.common.util
 
-run_shellcheck_sh = "/usr/share/csmock/scripts/run-shellcheck.sh"
+RUN_SHELLCHECK_SH = "/usr/share/csmock/scripts/run-shellcheck.sh"
 
-shellcheck_capture = "/builddir/shellcheck-capture.err"
+SHELLCHECK_CAPTURE = "/builddir/shellcheck-capture.err"
 
-filter_cmd = "csgrep --quiet '%s' " \
+FILTER_CMD = "csgrep --quiet '%s' " \
         "| csgrep --invert-match --event '^note$' " \
         "> '%s'"
 
@@ -48,21 +48,21 @@ class Plugin:
             return
 
         # which directories are we going to scan (build and/or install)
-        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(parser, args,
-                props, "shellcheck")
+        dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(
+            parser, args, props, "shellcheck")
 
         props.install_pkgs += ["ShellCheck"]
-        props.copy_in_files += [run_shellcheck_sh]
-        cmd = "%s %s > %s" % (run_shellcheck_sh, dirs_to_scan, shellcheck_capture)
+        props.copy_in_files += [RUN_SHELLCHECK_SH]
+        cmd = "%s %s > %s" % (RUN_SHELLCHECK_SH, dirs_to_scan, SHELLCHECK_CAPTURE)
         props.post_build_chroot_cmds += [cmd]
-        props.copy_out_files += [shellcheck_capture]
+        props.copy_out_files += [SHELLCHECK_CAPTURE]
 
         csmock.common.util.install_default_toolver_hook(props, "ShellCheck")
 
         def filter_hook(results):
-            src = results.dbgdir_raw + shellcheck_capture
+            src = results.dbgdir_raw + SHELLCHECK_CAPTURE
             dst = "%s/shellcheck-capture.err" % results.dbgdir_uni
-            cmd = filter_cmd % (src, dst)
+            cmd = FILTER_CMD % (src, dst)
             return results.exec_cmd(cmd, shell=True)
 
         props.post_process_hooks += [filter_hook]

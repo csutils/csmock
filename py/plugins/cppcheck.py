@@ -36,8 +36,9 @@ class Plugin:
         self.enabled = True
 
     def init_parser(self, parser):
-        parser.add_argument("--use-host-cppcheck", action="store_true",
-                help="use host's Cppcheck instead of the one in chroot \
+        parser.add_argument(
+            "--use-host-cppcheck", action="store_true",
+            help="use host's Cppcheck instead of the one in chroot \
 (automatically enables the Cppcheck plug-in)")
 
     def handle_args(self, parser, args, props):
@@ -56,8 +57,8 @@ class Plugin:
 
         # resolve cscppc_path by querying csmock binary
         cmd = ["cscppc", "--print-path-to-wrap"]
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = p.communicate()
+        subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = subproc.communicate()
         cscppc_path = out.decode("utf8").strip()
 
         props.path = [cscppc_path] + props.path
@@ -81,7 +82,7 @@ class Plugin:
         def store_cppcheck_version_hook(results, mock):
             cmd = mock.get_mock_cmd(["--chroot", "cppcheck --version"])
             (rc, verstr) = results.get_cmd_output(cmd, shell=False)
-            if 0 != rc:
+            if rc != 0:
                 return rc
 
             ver = re.sub("^Cppcheck ", "", verstr.strip())

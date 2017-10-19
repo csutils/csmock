@@ -15,29 +15,29 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
-del_flags_by_level_common = {
-        0: set(["-Werror*", "-fdiagnostics-color*"])}
+DEL_FLAGS_BY_LEVEL_COMMON = {
+    0: set(["-Werror*", "-fdiagnostics-color*"])}
 
-add_flags_by_level_common = {
-        1: set(["-Wall", "-Wextra"]),
-        2: set(["-Wunreachable-code", "-Wundef", "-Wcast-align",
+ADD_FLAGS_BY_LEVEL_COMMON = {
+    1: set(["-Wall", "-Wextra"]),
+    2: set(["-Wunreachable-code", "-Wundef", "-Wcast-align",
             "-Wpointer-arith", "-Wfloat-equal", "-Wshadow",
             "-Wwrite-strings", "-Wformat=2"])}
 
-add_flags_by_level_c_only = {
-        0: set(["-Wno-unknown-pragmas"]),
-        2: set(["-Wstrict-prototypes"])}
+ADD_FLAGS_BY_LEVEL_C_ONLY = {
+    0: set(["-Wno-unknown-pragmas"]),
+    2: set(["-Wstrict-prototypes"])}
 
-add_flags_by_level_cxx_only = {
-        2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
+ADD_FLAGS_BY_LEVEL_CXX_ONLY = {
+    2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
 
 def serialize_flags(flags):
-    str = ""
+    out = ""
     for f in flags:
-        if 0 < len(str):
-            str += ":"
-        str += f
-    return str
+        if out:
+            out += ":"
+        out += f
+    return out
 
 class FlagsMatrix:
     def __init__(self):
@@ -63,17 +63,17 @@ class FlagsMatrix:
 def flags_by_warning_level(level):
     flags = FlagsMatrix()
     for l in range(0, level + 1):
-        if l in del_flags_by_level_common:
-            flags.del_cflags |= del_flags_by_level_common[l]
-            flags.del_cxxflags |= del_flags_by_level_common[l]
+        if l in DEL_FLAGS_BY_LEVEL_COMMON:
+            flags.del_cflags |= DEL_FLAGS_BY_LEVEL_COMMON[l]
+            flags.del_cxxflags |= DEL_FLAGS_BY_LEVEL_COMMON[l]
 
-        if l in add_flags_by_level_common:
-            flags.add_cflags |= add_flags_by_level_common[l]
-            flags.add_cxxflags |= add_flags_by_level_common[l]
+        if l in ADD_FLAGS_BY_LEVEL_COMMON:
+            flags.add_cflags |= ADD_FLAGS_BY_LEVEL_COMMON[l]
+            flags.add_cxxflags |= ADD_FLAGS_BY_LEVEL_COMMON[l]
 
-        if l in add_flags_by_level_c_only:
-            flags.add_cflags |= add_flags_by_level_c_only[l]
+        if l in ADD_FLAGS_BY_LEVEL_C_ONLY:
+            flags.add_cflags |= ADD_FLAGS_BY_LEVEL_C_ONLY[l]
 
-        if l in add_flags_by_level_cxx_only:
-            flags.add_cxxflags |= add_flags_by_level_cxx_only[l]
+        if l in ADD_FLAGS_BY_LEVEL_CXX_ONLY:
+            flags.add_cxxflags |= ADD_FLAGS_BY_LEVEL_CXX_ONLY[l]
     return flags

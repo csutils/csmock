@@ -39,21 +39,25 @@ class Plugin:
         self.enabled = True
 
     def init_parser(self, parser):
-        parser.add_argument("-w", "--gcc-warning-level", type=int,
-                help="Adjust GCC warning level.  -w0 means default flags, \
+        parser.add_argument(
+            "-w", "--gcc-warning-level", type=int,
+            help="Adjust GCC warning level.  -w0 means default flags, \
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings. \
 (automatically enables the GCC plug-in)")
 
-        parser.add_argument("--gcc-add-flag", action="append", default=[],
-                help="append the given compiler flag when invoking gcc \
+        parser.add_argument(
+            "--gcc-add-flag", action="append", default=[],
+            help="append the given compiler flag when invoking gcc \
 (can be used multiple times)")
 
-        parser.add_argument("--gcc-add-c-only-flag", action="append", default=[],
-                help="append the given compiler flag when invoking gcc for C \
+        parser.add_argument(
+            "--gcc-add-c-only-flag", action="append", default=[],
+            help="append the given compiler flag when invoking gcc for C \
 (can be used multiple times)")
 
-        parser.add_argument("--gcc-add-cxx-only-flag", action="append", default=[],
-                help="append the given compiler flag when invoking gcc for C++ \
+        parser.add_argument(
+            "--gcc-add-cxx-only-flag", action="append", default=[],
+            help="append the given compiler flag when invoking gcc for C++ \
 (can be used multiple times)")
 
     def handle_args(self, parser, args, props):
@@ -71,7 +75,7 @@ class Plugin:
             add_cflags += ":" + flag
         for flag in args.gcc_add_cxx_only_flag:
             add_cxxflags += ":" + flag
-        if 0 < len(add_cflags) or 0 < len(add_cxxflags):
+        if add_cflags or add_cxxflags:
             self.enable()
 
         if not self.enabled:

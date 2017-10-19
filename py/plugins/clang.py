@@ -15,9 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
-import csmock.common.util
+# standard imports
 import os
 import subprocess
+
+# local imports
+import csmock.common.util
 
 class PluginProps:
     def __init__(self):
