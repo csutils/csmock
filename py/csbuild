@@ -32,22 +32,22 @@ import git
 from csmock.common.cflags import flags_by_warning_level
 from csmock.common.util   import add_paired_flag
 
-csbuild_travis_mirror = \
+CSBUILD_TRAVIS_MIRROR = \
         "deb https://kdudka.fedorapeople.org/csbuild trusty contrib"
 
-run_scan_sh = "/usr/share/csbuild/scripts/run-scan.sh"
+RUN_SCAN_SH = "/usr/share/csbuild/scripts/run-scan.sh"
 
-default_added_exit_code = 7
+DEFAULT_ADDED_EXIT_CODE = 7
 
-default_base_fail_exit_code = 0
+DEFAULT_BASE_FAIL_EXIT_CODE = 0
 
-default_cswrap_timeout = 30
+DEFAULT_CSWRAP_TIMEOUT = 30
 
-default_embed_context = 3
+DEFAULT_EMBED_CONTEXT = 3
 
-default_gcc_warning_level = 2
+DEFAULT_GCC_WARNING_LEVEL = 2
 
-tool_name = sys.argv[0]
+TOOL_NAME = sys.argv[0]
 
 class StatusWriter:
     def __init__(self):
@@ -69,16 +69,16 @@ class StatusWriter:
 
     def die(self, msg, ec=1):
         sys.stderr.write("%s: %sfatal error%s: %s\n" \
-                % (tool_name, self.color_r, self.color_n, msg))
+                % (TOOL_NAME, self.color_r, self.color_n, msg))
         sys.exit(ec)
 
     def emit_warning(self, msg):
         sys.stderr.write("%s: %swarning%s: %s\n" \
-                % (tool_name, self.color_y, self.color_n, msg))
+                % (TOOL_NAME, self.color_y, self.color_n, msg))
 
     def emit_status(self, msg):
         sys.stderr.write("%s: %sstatus%s: %s\n" \
-                % (tool_name, self.color_g, self.color_n, msg))
+                % (TOOL_NAME, self.color_g, self.color_n, msg))
 
     def print_stats(self, err_file):
         os.system("csgrep --mode=stat %s %s \"%s\"" \
@@ -167,19 +167,19 @@ def encode_csbuild_args(args):
     if args.git_bisect:
         cmd += " --git-bisect"
 
-    if args.added_exit_code != default_added_exit_code:
+    if args.added_exit_code != DEFAULT_ADDED_EXIT_CODE:
         cmd += " --added-exit-code %d" % args.added_exit_code
 
-    if args.base_fail_exit_code != default_base_fail_exit_code:
+    if args.base_fail_exit_code != DEFAULT_BASE_FAIL_EXIT_CODE:
         cmd += " --base-fail-exit-code %d" % args.base_fail_exit_code
 
-    if args.cswrap_timeout != default_cswrap_timeout:
+    if args.cswrap_timeout != DEFAULT_CSWRAP_TIMEOUT:
         cmd += " --cswrap-timeout %d" % args.cswrap_timeout
 
-    if args.embed_context != default_embed_context:
+    if args.embed_context != DEFAULT_EMBED_CONTEXT:
         cmd += " -U%d" % args.embed_context
 
-    if args.gcc_warning_level != default_gcc_warning_level:
+    if args.gcc_warning_level != DEFAULT_GCC_WARNING_LEVEL:
         cmd += " -w%d" % args.gcc_warning_level
 
     cmd += encode_paired_flag(args, "print-current")
@@ -204,11 +204,11 @@ def gen_travis_yml(args):
 
     # before_install
     print_yml_section("before_install")
-    if "https://" in csbuild_travis_mirror:
+    if "https://" in CSBUILD_TRAVIS_MIRROR:
         print_yml_item("sudo apt-get update -qq")
         print_yml_item("sudo apt-get install -qq apt-transport-https")
     print_yml_item("echo \"%s\" | sudo tee -a /etc/apt/sources.list" \
-            % csbuild_travis_mirror)
+            % CSBUILD_TRAVIS_MIRROR)
     print_yml_item("sudo apt-get update -qq")
 
     # install
@@ -255,11 +255,11 @@ def main():
 WARNING: The given command must (re)compile all sources for this option to work!")
 
     parser.add_argument(
-        "--added-exit-code", type=int, default=default_added_exit_code,
+        "--added-exit-code", type=int, default=DEFAULT_ADDED_EXIT_CODE,
         help="exit code to return if there is any defect added in the new version")
 
     parser.add_argument(
-        "--base-fail-exit-code", type=int, default=default_base_fail_exit_code,
+        "--base-fail-exit-code", type=int, default=DEFAULT_BASE_FAIL_EXIT_CODE,
         help="exit code to return if the base scan fails")
 
     add_paired_flag(
@@ -281,7 +281,7 @@ WARNING: The given command must (re)compile all sources for this option to work!
         help="clean the temporary directory with results on exit (default)")
 
     parser.add_argument(
-        "--cswrap-timeout", type=int, default=default_cswrap_timeout,
+        "--cswrap-timeout", type=int, default=DEFAULT_CSWRAP_TIMEOUT,
         help="maximal amount of time taken by analysis of a single module [s]")
 
     add_paired_flag(
@@ -301,13 +301,13 @@ WARNING: The given command must (re)compile all sources for this option to work!
         help="shell command to run before the build (runs in $PWD)")
 
     parser.add_argument(
-        "-w", "--gcc-warning-level", type=int, default=default_gcc_warning_level,
+        "-w", "--gcc-warning-level", type=int, default=DEFAULT_GCC_WARNING_LEVEL,
         help="Adjust GCC warning level.  -w0 means no additional warnings, \
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
 (default).")
 
     parser.add_argument(
-        "-U", "--embed-context", type=int, default=default_embed_context,
+        "-U", "--embed-context", type=int, default=DEFAULT_EMBED_CONTEXT,
         help="embed a number of lines of context from the source file for the \
 key event (defaults to 3).")
 
@@ -372,8 +372,8 @@ key event (defaults to 3).")
     # check for possible conflict of command-line options
     if not diff_scan:
         if args.git_bisect \
-                or (args.added_exit_code != default_added_exit_code) \
-                or (args.base_fail_exit_code != default_base_fail_exit_code) \
+                or (args.added_exit_code != DEFAULT_ADDED_EXIT_CODE) \
+                or (args.base_fail_exit_code != DEFAULT_BASE_FAIL_EXIT_CODE) \
                 or args.print_added or args.print_fixed:
             parser.error("options --git-bisect, --added-exit-code, --print-added, \
 --base-fail-exit-code, and --print-fixed make sense only with --git-commit-range")
@@ -401,7 +401,7 @@ key event (defaults to 3).")
 
     # prepare template for running the run-scan.sh script
     cmd = "%s %s %s %s %s" % (
-        cmd_prefix, run_scan_sh,
+        cmd_prefix, RUN_SCAN_SH,
         shell_quote(res_dir),
         shell_quote(args.build_cmd),
         shell_quote("csgrep --embed-context %d" % args.embed_context))
