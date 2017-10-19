@@ -237,226 +237,229 @@ class VersionPrinter(argparse.Action):
         print("@VERSION@")
         sys.exit(0)
 
-# initialize argument parser
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-c", "--build-cmd", required=True,
-    help="shell command used to build the sources (runs in $PWD)")
+def main():
+    # initialize argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c", "--build-cmd", required=True,
+        help="shell command used to build the sources (runs in $PWD)")
 
-# optional arguments
-parser.add_argument(
-    "-g", "--git-commit-range",
-    help="range of git revisions for a differential scan")
+    # optional arguments
+    parser.add_argument(
+        "-g", "--git-commit-range",
+        help="range of git revisions for a differential scan")
 
-parser.add_argument(
-    "--git-bisect", action="store_true",
-    help="if a new defect is added, use git-bisect to identify the cause \
+    parser.add_argument(
+        "--git-bisect", action="store_true",
+        help="if a new defect is added, use git-bisect to identify the cause \
 WARNING: The given command must (re)compile all sources for this option to work!")
 
-parser.add_argument(
-    "--added-exit-code", type=int, default=default_added_exit_code,
-    help="exit code to return if there is any defect added in the new version")
+    parser.add_argument(
+        "--added-exit-code", type=int, default=default_added_exit_code,
+        help="exit code to return if there is any defect added in the new version")
 
-parser.add_argument(
-    "--base-fail-exit-code", type=int, default=default_base_fail_exit_code,
-    help="exit code to return if the base scan fails")
+    parser.add_argument(
+        "--base-fail-exit-code", type=int, default=default_base_fail_exit_code,
+        help="exit code to return if the base scan fails")
 
-add_paired_flag(
-    parser, "print-current",
-    help="print all defects in the current version (default unless -g is given) \
+    add_paired_flag(
+        parser, "print-current",
+        help="print all defects in the current version (default unless -g is given) \
 WARNING: The given command must (re)compile all sources for this option to work!")
 
-add_paired_flag(
-    parser, "print-added",
-    help="print defects added in the new version (default if -g is given)")
+    add_paired_flag(
+        parser, "print-added",
+        help="print defects added in the new version (default if -g is given)")
 
-add_paired_flag(
-    parser, "print-fixed",
-    help="print defects fixed in the new version \
+    add_paired_flag(
+        parser, "print-fixed",
+        help="print defects fixed in the new version \
 WARNING: The given command must (re)compile all sources for this option to work!")
 
-add_paired_flag(
-    parser, "clean",
-    help="clean the temporary directory with results on exit (default)")
+    add_paired_flag(
+        parser, "clean",
+        help="clean the temporary directory with results on exit (default)")
 
-parser.add_argument(
-    "--cswrap-timeout", type=int, default=default_cswrap_timeout,
-    help="maximal amount of time taken by analysis of a single module [s]")
+    parser.add_argument(
+        "--cswrap-timeout", type=int, default=default_cswrap_timeout,
+        help="maximal amount of time taken by analysis of a single module [s]")
 
-add_paired_flag(
-    parser, "color",
-    help="use colorized console output (default if connected to a tty)")
+    add_paired_flag(
+        parser, "color",
+        help="use colorized console output (default if connected to a tty)")
 
-parser.add_argument(
-    "--gen-travis-yml", action="store_true",
-    help="generate the .travis.yml file for Travis CI (requires --install)")
+    parser.add_argument(
+        "--gen-travis-yml", action="store_true",
+        help="generate the .travis.yml file for Travis CI (requires --install)")
 
-parser.add_argument(
-    "--install",
-    help="space-separated list of packages to install with --gen-travis-yml")
+    parser.add_argument(
+        "--install",
+        help="space-separated list of packages to install with --gen-travis-yml")
 
-parser.add_argument(
-    "--prep-cmd",
-    help="shell command to run before the build (runs in $PWD)")
+    parser.add_argument(
+        "--prep-cmd",
+        help="shell command to run before the build (runs in $PWD)")
 
-parser.add_argument(
-    "-w", "--gcc-warning-level", type=int, default=default_gcc_warning_level,
-    help="Adjust GCC warning level.  -w0 means no additional warnings, \
+    parser.add_argument(
+        "-w", "--gcc-warning-level", type=int, default=default_gcc_warning_level,
+        help="Adjust GCC warning level.  -w0 means no additional warnings, \
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
 (default).")
 
-parser.add_argument(
-    "-U", "--embed-context", type=int, default=default_embed_context,
-    help="embed a number of lines of context from the source file for the \
+    parser.add_argument(
+        "-U", "--embed-context", type=int, default=default_embed_context,
+        help="embed a number of lines of context from the source file for the \
 key event (defaults to 3).")
 
-# needed for help2man
-parser.add_argument(
-    "--version", action=VersionPrinter,
-    help="print the version of csbuild and exit")
+    # needed for help2man
+    parser.add_argument(
+        "--version", action=VersionPrinter,
+        help="print the version of csbuild and exit")
 
-# parse command-line arguments
-args = parser.parse_args()
+    # parse command-line arguments
+    args = parser.parse_args()
 
-if args.gen_travis_yml:
-    if args.install is None:
-        parser.error("--install is required with --gen-travis-yml")
-    if args.git_commit_range is not None:
-        parser.error("--git-commit-range makes no sense with --gen-travis-yml")
-    ret = gen_travis_yml(args)
-    sys.exit(ret)
-elif args.install is not None:
-    parser.error("--install makes sense only with --gen-travis-yml")
+    if args.gen_travis_yml:
+        if args.install is None:
+            parser.error("--install is required with --gen-travis-yml")
+        if args.git_commit_range is not None:
+            parser.error("--git-commit-range makes no sense with --gen-travis-yml")
+        ret = gen_travis_yml(args)
+        sys.exit(ret)
+    elif args.install is not None:
+        parser.error("--install makes sense only with --gen-travis-yml")
 
-# initialize color escape sequences if enabled
-if args.color is None:
-    args.color = sys.stdout.isatty() and sys.stderr.isatty()
-if args.color:
-    sw.enable_colors()
+    # initialize color escape sequences if enabled
+    if args.color is None:
+        args.color = sys.stdout.isatty() and sys.stderr.isatty()
+    if args.color:
+        sw.enable_colors()
 
-diff_scan = args.git_commit_range is not None
-if diff_scan:
-    # parse git commit range
-    tokenized = args.git_commit_range.split("...")
-    if len(tokenized) != 2:
-        tokenized = args.git_commit_range.split("..")
-    if len(tokenized) != 2:
-        parser.error("not a range of git revisions: " + args.git_commit_range)
+    diff_scan = args.git_commit_range is not None
+    if diff_scan:
+        # parse git commit range
+        tokenized = args.git_commit_range.split("...")
+        if len(tokenized) != 2:
+            tokenized = args.git_commit_range.split("..")
+        if len(tokenized) != 2:
+            parser.error("not a range of git revisions: " + args.git_commit_range)
 
-    try:
-        repo = git.Repo(".")
-    except:
-        parser.error("failed to open git repository: .")
+        try:
+            repo = git.Repo(".")
+        except:
+            parser.error("failed to open git repository: .")
 
-    try:
-        old_commit = stable_commit_ref(repo, tokenized[0])
-        new_commit = stable_commit_ref(repo, tokenized[1])
-    except:
-        parser.error("failed to resolve the range of git revisions: " \
-                + args.git_commit_range)
+        try:
+            old_commit = stable_commit_ref(repo, tokenized[0])
+            new_commit = stable_commit_ref(repo, tokenized[1])
+        except:
+            parser.error("failed to resolve the range of git revisions: " \
+                    + args.git_commit_range)
 
-    if hasattr(repo.is_dirty, "__call__") and repo.is_dirty():
-        sw.emit_warning("git repository is dirty: .")
+        if hasattr(repo.is_dirty, "__call__") and repo.is_dirty():
+            sw.emit_warning("git repository is dirty: .")
 
-# initialize defaults where necessary
-if args.print_current is None:
-    args.print_current = not diff_scan
-if args.print_added is None:
-    args.print_added = diff_scan
-if args.print_fixed is None:
-    args.print_fixed = False
-if args.clean is None:
-    args.clean = True
+    # initialize defaults where necessary
+    if args.print_current is None:
+        args.print_current = not diff_scan
+    if args.print_added is None:
+        args.print_added = diff_scan
+    if args.print_fixed is None:
+        args.print_fixed = False
+    if args.clean is None:
+        args.clean = True
 
-# check for possible conflict of command-line options
-if not diff_scan:
-    if args.git_bisect \
-            or (args.added_exit_code != default_added_exit_code) \
-            or (args.base_fail_exit_code != default_base_fail_exit_code) \
-            or args.print_added or args.print_fixed:
-        parser.error("options --git-bisect, --added-exit-code, --print-added, \
+    # check for possible conflict of command-line options
+    if not diff_scan:
+        if args.git_bisect \
+                or (args.added_exit_code != default_added_exit_code) \
+                or (args.base_fail_exit_code != default_base_fail_exit_code) \
+                or args.print_added or args.print_fixed:
+            parser.error("options --git-bisect, --added-exit-code, --print-added, \
 --base-fail-exit-code, and --print-fixed make sense only with --git-commit-range")
 
-if args.prep_cmd is not None:
-    # run the command given by --prep-cmd
-    scan_or_die(args.prep_cmd, "prep")
+    if args.prep_cmd is not None:
+        # run the command given by --prep-cmd
+        scan_or_die(args.prep_cmd, "prep")
 
-# create a temporary directory for the results
-res_dir = tempfile.mkdtemp(prefix="csbuild")
+    # create a temporary directory for the results
+    res_dir = tempfile.mkdtemp(prefix="csbuild")
 
-# prepare environment
-env = {}
-env["CSWRAP_TIMEOUT"] = "%d" % args.cswrap_timeout
-env["CSWRAP_TIMEOUT_FOR"] = "clang:clang++:cppcheck"
+    # prepare environment
+    env = {}
+    env["CSWRAP_TIMEOUT"] = "%d" % args.cswrap_timeout
+    env["CSWRAP_TIMEOUT_FOR"] = "clang:clang++:cppcheck"
 
-# resolve compiler flags
-flags = flags_by_warning_level(args.gcc_warning_level)
-flags.write_to_env(env)
+    # resolve compiler flags
+    flags = flags_by_warning_level(args.gcc_warning_level)
+    flags.write_to_env(env)
 
-# serialize environment
-cmd_prefix = ""
-for var in env:
-    cmd_prefix += "%s='%s' " % (var, env[var])
+    # serialize environment
+    cmd_prefix = ""
+    for var in env:
+        cmd_prefix += "%s='%s' " % (var, env[var])
 
-# prepare template for running the run-scan.sh script
-cmd = "%s %s %s %s %s" % (
-    cmd_prefix, run_scan_sh,
-    shell_quote(res_dir),
-    shell_quote(args.build_cmd),
-    shell_quote("csgrep --embed-context %d" % args.embed_context))
+    # prepare template for running the run-scan.sh script
+    cmd = "%s %s %s %s %s" % (
+        cmd_prefix, run_scan_sh,
+        shell_quote(res_dir),
+        shell_quote(args.build_cmd),
+        shell_quote("csgrep --embed-context %d" % args.embed_context))
 
-curr = "%s/current.err" % res_dir
+    curr = "%s/current.err" % res_dir
 
-if diff_scan:
-    # scan base revision first
-    # TODO: handle checkout failures
-    do_git_checkout(repo, old_commit)
-    scan_or_die(cmd, "base scan", fail_exit_code=args.base_fail_exit_code)
+    if diff_scan:
+        # scan base revision first
+        # TODO: handle checkout failures
+        do_git_checkout(repo, old_commit)
+        scan_or_die(cmd, "base scan", fail_exit_code=args.base_fail_exit_code)
+        sw.print_stats(curr)
+        base = "%s/base.err" % res_dir
+        shutil.move(curr, base)
+        cmd += " %s" % shell_quote(base)
+        do_git_checkout(repo, new_commit)
+
+    # scan the current version
+    ret = scan_or_die(cmd, "scan")
     sw.print_stats(curr)
-    base = "%s/base.err" % res_dir
-    shutil.move(curr, base)
-    cmd += " %s" % shell_quote(base)
-    do_git_checkout(repo, new_commit)
 
-# scan the current version
-ret = scan_or_die(cmd, "scan")
-sw.print_stats(curr)
+    # acknowledge the overall status
+    if diff_scan:
+        if ret == 0:
+            sw.emit_status("no new defects found!")
+        else:
+            sw.emit_warning("new defects found!")
 
-# acknowledge the overall status
-if diff_scan:
-    if ret == 0:
-        sw.emit_status("no new defects found!")
-    else:
-        sw.emit_warning("new defects found!")
-
-res_added = "%s/added.err" % res_dir
-if args.git_bisect and 0 < os.path.getsize(res_added):
-    # new defects found and we are asked to git-bisect the cause
-    res_dir_gb = "%s/git-bisect" % res_dir
-    os.mkdir(res_dir_gb)
-    cmd = cmd.replace(res_dir, res_dir_gb, 1)
-    sw.emit_status("running git-bisect...")
-    cmd = "git bisect start %s %s \
+    res_added = "%s/added.err" % res_dir
+    if args.git_bisect and 0 < os.path.getsize(res_added):
+        # new defects found and we are asked to git-bisect the cause
+        res_dir_gb = "%s/git-bisect" % res_dir
+        os.mkdir(res_dir_gb)
+        cmd = cmd.replace(res_dir, res_dir_gb, 1)
+        sw.emit_status("running git-bisect...")
+        cmd = "git bisect start %s %s \
 && git bisect run $SHELL -c %s \
 && git bisect reset" \
-            % (new_commit, old_commit, shell_quote(cmd))
-    sys.stderr.write("+ %s\n" % cmd)
-    os.system(cmd)
+                % (new_commit, old_commit, shell_quote(cmd))
+        sys.stderr.write("+ %s\n" % cmd)
+        os.system(cmd)
 
-# print the results selected by the command-line options
-if args.print_current:
-    sw.print_defects_if_any("%s/current.err" % res_dir, "CURRENT DEFECTS")
-if args.print_fixed:
-    sw.print_defects_if_any("%s/fixed.err" % res_dir, "FIXED DEFECTS")
-if args.print_added:
-    sw.print_defects_if_any(res_added, "ADDED DEFECTS")
+    # print the results selected by the command-line options
+    if args.print_current:
+        sw.print_defects_if_any("%s/current.err" % res_dir, "CURRENT DEFECTS")
+    if args.print_fixed:
+        sw.print_defects_if_any("%s/fixed.err" % res_dir, "FIXED DEFECTS")
+    if args.print_added:
+        sw.print_defects_if_any(res_added, "ADDED DEFECTS")
 
-if args.clean:
-    # purge the temporary directory
-    shutil.rmtree(res_dir)
-else:
-    print("\nScan results: %s\n" % res_dir)
+    if args.clean:
+        # purge the temporary directory
+        shutil.rmtree(res_dir)
+    else:
+        print("\nScan results: %s\n" % res_dir)
 
-if ret != 0:
-    # return the required exit code if new defects were found
-    sys.exit(args.added_exit_code)
+    if ret != 0:
+        # return the required exit code if new defects were found
+        sys.exit(args.added_exit_code)
+
+main()

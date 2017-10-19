@@ -211,9 +211,9 @@ class ScanResults:
             tee, stdin=subprocess.PIPE, preexec_fn=os.setsid)
         self.log_fd = self.utf8_wrap(self.log_pid.stdin)
 
-        def signal_handler(signal, frame):
+        def signal_handler(signum, frame):
             # FIXME: we should use Async-signal-safe functions only
-            self.fatal_error("caught signal %d" % signal, ec=(0x80 + signal))
+            self.fatal_error("caught signal %d" % signum, ec=(0x80 + signum))
         for i in [signal.SIGINT, signal.SIGTERM]:
             signal.signal(i, signal_handler)
 
@@ -475,6 +475,8 @@ class ScanProps:
         self.shell_cmd_to_build = None
         self.srpm = None
         self.mock_profile = None
+        self.any_tool = False
+        self.nvr = None
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -663,221 +665,231 @@ def require_file(parser, name):
     if not os.path.isfile(name):
         parser.error("'%s' is not a file" % name)
 
-# load plug-ins
-plugins = PluginManager()
-plugins.load_default_plugins()
-plugin_list = plugins.get_name_list()
+def main():
+    # load plug-ins
+    plugins = PluginManager()
+    plugins.load_default_plugins()
+    plugin_list = plugins.get_name_list()
 
-# list available tools
-# FIXME: --list-available-tools takes precedence over --help and --version
-class ToolsPrinter(argparse.Action):
-    def __init__(self, option_strings, dest=None, default=None, help=None):
-        super(ToolsPrinter, self).__init__(
-            option_strings=option_strings, dest=dest, default=default, nargs=0,
-            help=help)
-    def __call__(self, parser, namespace, values, option_string=None):
-        sys.stdout.write('Tools list: \n')
-        plugins.print_plugin_descriptions()
-        sys.exit(0)
+    # list available tools
+    # FIXME: --list-available-tools takes precedence over --help and --version
+    class ToolsPrinter(argparse.Action):
+        def __init__(self, option_strings, dest=None, default=None, help=None):
+            super(ToolsPrinter, self).__init__(
+                option_strings=option_strings, dest=dest, default=default, nargs=0,
+                help=help)
+        def __call__(self, parser, namespace, values, option_string=None):
+            sys.stdout.write('Tools list: \n')
+            plugins.print_plugin_descriptions()
+            sys.exit(0)
 
-# initialize argument parser
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "SRPM", nargs="?", action=FileNameParser,
-    help="source RPM package to be scanned by static analyzers")
+    # initialize argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "SRPM", nargs="?", action=FileNameParser,
+        help="source RPM package to be scanned by static analyzers")
 
-# define optional arguments
-parser.add_argument(
-    "-r", "--root", dest="mock_profile", default="default",
-    help="mock profile to use (defaults to mock's default)")
+    # define optional arguments
+    parser.add_argument(
+        "-r", "--root", dest="mock_profile", default="default",
+        help="mock profile to use (defaults to mock's default)")
 
-parser.add_argument(
-    "-t", "--tools", action="append", default=[],
-    help="comma-spearated list of tools to enable \
+    parser.add_argument(
+        "-t", "--tools", action="append", default=[],
+        help="comma-spearated list of tools to enable \
 (use --list-available-tools to see the list of available tools)")
 
-parser.add_argument(
-    "-a", "--all-tools", action="store_true",
-    help="enable all available tools \
+    parser.add_argument(
+        "-a", "--all-tools", action="store_true",
+        help="enable all available tools \
 (use --list-available-tools to see the list of available tools)")
 
-parser.add_argument(
-    "-l", "--list-available-tools", action=ToolsPrinter,
-    help="list available tools and exit")
+    parser.add_argument(
+        "-l", "--list-available-tools", action=ToolsPrinter,
+        help="list available tools and exit")
 
-parser.add_argument(
-    "--install", dest="list_of_pkgs",
-    help="space-separated list of packages to install into the chroot")
+    parser.add_argument(
+        "--install", dest="list_of_pkgs",
+        help="space-separated list of packages to install into the chroot")
 
-parser.add_argument(
-    "-o", "--output",
-    help="name of the tarball or directory to put the results to")
+    parser.add_argument(
+        "-o", "--output",
+        help="name of the tarball or directory to put the results to")
 
-parser.add_argument(
-    "-f", "--force", action="store_true",
-    help="overwrite the resulting file or directory if it exists already")
+    parser.add_argument(
+        "-f", "--force", action="store_true",
+        help="overwrite the resulting file or directory if it exists already")
 
-parser.add_argument(
-    "-j", "--jobs", type=int, default=default_jobs_cnt,
-    help="maximal number of jobs running in parallel (passed to 'make')")
+    parser.add_argument(
+        "-j", "--jobs", type=int, default=default_jobs_cnt,
+        help="maximal number of jobs running in parallel (passed to 'make')")
 
-parser.add_argument(
-    "--cswrap-timeout", type=int, default=default_cswrap_timeout,
-    help="maximal amount of time taken by analysis of a single module [s]")
+    parser.add_argument(
+        "--cswrap-timeout", type=int, default=default_cswrap_timeout,
+        help="maximal amount of time taken by analysis of a single module [s]")
 
-parser.add_argument(
-    "-U", "--embed-context", type=int, default=3,
-    help="embed a number of lines of context from the source file for the \
+    parser.add_argument(
+        "-U", "--embed-context", type=int, default=3,
+        help="embed a number of lines of context from the source file for the \
 key event (defaults to 3).")
 
-parser.add_argument(
-    "-k", "--keep-going", action="store_true",
-    help="continue as much as possible after an error")
+    parser.add_argument(
+        "-k", "--keep-going", action="store_true",
+        help="continue as much as possible after an error")
 
-parser.add_argument(
-    "--skip-init", action="store_true",
-    help="do not run 'mock --init' before the scan \
+    parser.add_argument(
+        "--skip-init", action="store_true",
+        help="do not run 'mock --init' before the scan \
 (may lead to unpredictable scan results)")
 
-parser.add_argument(
-    "--no-clean", action="store_true",
-    help="do not clean chroot when it becomes unused")
+    parser.add_argument(
+        "--no-clean", action="store_true",
+        help="do not clean chroot when it becomes unused")
 
-parser.add_argument(
-    "--no-scan", action="store_true",
-    help="do not analyze any package, just check versions of the analyzers")
+    parser.add_argument(
+        "--no-scan", action="store_true",
+        help="do not analyze any package, just check versions of the analyzers")
 
-csmock.common.util.add_paired_flag(
-    parser, "print-defects",
-    help="print the resulting list of defects (default if connected to a tty)")
+    csmock.common.util.add_paired_flag(
+        parser, "print-defects",
+        help="print the resulting list of defects (default if connected to a tty)")
 
-parser.add_argument(
-    "--base-srpm",
-    help="perform a differential scan against the specified base pacakge")
+    parser.add_argument(
+        "--base-srpm",
+        help="perform a differential scan against the specified base pacakge")
 
-parser.add_argument(
-    "--base-root", dest="base_mock_profile",
-    help="mock profile to use for the base scan (use only with --base-srpm)")
+    parser.add_argument(
+        "--base-root", dest="base_mock_profile",
+        help="mock profile to use for the base scan (use only with --base-srpm)")
 
-# --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
-group = parser.add_mutually_exclusive_group()
-group.add_argument(
-    "--skip-patches", action="store_true",
-    help="skip patches not annotated by %%{?_rawbuild} (vanilla build)")
-group.add_argument(
-    "--diff-patches", action="store_true",
-    help="scan with/without patches and diff the lists of defects")
-group.add_argument(
-    "-c", "--shell-cmd",
-    help="use shell command to build the given tarball (instead of SRPM)")
+    # --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--skip-patches", action="store_true",
+        help="skip patches not annotated by %%{?_rawbuild} (vanilla build)")
+    group.add_argument(
+        "--diff-patches", action="store_true",
+        help="scan with/without patches and diff the lists of defects")
+    group.add_argument(
+        "-c", "--shell-cmd",
+        help="use shell command to build the given tarball (instead of SRPM)")
 
-# needed for help2man
-parser.add_argument(
-    "--version", action=VersionPrinter,
-    help="print the version of csmock and exit")
+    # needed for help2man
+    parser.add_argument(
+        "--version", action=VersionPrinter,
+        help="print the version of csmock and exit")
 
-# add command-line options handled by plugins
-plugins.init_parser(parser)
+    # add command-line options handled by plugins
+    plugins.init_parser(parser)
 
-# parse command-line arguments
-args = parser.parse_args()
+    # parse command-line arguments
+    args = parser.parse_args()
 
-if args.print_defects is None:
-    args.print_defects = sys.stdout.isatty()
+    if args.print_defects is None:
+        args.print_defects = sys.stdout.isatty()
 
-# check that only available tools are requested (and enable them)
-for i in args.tools:
-    for j in i.split(","):
-        tool = j.strip()
-        if len(tool) == 0:
-            continue
-        if tool in plugin_list:
-            # explicitly enable this tool
-            plugins.enable(tool)
+    # check that only available tools are requested (and enable them)
+    for i in args.tools:
+        for j in i.split(","):
+            tool = j.strip()
+            if len(tool) == 0:
+                continue
+            if tool in plugin_list:
+                # explicitly enable this tool
+                plugins.enable(tool)
+            else:
+                parser.error("tool not available: %s" % tool)
+
+    if args.all_tools:
+        # enable all available tools
+        plugins.enable_all()
+
+    output = args.output
+    if args.SRPM is None:
+        if args.no_scan:
+            if output is None:
+                parser.error("unable to infer --output (despite --no-scan was given)")
         else:
-            parser.error("tool not available: %s" % tool)
+            parser.error("no SRPM (or tarball) specified on the command line")
 
-if args.all_tools:
-    # enable all available tools
-    plugins.enable_all()
+    if args.no_scan and args.shell_cmd is not None:
+        parser.error("--shell-cmd makes no sense with --no-scan")
 
-output = args.output
-if args.SRPM is None:
-    if args.no_scan:
-        if output is None:
-            parser.error("unable to infer --output (despite --no-scan was given)")
+    if args.base_srpm is None:
+        if args.base_mock_profile is not None:
+            parser.error("--base-root makes no sense without --base-srpm")
     else:
-        parser.error("no SRPM (or tarball) specified on the command line")
+        if args.diff_patches:
+            parser.error("options --diff-patches and --base-scan are mutually exclusive")
 
-if args.no_scan and args.shell_cmd is not None:
-    parser.error("--shell-cmd makes no sense with --no-scan")
+    props = ScanProps()
+    props.cswrap_timeout        = args.cswrap_timeout
+    props.keep_going            = args.keep_going
+    props.no_scan               = args.no_scan
+    props.print_defects         = args.print_defects
+    props.shell_cmd_to_build    = args.shell_cmd
+    props.srpm                  = args.SRPM
+    props.base_srpm             = args.base_srpm
 
-if args.base_srpm is None:
-    if args.base_mock_profile is not None:
-        parser.error("--base-root makes no sense without --base-srpm")
-else:
+    if 0 < args.embed_context:
+        # we need 'csgrep --embed-context' to work in the chroot for --embed-context
+        props.install_opt_pkgs += ["csdiff >= 1.2.1"]
+
+    # initialize the %{_smp_mflags} RPM macro
+    mflags_rpmm = "_smp_mflags"
+    mflags_rpmm += " -j%d" % args.jobs
+    if props.keep_going:
+        mflags_rpmm += " -k"
+    props.rpm_opts += ["--define", mflags_rpmm]
+
+    # make sure that we have a configuration for the selected mock profile
+    props.mock_profile = args.mock_profile
+    require_file(parser, "/etc/mock/%s.cfg" % props.mock_profile)
+    if args.base_mock_profile is None:
+        props.base_mock_profile = props.mock_profile
+    else:
+        props.base_mock_profile = args.base_mock_profile
+        require_file(parser, "/etc/mock/%s.cfg" % props.base_mock_profile)
+
+    if args.list_of_pkgs is not None:
+        # append the list of packages to install specified on command-line
+        props.install_pkgs += args.list_of_pkgs.split()
+
+    if not props.no_scan:
+        # make sure that 'srpm' is a file (it can be a tar archive instead of SRPM)
+        require_file(parser, props.srpm)
+
+    if props.srpm is not None:
+        # resolve NVR
+        srpm_base = os.path.basename(props.srpm)
+        if props.shell_cmd_to_build is None:
+            props.nvr = re.sub("\.src\.rpm$", "", srpm_base)
+        else:
+            props.nvr = re.sub("\.tar$", "", re.sub("\.[^.]*$", "", srpm_base))
+
+    # resolve name of the file/dir we are going to store the results to
+    if args.output is None:
+        output = props.nvr + ".tar.xz"
+    output = os.path.realpath(output)
+
+    # FIXME: TOCTOU race
+    if os.path.exists(output) and not args.force:
+        parser.error("'%s' already exists, use --force to proceed" % output)
+
+    # poll plug-ins to reflect themselves in ScanProps
+    plugins.handle_args(parser, args, props)
+    props.any_tool = (0 < plugins.num_enabled())
+
     if args.diff_patches:
-        parser.error("options --diff-patches and --base-scan are mutually exclusive")
-
-props = ScanProps()
-props.cswrap_timeout        = args.cswrap_timeout
-props.keep_going            = args.keep_going
-props.no_scan               = args.no_scan
-props.print_defects         = args.print_defects
-props.shell_cmd_to_build    = args.shell_cmd
-props.srpm                  = args.SRPM
-props.base_srpm             = args.base_srpm
-
-if 0 < args.embed_context:
-    # we need 'csgrep --embed-context' to work in the chroot for --embed-context
-    props.install_opt_pkgs += ["csdiff >= 1.2.1"]
-
-# initialize the %{_smp_mflags} RPM macro
-mflags_rpmm = "_smp_mflags"
-mflags_rpmm += " -j%d" % args.jobs
-if props.keep_going:
-    mflags_rpmm += " -k"
-props.rpm_opts += ["--define", mflags_rpmm]
-
-# make sure that we have a configuration for the selected mock profile
-props.mock_profile = args.mock_profile
-require_file(parser, "/etc/mock/%s.cfg" % props.mock_profile)
-if args.base_mock_profile is None:
-    props.base_mock_profile = props.mock_profile
-else:
-    props.base_mock_profile = args.base_mock_profile
-    require_file(parser, "/etc/mock/%s.cfg" % props.base_mock_profile)
-
-if args.list_of_pkgs is not None:
-    # append the list of packages to install specified on command-line
-    props.install_pkgs += args.list_of_pkgs.split()
-
-if not props.no_scan:
-    # make sure that 'srpm' is a file (it can be a tar archive instead of SRPM)
-    require_file(parser, props.srpm)
-
-if props.srpm is not None:
-    # resolve NVR
-    srpm_base = os.path.basename(props.srpm)
-    if props.shell_cmd_to_build is None:
-        nvr = re.sub("\.src\.rpm$", "", srpm_base)
+        ec = do_diff_scan(props, output, args, diff_patches=True)
+    elif args.base_srpm is not None:
+        ec = do_diff_scan(props, output, args, diff_patches=False)
     else:
-        nvr = re.sub("\.tar$", "", re.sub("\.[^.]*$", "", srpm_base))
+        ec = do_scan(props, output, args, args.skip_patches)
 
-# resolve name of the file/dir we are going to store the results to
-if args.output is None:
-    output = nvr + ".tar.xz"
-output = os.path.realpath(output)
+    sys.exit(ec)
 
-# FIXME: TOCTOU race
-if os.path.exists(output) and not args.force:
-    parser.error("'%s' already exists, use --force to proceed" % output)
-
-# poll plug-ins to reflect themselves in ScanProps
-plugins.handle_args(parser, args, props)
-any_tool = (0 < plugins.num_enabled())
-
-def do_scan(props, output, skip_patches):
+def do_scan(props, output, args, skip_patches):
     if skip_patches:
         props.copy_in_files += [patch_rawbuild]
         props.rpm_opts += rawbuild_rpm_opts
@@ -886,7 +898,7 @@ def do_scan(props, output, skip_patches):
         with ScanResults(output, props.keep_going) as results:
             results.ini_writer.append("mock-config", props.mock_profile)
 
-            if not any_tool:
+            if not props.any_tool:
                 # no tool enabled
                 results.error("No tools are enabled, only trying to build \
 the package.  Use --tools or --all-tools to enable them!\n", ec=0)
@@ -909,6 +921,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     spec_in = "/builddir/build/SPECS/%s" % spec
 
                 # copy the given SRPM into our tmp dir
+                srpm_base = os.path.basename(props.srpm)
                 srpm_dup = "%s/%s" % (results.tmpdir, srpm_base)
                 shutil.copyfile(props.srpm, srpm_dup)
                 props.copy_in_files += [srpm_dup]
@@ -956,7 +969,7 @@ cd /builddir/build/BUILD || exit $?\n\
 cd %%s*/ || cd *\n\
 %%s' '%s' '%s' | tee '%s' >&2\n"
                     results.exec_cmd(
-                        cmd_tpl % (nvr, props.shell_cmd_to_build, build_script),
+                        cmd_tpl % (props.nvr, props.shell_cmd_to_build, build_script),
                         shell=True)
                     props.copy_in_files += [build_script]
 
@@ -1106,29 +1119,29 @@ cd %%s*/ || cd *\n\
     except FatalError as error:
         return error.ec
 
-def do_diff_scan(props, output, skip_patches, diff_patches):
+def do_diff_scan(props, output, args, diff_patches):
     try:
         with ScanResults(output, props.keep_going, create_dbgdir=False) as results:
             run0_props = copy.deepcopy(props)
             csdiff = "csdiff"
             if diff_patches:
                 # we are looking for defects in patches
-                assert not skip_patches
-                title = "%s - Defects in Patches" % nvr
+                assert not args.skip_patches
+                title = "%s - Defects in Patches" % props.nvr
             else:
                 # this is a version-diff-build
                 run0_props.srpm         = run0_props.base_srpm
                 run0_props.mock_profile = run0_props.base_mock_profile
                 csdiff += " --ignore-path"
-                title = "%s - Defects not detected in %s" % (nvr, props.base_srpm)
+                title = "%s - Defects not detected in %s" % (props.nvr, props.base_srpm)
 
             run0 = "%s/run0" % results.resdir
-            ec = do_scan(run0_props, run0, skip_patches=(skip_patches or diff_patches))
+            ec = do_scan(run0_props, run0, args, skip_patches=(args.skip_patches or diff_patches))
             if 0 != ec:
                 results.error("base scan failed", ec=ec)
 
             run1 = "%s/run1" % results.resdir
-            ec = do_scan(props, run1, skip_patches=skip_patches)
+            ec = do_scan(props, run1, args, skip_patches=args.skip_patches)
             if 0 != ec:
                 results.error("regular scan failed", ec=ec)
 
@@ -1158,11 +1171,4 @@ def do_diff_scan(props, output, skip_patches, diff_patches):
     except FatalError as error:
         return error.ec
 
-if args.diff_patches:
-    ec = do_diff_scan(props, output, args.skip_patches, diff_patches=True)
-elif args.base_srpm is not None:
-    ec = do_diff_scan(props, output, args.skip_patches, diff_patches=False)
-else:
-    ec = do_scan(props, output, args.skip_patches)
-
-sys.exit(ec)
+main()
