@@ -32,12 +32,12 @@ add_flags_by_level_cxx_only = {
     2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
 
 def serialize_flags(flags):
-    str = ""
+    out = ""
     for f in flags:
-        if 0 < len(str):
-            str += ":"
-        str += f
-    return str
+        if 0 < len(out):
+            out += ":"
+        out += f
+    return out
 
 class FlagsMatrix:
     def __init__(self):

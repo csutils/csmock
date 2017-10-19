@@ -220,7 +220,7 @@ class ScanResults:
         self.ini_writer = IniWriter(self)
         return self
 
-    def __exit__(self, type, value, bt):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.ini_writer.close()
         if hasattr(self, "p") and self.p.returncode is None:
             # FIXME: TOCTOU race
@@ -282,7 +282,7 @@ class ScanResults:
             os.kill(os.getpid(), rv - 128)
         return rv
 
-    def get_cmd_output(self, cmd, input=None, shell=True):
+    def get_cmd_output(self, cmd, shell=True):
         self.p = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=self.log_fd, shell=shell)
         (out, _) = self.p.communicate()
@@ -380,7 +380,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
         return self
 
-    def __exit__(self, type, value, bt):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         cmd = "test -r '%s' && test %d = \"$(<%s)\" && rm -f '%s'" % (
             self.lock_file, self.pid, self.lock_file, self.lock_file)
         os.system(cmd)
