@@ -253,9 +253,9 @@ class ScanResults:
 
     def error(self, msg, ec=1, err_prefix=""):
         self.print_with_ts("%serror: %s\n" % (err_prefix, msg), prefix="!!! ")
-        if (self.ec < ec):
+        if self.ec < ec:
             self.ec = ec
-        if not self.keep_going and (0 != self.ec):
+        if not self.keep_going and (self.ec != 0):
             raise FatalError(ec)
 
     def fatal_error(self, msg, ec=1):
@@ -277,7 +277,7 @@ class ScanResults:
             cmd, stdout=self.log_fd, stderr=self.log_fd, shell=shell)
         rv = self.p.wait()
         self.log_fd.write("\n")
-        if 128 <= rv:
+        if rv >= 128:
             # if the child has been signalled, signal self with the same signal
             os.kill(os.getpid(), rv - 128)
         return rv
@@ -343,7 +343,7 @@ if test -e \"$lock_file\"; then \n\
 fi \n\
 echo \"$self_pid\" > \"$lock_file\"'" \
             % (self.meta_lock_file, self.lock_file, self.pid)
-        while (os.system(cmd) != 0):
+        while os.system(cmd) != 0:
             f = open(self.lock_file)
             other_pid = ""
             if f is not None:
@@ -369,13 +369,13 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         # (see <https://bugzilla.redhat.com/1190100> for details)
         self.def_cmd += ["--plugin-option=tmpfs:keep_mounted=True"]
 
-        if (self.results.get_cmd_output("%s --help | grep package_state" % mock)[0] == 0):
+        if self.results.get_cmd_output("%s --help | grep package_state" % mock)[0] == 0:
             self.def_cmd += ["--disable-plugin=package_state"]
 
         # workaround for bug https://bugzilla.redhat.com/1166609
         cmd = "script -aefqc \"echo test\" /dev/null 2>/dev/null"
         (ec, out) = self.results.get_cmd_output(cmd)
-        if (ec == 0 and out.strip() == "test"):
+        if ec == 0 and out.strip() == "test":
             self.emul_pty = True
 
         return self
@@ -653,7 +653,7 @@ class VersionPrinter(argparse.Action):
 # provide a more user-friendly error message in case a plug-in is not installed
 class FileNameParser(argparse.Action):
     def __call__(self, parser, namespace, val, os=None):
-        if (isinstance(val, str) and val.startswith("--")):
+        if isinstance(val, str) and val.startswith("--"):
             parser.error("File name '%s' starts with '--', which looks like \
 option.  Are you sure, you have necessary plug-ins installed?  If it really \
 is a file name, please use the './' prefix." % val)
@@ -831,7 +831,7 @@ key event (defaults to 3).")
     props.srpm                  = args.SRPM
     props.base_srpm             = args.base_srpm
 
-    if 0 < args.embed_context:
+    if args.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
         props.install_opt_pkgs += ["csdiff >= 1.2.1"]
 
@@ -878,7 +878,7 @@ key event (defaults to 3).")
 
     # poll plug-ins to reflect themselves in ScanProps
     plugins.handle_args(parser, args, props)
-    props.any_tool = (0 < plugins.num_enabled())
+    props.any_tool = (plugins.num_enabled() > 0)
 
     if args.diff_patches:
         ec = do_diff_scan(props, output, args, diff_patches=True)
@@ -911,7 +911,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
             if not props.no_scan:
                 if props.shell_cmd_to_build is None:
                     # check the given SRPM
-                    if (results.get_cmd_output("rpm -pq '%s'" % props.srpm)[0] != 0):
+                    if results.get_cmd_output("rpm -pq '%s'" % props.srpm)[0] != 0:
                         results.fatal_error("failed to open SRPM: %s" % props.srpm)
                     (ec, spec) = results.get_cmd_output(
                         "rpm -lpq '%s' | grep '\.spec$'" % props.srpm)
@@ -956,7 +956,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 mock.init_and_install(props.install_pkgs)
 
                 # install optional packages (if any)
-                if 0 < len(props.install_opt_pkgs):
+                if props.install_opt_pkgs:
                     mock.exec_mock_cmd(["--install"] + props.install_opt_pkgs)
                     # just to update rpm-list-mock.txt
                     find_missing_pkgs([], results, mock)
@@ -1017,7 +1017,7 @@ cd %%s*/ || cd *\n\
                     # make the unpacked contents accessible (if the maintainer did not)
                     mock.exec_chroot_cmd("chmod -R +r /builddir/build")
 
-                    if (ec != 0):
+                    if ec != 0:
                         results.error("%prep failed", ec=ec)
 
                     if props.shell_cmd_to_build is None:
@@ -1035,7 +1035,7 @@ cd %%s*/ || cd *\n\
                     build_cmd = props.wrap_shell_cmd_by_env(build_cmd)
 
                     ec = mock.exec_mockbuild_cmd(build_cmd)
-                    if (ec != 0):
+                    if ec != 0:
                         results.error("%build failed", ec=ec)
 
                     if props.need_rpm_bi:
@@ -1048,7 +1048,7 @@ cd %%s*/ || cd *\n\
                         cmd = props.wrap_shell_cmd_by_env(cmd)
 
                         ec = mock.exec_mockbuild_cmd(cmd)
-                        if (ec != 0):
+                        if ec != 0:
                             results.error("%install failed", ec=ec)
                         props.result_filters = ["sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"] \
                                 + props.result_filters
@@ -1089,19 +1089,19 @@ cd %%s*/ || cd *\n\
 > '%s'" % (cwe_list_file, ini_file, results.dbgdir_uni, all_file)
                 results.exec_cmd(cmd, shell=True)
 
-                if 0 < args.embed_context:
+                if args.embed_context > 0:
                     # embed context lines from source program files
                     tmp_file = "%s.tmp" % all_file
                     cmd = strlist_to_shell_cmd(
                         mock.get_mock_cmd(
                             ["--shell", "csgrep --mode=json --embed-context %d" % args.embed_context]))
                     cmd += " < '%s' > '%s'" % (all_file, tmp_file)
-                    if (0 == results.exec_cmd(cmd, shell=True)):
+                    if results.exec_cmd(cmd, shell=True) == 0:
                         shutil.move(tmp_file, all_file)
 
                 if not args.no_clean:
                     # clean up thhe mock root
-                    if (mock.exec_mock_cmd(["--clean"]) != 0):
+                    if mock.exec_mock_cmd(["--clean"]) != 0:
                         results.error("failed to clean mock profile", ec=0)
 
             # we are done with mock
@@ -1137,20 +1137,20 @@ def do_diff_scan(props, output, args, diff_patches):
 
             run0 = "%s/run0" % results.resdir
             ec = do_scan(run0_props, run0, args, skip_patches=(args.skip_patches or diff_patches))
-            if 0 != ec:
+            if ec != 0:
                 results.error("base scan failed", ec=ec)
 
             run1 = "%s/run1" % results.resdir
             ec = do_scan(props, run1, args, skip_patches=args.skip_patches)
-            if 0 != ec:
+            if ec != 0:
                 results.error("regular scan failed", ec=ec)
 
             # diff and process fixed defects
             run0_file = "%s/scan-results.js" % run0
             run1_file = "%s/scan-results.js" % run1
             js_file_fixed = "%s/scan-results-fixed.js" % results.resdir
-            if 0 != results.exec_cmd("%s --fixed %s %s > %s" \
-                    % (csdiff, run0_file, run1_file, js_file_fixed), shell=True):
+            cmd = "%s --fixed %s %s > %s" % (csdiff, run0_file, run1_file, js_file_fixed)
+            if results.exec_cmd(cmd, shell=True) != 0:
                 results.error("csdiff --fixed failed")
             transform_results(js_file_fixed, results)
 
@@ -1161,8 +1161,9 @@ def do_diff_scan(props, output, args, diff_patches):
 
             # diff and process added defects
             js_file = "%s/scan-results.js" % results.resdir
-            if 0 != results.exec_cmd("%s %s %s | cslinker --inifile %s - > %s" \
-                    % (csdiff, run0_file, run1_file, ini_file, js_file), shell=True):
+            cmd_tpl = "%s %s %s | cslinker --inifile %s - > %s"
+            cmd = cmd_tpl % (csdiff, run0_file, run1_file, ini_file, js_file)
+            if results.exec_cmd(cmd, shell=True) != 0:
                 results.error("csdiff failed")
             finalize_results(js_file, results, props.print_defects)
 

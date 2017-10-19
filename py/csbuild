@@ -431,7 +431,7 @@ key event (defaults to 3).")
             sw.emit_warning("new defects found!")
 
     res_added = "%s/added.err" % res_dir
-    if args.git_bisect and 0 < os.path.getsize(res_added):
+    if args.git_bisect and os.path.getsize(res_added) > 0:
         # new defects found and we are asked to git-bisect the cause
         res_dir_gb = "%s/git-bisect" % res_dir
         os.mkdir(res_dir_gb)

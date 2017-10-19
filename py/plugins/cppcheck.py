@@ -82,7 +82,7 @@ class Plugin:
         def store_cppcheck_version_hook(results, mock):
             cmd = mock.get_mock_cmd(["--chroot", "cppcheck --version"])
             (rc, verstr) = results.get_cmd_output(cmd, shell=False)
-            if 0 != rc:
+            if rc != 0:
                 return rc
 
             ver = re.sub("^Cppcheck ", "", verstr.strip())
