@@ -23,7 +23,7 @@ def install_default_toolver_hook(props, tool):
     def toolver_by_rpmlist_hook(results, mock):
         cmd = "grep '^%s-[0-9]' %s/rpm-list-mock.txt" % (tool, results.dbgdir)
         (rc, nvr) = results.get_cmd_output(cmd)
-        if 0 != rc:
+        if rc != 0:
             return rc
 
         ver = re.sub("-[0-9].*$", "", re.sub("^%s-" % tool, "", nvr.strip()))

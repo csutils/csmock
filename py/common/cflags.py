@@ -34,7 +34,7 @@ add_flags_by_level_cxx_only = {
 def serialize_flags(flags):
     out = ""
     for f in flags:
-        if 0 < len(out):
+        if out:
             out += ":"
         out += f
     return out

@@ -75,7 +75,7 @@ class Plugin:
             add_cflags += ":" + flag
         for flag in args.gcc_add_cxx_only_flag:
             add_cxxflags += ":" + flag
-        if 0 < len(add_cflags) or 0 < len(add_cxxflags):
+        if add_cflags or add_cxxflags:
             self.enable()
 
         if not self.enabled:
