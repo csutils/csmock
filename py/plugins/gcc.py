@@ -19,12 +19,15 @@ import csmock.common.util
 
 from csmock.common.cflags import flags_by_warning_level
 
+
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x10
 
+
 def flags_by_default():
     return flags_by_warning_level(0)
+
 
 class Plugin:
     def __init__(self):

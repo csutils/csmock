@@ -31,6 +31,7 @@ ADD_FLAGS_BY_LEVEL_C_ONLY = {
 ADD_FLAGS_BY_LEVEL_CXX_ONLY = {
     2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
 
+
 def serialize_flags(flags):
     out = ""
     for f in flags:
@@ -38,6 +39,7 @@ def serialize_flags(flags):
             out += ":"
         out += f
     return out
+
 
 class FlagsMatrix:
     def __init__(self):
@@ -59,6 +61,7 @@ class FlagsMatrix:
         env["CSWRAP_DEL_CFLAGS"]   = serialize_flags(self.del_cflags)
         env["CSWRAP_ADD_CXXFLAGS"] = serialize_flags(self.add_cxxflags)
         env["CSWRAP_DEL_CXXFLAGS"] = serialize_flags(self.del_cxxflags)
+
 
 def flags_by_warning_level(level):
     flags = FlagsMatrix()
