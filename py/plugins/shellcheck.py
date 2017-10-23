@@ -17,6 +17,7 @@
 
 import csmock.common.util
 
+
 RUN_SHELLCHECK_SH = "/usr/share/csmock/scripts/run-shellcheck.sh"
 
 SHELLCHECK_CAPTURE = "/builddir/shellcheck-capture.err"
@@ -25,9 +26,11 @@ FILTER_CMD = "csgrep --quiet '%s' " \
         "| csgrep --invert-match --event '^note$' " \
         "> '%s'"
 
+
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x58
+
 
 class Plugin:
     def __init__(self):

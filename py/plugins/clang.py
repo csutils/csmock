@@ -22,9 +22,11 @@ import subprocess
 # local imports
 import csmock.common.util
 
+
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x30
+
 
 class Plugin:
     def __init__(self):

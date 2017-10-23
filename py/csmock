@@ -36,6 +36,7 @@ import time
 # local imports
 import csmock.common.util
 
+
 CSMOCK_DATADIR = "/usr/share/csmock"
 
 PATCH_RAWBUILD = CSMOCK_DATADIR + "/scripts/patch-rawbuild.sh"
@@ -82,10 +83,12 @@ DEFAULT_RESULT_FILTERS = [
 CSGREP_FINAL_FILTER_ARGS = "--invert-match --event \"internal warning\" \
 --prune-events=1"
 
+
 def current_iso_date():
     now = datetime.datetime.now()
-    return "%04u-%02u-%02u %02u:%02u:%02u" \
-            % (now.year, now.month, now.day, now.hour, now.minute, now.second)
+    return "%04u-%02u-%02u %02u:%02u:%02u" % \
+           (now.year, now.month, now.day, now.hour, now.minute, now.second)
+
 
 def shell_quote(str_in):
     str_out = ""
@@ -101,6 +104,7 @@ def shell_quote(str_in):
             str_out += c
     return "\"" + str_out + "\""
 
+
 def strlist_to_shell_cmd(cmd_in, escape_special=False):
     def translate_one(i):
         if escape_special:
@@ -114,9 +118,11 @@ def strlist_to_shell_cmd(cmd_in, escape_special=False):
         cmd_out += " " + translate_one(i)
     return cmd_out.lstrip()
 
+
 def is_ignored_dep(pkg):
     # we do not install/check this kind of dependencies
     return re.match("^.*rpmlib\\(.*\\)", pkg) is not None
+
 
 def find_missing_pkgs(pkgs, results, mock):
     # dump list of RPMs installed in the chroot (for debugging purposes)
@@ -151,9 +157,11 @@ def find_missing_pkgs(pkgs, results, mock):
             missing += [pkg]
     return missing
 
+
 class FatalError(Exception):
     def __init__(self, ec):
         self.ec = ec
+
 
 class ScanResults:
     def __init__(self, output, keep_going=False, create_dbgdir=True):
@@ -303,6 +311,7 @@ class ScanResults:
         abs_path = "%s/%s" % (self.resdir, rel_path)
         return open(abs_path, "w")
 
+
 class IniWriter:
     def __init__(self, results):
         self.results = results
@@ -329,6 +338,7 @@ class IniWriter:
 
     def append(self, key, value):
         self.write("%s = %s\n" % (key, value))
+
 
 class MockWrapper:
     def __init__(self, results, mock_profile, skip_init=False):
@@ -442,8 +452,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 return True
 
             self.results.error(
-                "hard to install dependencies (%s), still trying..." % \
-                    strlist_to_shell_cmd(missing_deps), ec=0)
+                "hard to install dependencies (%s), still trying..." %
+                strlist_to_shell_cmd(missing_deps), ec=0)
 
             if not scrub_root and not self.skip_init:
                 # try --scrub=root-cache
@@ -459,9 +469,10 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 # no missing dependencies
                 return True
 
-            self.results.error("failed to install dependencies: %s" % \
-                    strlist_to_shell_cmd(missing_deps))
+            self.results.error("failed to install dependencies: %s" %
+                               strlist_to_shell_cmd(missing_deps))
             return False
+
 
 class ScanProps:
     def __init__(self):
@@ -550,6 +561,7 @@ class ScanProps:
         cmd_out += "sh -c %s" % shell_quote(cmd_in)
         return cmd_out
 
+
 class PluginManager:
     def __init__(self):
         self.plug_by_prio = {}
@@ -558,8 +570,8 @@ class PluginManager:
     def try_load(self, modname, path):
         fp, pathname, description = imp.find_module(modname, [path])
         try:
-            module = imp.load_module(modname, fp, pathname, description)
-            plugin = module.Plugin()
+            mod = imp.load_module(modname, fp, pathname, description)
+            plugin = mod.Plugin()
         finally:
             fp.close()
 
@@ -625,6 +637,7 @@ class PluginManager:
                 cnt = cnt + 1
         return cnt
 
+
 def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
     raw_deps = filter(None, deps.split("\n"))
@@ -636,25 +649,28 @@ def deplist_from_srpm(results, srpm):
         deps += [pkg]
     return deps
 
+
 def transform_results(js_file, results):
     err_file  = re.sub("\\.js", ".err",  js_file)
     html_file = re.sub("\\.js", ".html", js_file)
-    results.exec_cmd("csgrep --mode=grep %s '%s' > '%s'" \
-            % (CSGREP_FINAL_FILTER_ARGS, js_file,  err_file), shell=True)
-    results.exec_cmd("csgrep --mode=json %s '%s' | cshtml - > '%s'" \
-            % (CSGREP_FINAL_FILTER_ARGS, js_file, html_file), shell=True)
+    results.exec_cmd("csgrep --mode=grep %s '%s' > '%s'" %
+                     (CSGREP_FINAL_FILTER_ARGS, js_file,  err_file), shell=True)
+    results.exec_cmd("csgrep --mode=json %s '%s' | cshtml - > '%s'" %
+                     (CSGREP_FINAL_FILTER_ARGS, js_file, html_file), shell=True)
     return err_file, html_file
+
 
 # transform scan-results.js to scan-results.{err,html} and write stats
 def finalize_results(js_file, results, print_defects):
     (err_file, _) = transform_results(js_file, results)
     summary_file = "%s/scan-results-summary.txt" % results.resdir
-    cmd = "csgrep --mode=stat %s '%s' | tee '%s'" \
-            % (CSGREP_FINAL_FILTER_ARGS, err_file, summary_file)
+    cmd = "csgrep --mode=stat %s '%s' | tee '%s'" % \
+          (CSGREP_FINAL_FILTER_ARGS, err_file, summary_file)
     ec = results.exec_cmd(cmd, shell=True)
     if print_defects:
         os.system("csgrep '%s'" % err_file)
     return ec
+
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -662,9 +678,11 @@ class VersionPrinter(argparse.Action):
         super(VersionPrinter, self).__init__(
             option_strings=option_strings, dest=dest, default=default, nargs=0,
             help=help)
+
     def __call__(self, parser, namespace, values, option_string=None):
         print("@VERSION@")
         sys.exit(0)
+
 
 # provide a more user-friendly error message in case a plug-in is not installed
 class FileNameParser(argparse.Action):
@@ -676,10 +694,12 @@ is a file name, please use the './' prefix." % val)
         else:
             setattr(namespace, self.dest, val)
 
+
 def require_file(parser, name):
     """Print an error and exit unsuccessfully if 'name' is not a file"""
     if not os.path.isfile(name):
         parser.error("'%s' is not a file" % name)
+
 
 def main():
     # load plug-ins
@@ -694,6 +714,7 @@ def main():
             super(ToolsPrinter, self).__init__(
                 option_strings=option_strings, dest=dest, default=default, nargs=0,
                 help=help)
+
         def __call__(self, parser, namespace, values, option_string=None):
             sys.stdout.write('Tools list: \n')
             plugins.print_plugin_descriptions()
@@ -905,6 +926,7 @@ key event (defaults to 3).")
 
     sys.exit(ec)
 
+
 def do_scan(props, output, args, skip_patches):
     if skip_patches:
         props.copy_in_files += [PATCH_RAWBUILD]
@@ -1066,8 +1088,8 @@ cd %%s*/ || cd *\n\
                         ec = mock.exec_mockbuild_cmd(cmd)
                         if ec != 0:
                             results.error("%install failed", ec=ec)
-                        props.result_filters = ["sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"] \
-                                + props.result_filters
+                        props.result_filters = ["sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"] +\
+                                               props.result_filters
 
                     # execute post-build commands in the chroot
                     for cmd in props.post_build_chroot_cmds:
@@ -1134,6 +1156,7 @@ cd %%s*/ || cd *\n\
 
     except FatalError as error:
         return error.ec
+
 
 def do_diff_scan(props, output, args, diff_patches):
     try:
