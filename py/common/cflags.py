@@ -48,12 +48,12 @@ class FlagsMatrix:
         self.add_cxxflags = set()
         self.del_cxxflags = set()
 
-    def __ior__(a, b):
+    def __ior__(self, b):
         r = FlagsMatrix()
-        r.add_cflags = a.add_cflags | b.add_cflags
-        r.del_cflags = a.del_cflags | b.del_cflags
-        r.add_cxxflags = a.add_cxxflags | b.add_cxxflags
-        r.del_cxxflags = a.del_cxxflags | b.del_cxxflags
+        r.add_cflags = self.add_cflags | b.add_cflags
+        r.del_cflags = self.del_cflags | b.del_cflags
+        r.add_cxxflags = self.add_cxxflags | b.add_cxxflags
+        r.del_cxxflags = self.del_cxxflags | b.del_cxxflags
         return r
 
     def write_to_env(self, env):
