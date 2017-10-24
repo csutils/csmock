@@ -32,6 +32,7 @@ import git
 from csmock.common.cflags import flags_by_warning_level
 from csmock.common.util   import add_paired_flag
 
+
 CSBUILD_TRAVIS_MIRROR = \
         "deb https://kdudka.fedorapeople.org/csbuild trusty contrib"
 
@@ -48,6 +49,7 @@ DEFAULT_EMBED_CONTEXT = 3
 DEFAULT_GCC_WARNING_LEVEL = 2
 
 TOOL_NAME = sys.argv[0]
+
 
 class StatusWriter:
     def __init__(self):
@@ -68,21 +70,21 @@ class StatusWriter:
         self.color_opt = "--color"
 
     def die(self, msg, ec=1):
-        sys.stderr.write("%s: %sfatal error%s: %s\n" \
-                % (TOOL_NAME, self.color_r, self.color_n, msg))
+        sys.stderr.write("%s: %sfatal error%s: %s\n" %
+                         (TOOL_NAME, self.color_r, self.color_n, msg))
         sys.exit(ec)
 
     def emit_warning(self, msg):
-        sys.stderr.write("%s: %swarning%s: %s\n" \
-                % (TOOL_NAME, self.color_y, self.color_n, msg))
+        sys.stderr.write("%s: %swarning%s: %s\n" %
+                         (TOOL_NAME, self.color_y, self.color_n, msg))
 
     def emit_status(self, msg):
-        sys.stderr.write("%s: %sstatus%s: %s\n" \
-                % (TOOL_NAME, self.color_g, self.color_n, msg))
+        sys.stderr.write("%s: %sstatus%s: %s\n" %
+                         (TOOL_NAME, self.color_g, self.color_n, msg))
 
     def print_stats(self, err_file):
-        os.system("csgrep --mode=stat %s %s \"%s\"" \
-            % (self.csgrep_args, self.color_opt, err_file))
+        os.system("csgrep --mode=stat %s %s \"%s\"" %
+                  (self.csgrep_args, self.color_opt, err_file))
 
     def print_defects_if_any(self, err_file, title):
         if os.path.getsize(err_file) <= 0:
@@ -92,13 +94,15 @@ class StatusWriter:
         print("\n%s%s\n%s%s" % (self.color_b, title, hline, self.color_n))
 
         # pass the --[no-]color option to csgrep
-        os.system("csgrep %s %s \"%s\"" \
-                % (self.csgrep_args, self.color_opt, err_file))
+        os.system("csgrep %s %s \"%s\"" %
+                  (self.csgrep_args, self.color_opt, err_file))
 
 # FIXME: global instance
 sw = StatusWriter()
 
 # FIXME: copy/paste from csmock
+
+
 def shell_quote(str_in):
     str_out = ""
     for i in range(0, len(str_in)):
@@ -110,6 +114,7 @@ def shell_quote(str_in):
         else:
             str_out += c
     return "\"" + str_out + "\""
+
 
 def scan_or_die(cmd, what, fail_exit_code=1):
     sw.emit_status("running %s..." % what)
@@ -129,6 +134,7 @@ def scan_or_die(cmd, what, fail_exit_code=1):
     sw.emit_status("%s succeeded" % what)
     return status
 
+
 def stable_commit_ref(repo, ref):
     if hasattr(repo, "rev_parse"):
         commit = repo.rev_parse(ref)
@@ -137,7 +143,7 @@ def stable_commit_ref(repo, ref):
         p = subprocess.Popen(["git", "rev-parse", ref], stdout=subprocess.PIPE)
         (out, _) = p.communicate()
         if p.returncode != 0:
-            raise "git rev-parse failed"
+            raise Exception("git rev-parse failed")
         commit = out.decode("utf8").strip()
 
     if "HEAD" in ref:
@@ -148,9 +154,11 @@ def stable_commit_ref(repo, ref):
 
     return ref
 
+
 def do_git_checkout(repo, commit):
     sw.emit_status("checking out %s" % commit)
     repo.git.checkout(commit)
+
 
 def encode_paired_flag(args, flag):
     value = getattr(args, flag.replace("-", "_"))
@@ -159,6 +167,7 @@ def encode_paired_flag(args, flag):
     if value:
         return " --" + flag
     return " --no-" + flag
+
 
 def encode_csbuild_args(args):
     cmd = " -c %s" % shell_quote(args.build_cmd)
@@ -188,14 +197,18 @@ def encode_csbuild_args(args):
     cmd += encode_paired_flag(args, "color")
     return cmd
 
+
 def print_yml_pair(name, value):
     print("%s: %s" % (name, value))
+
 
 def print_yml_section(name):
     print("\n%s:" % name)
 
+
 def print_yml_item(item):
     print("    - %s" % item)
+
 
 def gen_travis_yml(args):
     print_yml_pair("language", "cpp")
@@ -206,8 +219,8 @@ def gen_travis_yml(args):
     if "https://" in CSBUILD_TRAVIS_MIRROR:
         print_yml_item("sudo apt-get update -qq")
         print_yml_item("sudo apt-get install -qq apt-transport-https")
-    print_yml_item("echo \"%s\" | sudo tee -a /etc/apt/sources.list" \
-            % CSBUILD_TRAVIS_MIRROR)
+    print_yml_item("echo \"%s\" | sudo tee -a /etc/apt/sources.list" %
+                   CSBUILD_TRAVIS_MIRROR)
     print_yml_item("sudo apt-get update -qq")
 
     # install
@@ -220,11 +233,12 @@ def gen_travis_yml(args):
     if args.prep_cmd is not None:
         print_yml_item(args.prep_cmd)
     print_yml_item("test -z \"$TRAVIS_COMMIT_RANGE\" \
-|| csbuild --git-commit-range \"$TRAVIS_COMMIT_RANGE\"" \
-            + encode_csbuild_args(args))
+|| csbuild --git-commit-range \"$TRAVIS_COMMIT_RANGE\"" +
+                   encode_csbuild_args(args))
 
     # all OK
     return 0
+
 
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
@@ -232,9 +246,11 @@ class VersionPrinter(argparse.Action):
         super(VersionPrinter, self).__init__(
             option_strings=option_strings, dest=dest, default=default, nargs=0,
             help=help)
+
     def __call__(self, parser, namespace, values, option_string=None):
         print("@VERSION@")
         sys.exit(0)
+
 
 def main():
     # initialize argument parser
@@ -352,8 +368,8 @@ key event (defaults to 3).")
             old_commit = stable_commit_ref(repo, tokenized[0])
             new_commit = stable_commit_ref(repo, tokenized[1])
         except:
-            parser.error("failed to resolve the range of git revisions: " \
-                    + args.git_commit_range)
+            parser.error("failed to resolve the range of git revisions: " +
+                         args.git_commit_range)
 
         if hasattr(repo.is_dirty, "__call__") and repo.is_dirty():
             sw.emit_warning("git repository is dirty: .")

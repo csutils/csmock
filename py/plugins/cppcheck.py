@@ -19,9 +19,11 @@ import os
 import re
 import subprocess
 
+
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x20
+
 
 class Plugin:
     def __init__(self):

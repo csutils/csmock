@@ -17,6 +17,7 @@
 
 import csmock.common.util
 
+
 RUN_PYLINT_SH = "/usr/share/csmock/scripts/run-pylint.sh"
 
 PYLINT_CAPTURE = "/builddir/pylint-capture.err"
@@ -25,9 +26,11 @@ FILTER_CMD = "csgrep --quiet '%s' " \
         "| csgrep --event '%s' " \
         "> '%s'"
 
+
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x50
+
 
 class Plugin:
     def __init__(self):
