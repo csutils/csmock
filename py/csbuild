@@ -143,7 +143,7 @@ def stable_commit_ref(repo, ref):
         p = subprocess.Popen(["git", "rev-parse", ref], stdout=subprocess.PIPE)
         (out, _) = p.communicate()
         if p.returncode != 0:
-            raise "git rev-parse failed"
+            raise Exception("git rev-parse failed")
         commit = out.decode("utf8").strip()
 
     if "HEAD" in ref:
