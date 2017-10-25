@@ -48,14 +48,6 @@ class FlagsMatrix:
         self.add_cxxflags = set()
         self.del_cxxflags = set()
 
-    def __ior__(self, b):
-        r = FlagsMatrix()
-        r.add_cflags = self.add_cflags | b.add_cflags
-        r.del_cflags = self.del_cflags | b.del_cflags
-        r.add_cxxflags = self.add_cxxflags | b.add_cxxflags
-        r.del_cxxflags = self.del_cxxflags | b.del_cxxflags
-        return r
-
     def write_to_env(self, env):
         env["CSWRAP_ADD_CFLAGS"]   = serialize_flags(self.add_cflags)
         env["CSWRAP_DEL_CFLAGS"]   = serialize_flags(self.del_cflags)

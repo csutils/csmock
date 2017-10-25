@@ -25,14 +25,10 @@ class PluginProps:
         self.pass_priority = 0x10
 
 
-def flags_by_default():
-    return flags_by_warning_level(0)
-
-
 class Plugin:
     def __init__(self):
         self.enabled = False
-        self.flags = flags_by_default()
+        self.flags = flags_by_warning_level(0)
         self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
 
     def get_props(self):
@@ -66,7 +62,7 @@ class Plugin:
     def handle_args(self, parser, args, props):
         if args.gcc_warning_level is not None:
             self.enable()
-            self.flags |= flags_by_warning_level(args.gcc_warning_level)
+            self.flags = flags_by_warning_level(args.gcc_warning_level)
 
         # serialize custom compiler flags
         add_cflags = ""
