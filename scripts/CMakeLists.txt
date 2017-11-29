@@ -25,6 +25,7 @@ endif()
 if(ENABLE_CSMOCK)
     install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/patch-rawbuild.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}/run-bandit.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-pylint.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-shellcheck.sh
         DESTINATION ${SHARE_INSTALL_PREFIX}/csmock/scripts

@@ -108,6 +108,7 @@ BuildRequires: python-devel
 %endif
 
 Requires: csmock-common                 >= %{version}-%{release}
+Requires: csmock-plugin-bandit          >= %{version}-%{release}
 Requires: csmock-plugin-clang           >= %{version}-%{release}
 Requires: csmock-plugin-cppcheck        >= %{version}-%{release}
 Requires: csmock-plugin-pylint          >= %{version}-%{release}
@@ -150,6 +151,16 @@ Provides: csmock-common(python3) = %{version}-%{release}
 %description -n csmock-common
 This package contains the csmock tool that allows to scan SRPMs by Static
 Analysis tools in a fully automated way.
+
+%package -n csmock-plugin-bandit
+Summary: csmock plug-in providing the support for Bandit.
+Requires: csmock-common >= 1.8.0
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
+
+%description -n csmock-plugin-bandit
+This package contains the bandit plug-in for csmock.
 
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
@@ -240,6 +251,13 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{csmock_python_sitelib}/csmock/plugins/__pycache__/gcc.*
 %endif
 %doc COPYING README
+
+%files -n csmock-plugin-bandit
+%{_datadir}/csmock/scripts/run-bandit.sh
+%{csmock_python_sitelib}/csmock/plugins/bandit.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/bandit.*
+%endif
 
 %files -n csmock-plugin-clang
 %{csmock_python_sitelib}/csmock/plugins/clang.py*
