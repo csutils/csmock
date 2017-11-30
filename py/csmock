@@ -154,7 +154,7 @@ def find_missing_pkgs(pkgs, results, mock):
             continue
         pkg = re.sub(" .*$", "", dep)
         if pkg not in installed:
-            missing += [pkg]
+            missing += [dep]
     return missing
 
 
