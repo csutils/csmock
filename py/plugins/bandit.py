@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Red Hat, Inc.
+# Copyright (C) 2017 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -18,11 +18,11 @@
 import csmock.common.util
 
 
-run_bandit_sh = "/usr/share/csmock/scripts/run-bandit.sh"
+RUN_BANDIT_SH = "/usr/share/csmock/scripts/run-bandit.sh"
 
-bandit_capture = "/builddir/bandit-capture.err"
+BANDIT_CAPTURE = "/builddir/bandit-capture.err"
 
-filter_cmd = "csgrep --quiet '%s' | csgrep --event '%s' > '%s'"
+FILTER_CMD = "csgrep --quiet '%s' | csgrep --event '%s' > '%s'"
 
 
 class PluginProps:
@@ -60,22 +60,22 @@ class Plugin:
         dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(parser, args,
                                                                props, "bandit")
 
-        props.copy_in_files += [run_bandit_sh]
+        props.copy_in_files += [RUN_BANDIT_SH]
 
         # Note: bandit is running on python3, pbr needs git to assert correct version
         props.install_pkgs += ["bandit"]
 
         severity_filter = dict(zip(self._severity_levels, ['-l', '-ll', '-lll']))[args.bandit_severity_filter.upper()]
-        run_cmd = "%s %s %s > %s" % (run_bandit_sh, severity_filter, dirs_to_scan, bandit_capture)
+        run_cmd = "%s %s %s > %s" % (RUN_BANDIT_SH, severity_filter, dirs_to_scan, BANDIT_CAPTURE)
         props.post_build_chroot_cmds += [run_cmd]
-        props.copy_out_files += [bandit_capture]
+        props.copy_out_files += [BANDIT_CAPTURE]
 
         csmock.common.util.install_default_toolver_hook(props, "bandit")
 
         def filter_hook(results):
-            src = results.dbgdir_raw + bandit_capture
+            src = results.dbgdir_raw + BANDIT_CAPTURE
             dst = "%s/bandit-capture.err" % results.dbgdir_uni
-            cmd = filter_cmd % (src, args.bandit_evt_filter, dst)
+            cmd = FILTER_CMD % (src, args.bandit_evt_filter, dst)
             return results.exec_cmd(cmd, shell=True)
 
         props.post_process_hooks += [filter_hook]
