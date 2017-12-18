@@ -55,9 +55,9 @@ DEFAULT_RPM_OPTS = [
     "--define", "check\\\n%%check\\\nexit 0",
     "--define", "libguestfs_runtests 0",
     "--define", "runselftest 0",
-    "--define", "with_docs 0",
     "--define", "with_publican 0",
     "--without", "binfilter",
+    "--without", "docs",
     "--without", "langpacks"]
 
 RAWBUILD_RPM_OPTS = [
