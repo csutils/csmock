@@ -52,7 +52,6 @@ DEFAULT_JOBS_CNT = 13
 DEFAULT_RPM_OPTS = [
     "--define", "_without_testsuite 1",
     "--define", "apidocs 0",
-    "--define", "check\\\n%%check\\\nexit 0",
     "--define", "libguestfs_runtests 0",
     "--define", "runselftest 0",
     "--define", "with_publican 0",
@@ -1078,10 +1077,19 @@ cd %%s*/ || cd *\n\
                         results.error("%build failed", ec=ec)
 
                     if props.need_rpm_bi:
+                        # disable %check while running 'rpmbuild -bi'
+                        rpm_opts = props.rpm_opts
+                        if mock.exec_chroot_cmd("rpmbuild --nocheck") == 0:
+                            rpm_opts += ["--nocheck"]
+                        else:
+                            # fragile compatiblity workaround for older versions of rpm-build,
+                            # known to break if unescaped %check appears in a change log entry
+                            rpm_opts += ["--define", "check\\\n%%check\\\nexit 0"]
+
                         if props.shell_cmd_to_build is not None:
                             results.fatal_error("SRPM is required by a plug-in")
                         cmd = "rpmbuild -bi --nodeps --short-circuit %s %s" \
-                            % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
+                            % (spec_in, strlist_to_shell_cmd(rpm_opts))
 
                         # initialize environment variables according to ScanProps
                         cmd = props.wrap_shell_cmd_by_env(cmd)
