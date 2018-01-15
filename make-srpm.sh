@@ -82,10 +82,9 @@ License:    GPLv3+
 URL:        https://github.com/kdudka/%{name}
 Source0:    https://github.com/kdudka/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.xz
 
-BuildRequires: GitPython
 BuildRequires: cmake
 BuildRequires: help2man
-BuildRequires: python-devel
+
 %if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
 BuildRequires: python-argparse
 %endif
@@ -98,6 +97,8 @@ BuildRequires: python3-devel
 %global csmock_python_executable %{__python3}
 %global csmock_python_sitelib %{python3_sitelib}
 %else
+BuildRequires: GitPython
+BuildRequires: python-devel
 %if 0%{?rhel} && 0%{?rhel} <= 6
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
