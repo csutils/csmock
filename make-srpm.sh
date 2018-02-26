@@ -108,7 +108,6 @@ BuildRequires: python-devel
 %endif
 
 Requires: csmock-common                 >= %{version}-%{release}
-Requires: csmock-plugin-bandit          >= %{version}-%{release}
 Requires: csmock-plugin-clang           >= %{version}-%{release}
 Requires: csmock-plugin-cppcheck        >= %{version}-%{release}
 Requires: csmock-plugin-pylint          >= %{version}-%{release}
