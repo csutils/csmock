@@ -13,7 +13,7 @@ Dependences
 -----------
     * csdiff (non-interactive tools for processing scan results in plain-text)
 
-    * cswrap (generic compiler wrapper using to capture diagnostic messages)
+    * cswrap (generic compiler wrapper that captures diagnostic messages)
 
     * mock (chroot-based tool for building RPMs)
 
@@ -24,7 +24,7 @@ RPM-based Installation
 
     rpmbuild --rebuild ./csmock-*.src.rpm
 
-    sudo yum install ...
+    sudo dnf install ...
 
 
 Documentation
