@@ -107,7 +107,7 @@ RAW_CURR_ERR="${RES_DIR}/raw-current.err"
 if test -n "$COV_INT_DIR" && test -e "${COV_INT_DIR}/emit/"*/emit-db.write-lock
 then
     msg "Running Coverity Analysis..."
-    (set -x; cov-analyze "--dir=${COV_INT_DIR}" \
+    (set -x; cov-analyze "--dir=${COV_INT_DIR}" --security --concurrency \
         && cov-format-errors "--dir=${COV_INT_DIR}" --emacs-style \
         | csgrep --prune-events=1 >> "$RAW_CURR_ERR")
 fi
