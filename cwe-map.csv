@@ -122,6 +122,7 @@
 "CPPCHECK_WARNING","warning[invalidScanfArgType_float]","CWE-686"
 "CPPCHECK_WARNING","warning[invalidScanfArgType_int]","CWE-686"
 "CPPCHECK_WARNING","warning[invalidScanfArgType_s]","CWE-686"
+"CPPCHECK_WARNING","warning[nullPointer]","CWE-476"
 "CPPCHECK_WARNING","warning[pureVirtualCall]","CWE-MAP-NOMATCH"
 "CTOR_DTOR_LEAK","ctor_dtor_leak","CWE-772"
 "DEADCODE","dead_error_begin","CWE-561"
