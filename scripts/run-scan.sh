@@ -97,8 +97,6 @@ RAW_CURR_ERR="${RES_DIR}/raw-current.err"
 (set -x; csgrep --quiet --event 'error|warning' \
     --remove-duplicates "${CSWRAP_CAP_FILE}" \
     | csgrep --invert-match --checker CLANG_WARNING --event error \
-    | csgrep --invert-match --checker CLANG_WARNING \
-        --msg "Value stored to '.*' is never read" \
     | csgrep --invert-match --checker CPPCHECK_WARNING \
         --event 'preprocessorErrorDirective|syntaxError' \
     > "$RAW_CURR_ERR")
