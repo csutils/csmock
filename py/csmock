@@ -975,6 +975,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
             with MockWrapper(results, props.mock_profile, args.skip_init) as mock:
                 if not props.no_scan and props.shell_cmd_to_build is None:
                     # first rebuild the given SRPM
+                    mock.init_and_install([])
 
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
