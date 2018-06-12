@@ -39,6 +39,8 @@ import csmock.common.util
 
 CSMOCK_DATADIR = "/usr/share/csmock"
 
+CHROOT_FIXUPS = CSMOCK_DATADIR + "/scripts/chroot-fixups"
+
 PATCH_RAWBUILD = CSMOCK_DATADIR + "/scripts/patch-rawbuild.sh"
 
 CWE_LIST_FILE = CSMOCK_DATADIR + "/cwe-map.csv"
@@ -480,7 +482,7 @@ class ScanProps:
     def __init__(self):
         self.install_pkgs = []
         self.install_opt_pkgs = []
-        self.copy_in_files = []
+        self.copy_in_files = [CHROOT_FIXUPS]
         self.pre_mock_hooks = []
         self.post_depinst_hooks = []
         self.rpm_opts = DEFAULT_RPM_OPTS
@@ -1036,8 +1038,8 @@ cd %%s*/ || cd *\n\
                         mock.exec_chroot_cmd("chmod -R +r /builddir")
 
                     # run fixups scripts
-                    mock.exec_chroot_cmd("find %s/scripts -name 'fixups-*.sh' \
-| xargs -n1 sh -x" % CSMOCK_DATADIR)
+                    cmd_tpl = "for i in %s/*; do test -x $i && echo $i >&2 && $i; done"
+                    mock.exec_mock_cmd(["--shell", cmd_tpl % CHROOT_FIXUPS])
 
                     if props.shell_cmd_to_build is None:
                         # run %prep phase without pluggin-in any static analyzers

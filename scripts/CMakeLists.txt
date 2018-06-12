@@ -23,6 +23,10 @@ if(ENABLE_CSBUILD)
 endif()
 
 if(ENABLE_CSMOCK)
+    install(DIRECTORY chroot-fixups
+        FILE_PERMISSIONS ${PERM_EXECUTABLE}
+        DESTINATION ${SHARE_INSTALL_PREFIX}/csmock/scripts)
+
     install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/patch-rawbuild.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-bandit.sh

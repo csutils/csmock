@@ -241,6 +241,7 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{_bindir}/csmock
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
+%{_datadir}/csmock/scripts/chroot-fixups
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
 %{csmock_python_sitelib}/csmock/__init__.py*
 %{csmock_python_sitelib}/csmock/common
