@@ -432,6 +432,29 @@ echo \"$self_pid\" > \"$lock_file\"'" \
     def try_install(self, pkgs):
         return (self.exec_mock_cmd(["--install"] + pkgs) == 0)
 
+    def prepare_dnf_in_chroot(self):
+        self.try_install(["dnf"])
+        if find_missing_pkgs(["dnf"], self.results, self):
+            return False
+
+        # dump the contents of config_opts["yum.conf"] from the mock profile
+        # and save it as /etc/dnf/dnf.conf in the chroot
+        # FIXME: use some Python module to parse the conf
+        cmd = "setopt pipefail; { "
+        cmd += "echo 'config_opts = dict()'; "
+        cmd += "echo 'config_opts[\"plugin_conf\"] = dict()'; "
+        cmd += "echo 'config_opts[\"macros\"] = dict()'; "
+        cmd += "cat /etc/mock/%s.cfg; " % self.mock_profile
+        cmd += "echo 'print(config_opts[\"yum.conf\"])'; "
+        cmd += "} | python | "
+        cmd += strlist_to_shell_cmd(self.get_mock_cmd(["--shell", "dd of=/etc/dnf/dnf.conf"]))
+        if (self.results.exec_cmd(cmd, shell=True) != 0):
+            return False
+
+        # copy DNS configuration from host into chroot for dnf to work
+        resconf = "/etc/resolv.conf"
+        return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
+
     def init_and_install(self, pkgs):
         for scrub_root in [False, True]:
             if scrub_root:
@@ -467,11 +490,24 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             for pkg in missing_deps:
                 self.try_install([pkg])
 
-            # check that all dependencies are installed
-            missing_deps = find_missing_pkgs(pkgs, self.results, self)
-            if not missing_deps:
-                # no missing dependencies
-                return True
+            for tried_dnf in [False, True]:
+                # check that all dependencies are installed
+                missing_deps = find_missing_pkgs(pkgs, self.results, self)
+                if not missing_deps:
+                    # no missing dependencies
+                    return True
+
+                if tried_dnf:
+                    break
+                self.results.error(
+                    "hard to install dependencies (%s), still trying..." %
+                    strlist_to_shell_cmd(missing_deps), ec=0)
+
+                # try to install/configure dnf in chroot and run it from there
+                if not self.prepare_dnf_in_chroot():
+                    break
+                cmd = strlist_to_shell_cmd(["dnf", "install"] + missing_deps, escape_special=True)
+                self.exec_chroot_cmd(cmd)
 
             self.results.error("failed to install dependencies: %s" %
                                strlist_to_shell_cmd(missing_deps))
