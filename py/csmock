@@ -429,8 +429,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         cmd = ["--disable-plugin=selinux", "--copyout"] + args
         return self.exec_mock_cmd(cmd)
 
-    def try_install(self, pkg):
-        return self.exec_mock_cmd(["--install", pkg])
+    def try_install(self, pkgs):
+        return (self.exec_mock_cmd(["--install"] + pkgs) == 0)
 
     def init_and_install(self, pkgs):
         for scrub_root in [False, True]:
@@ -449,7 +449,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 return True
 
             # install required packages (all at once)
-            self.exec_mock_cmd(["--install"] + pkgs)
+            self.try_install(pkgs)
             missing_deps = find_missing_pkgs(pkgs, self.results, self)
             if not missing_deps:
                 # no misssing dependencies
@@ -465,7 +465,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
             # try to install the missing packages one by one
             for pkg in missing_deps:
-                self.try_install(pkg)
+                self.try_install([pkg])
 
             # check that all dependencies are installed
             missing_deps = find_missing_pkgs(pkgs, self.results, self)
@@ -1000,7 +1000,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                 # install optional packages (if any)
                 if props.install_opt_pkgs:
-                    mock.exec_mock_cmd(["--install"] + props.install_opt_pkgs)
+                    mock.try_install(props.install_opt_pkgs)
                     # just to update rpm-list-mock.txt
                     find_missing_pkgs([], results, mock)
 
