@@ -1074,7 +1074,7 @@ cd %%s*/ || cd *\n\
                         mock.exec_chroot_cmd("chmod -R +r /builddir")
 
                     # run fixups scripts
-                    cmd_tpl = "for i in %s/*; do test -x $i && echo $i >&2 && $i; done"
+                    cmd_tpl = "for i in %s/*; do test -x $i && echo RUN: $i >&2 && $i; done"
                     mock.exec_mock_cmd(["--shell", cmd_tpl % CHROOT_FIXUPS])
 
                     if props.shell_cmd_to_build is None:
