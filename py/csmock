@@ -440,7 +440,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         # dump the contents of config_opts["yum.conf"] from the mock profile
         # and save it as /etc/dnf/dnf.conf in the chroot
         # FIXME: use some Python module to parse the conf
-        cmd = "setopt pipefail; { "
+        cmd = "set -o pipefail; { "
         cmd += "echo 'config_opts = dict()'; "
         cmd += "echo 'config_opts[\"plugin_conf\"] = dict()'; "
         cmd += "echo 'config_opts[\"macros\"] = dict()'; "
