@@ -693,23 +693,21 @@ def deplist_from_srpm(results, srpm):
 def transform_results(js_file, results):
     err_file  = re.sub("\\.js", ".err",  js_file)
     html_file = re.sub("\\.js", ".html", js_file)
+    stat_file = re.sub("\\.js", "-summary.txt", js_file)
     results.exec_cmd("csgrep --mode=grep %s '%s' > '%s'" %
                      (CSGREP_FINAL_FILTER_ARGS, js_file,  err_file), shell=True)
     results.exec_cmd("csgrep --mode=json %s '%s' | cshtml - > '%s'" %
                      (CSGREP_FINAL_FILTER_ARGS, js_file, html_file), shell=True)
+    results.exec_cmd("csgrep --mode=stat %s '%s' | tee '%s'" % \
+                     (CSGREP_FINAL_FILTER_ARGS, err_file, stat_file), shell=True)
     return err_file, html_file
 
 
 # transform scan-results.js to scan-results.{err,html} and write stats
-def finalize_results(js_file, results, print_defects):
+def finalize_results(js_file, results, props):
     (err_file, _) = transform_results(js_file, results)
-    summary_file = "%s/scan-results-summary.txt" % results.resdir
-    cmd = "csgrep --mode=stat %s '%s' | tee '%s'" % \
-          (CSGREP_FINAL_FILTER_ARGS, err_file, summary_file)
-    ec = results.exec_cmd(cmd, shell=True)
-    if print_defects:
+    if props.print_defects:
         os.system("csgrep '%s'" % err_file)
-    return ec
 
 
 # argparse._VersionAction would write to stderr, which breaks help2man
@@ -1201,7 +1199,7 @@ cd %%s*/ || cd *\n\
             cmd += " | cssort --key=path > '%s'" % js_file
             results.exec_cmd(cmd, shell=True)
 
-            finalize_results(js_file, results, props.print_defects)
+            finalize_results(js_file, results, props)
             return results.ec
 
     except FatalError as error:
@@ -1254,7 +1252,7 @@ def do_diff_scan(props, output, args, diff_patches):
             cmd = cmd_tpl % (csdiff, run0_file, run1_file, ini_file, js_file)
             if results.exec_cmd(cmd, shell=True) != 0:
                 results.error("csdiff failed")
-            finalize_results(js_file, results, props.print_defects)
+            finalize_results(js_file, results, props)
 
             return results.ec
 
