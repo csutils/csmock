@@ -543,6 +543,8 @@ class ScanProps:
         self.base_mock_profile = None
         self.any_tool = False
         self.nvr = None
+        self.imp_checker_set = set()
+        self.imp_csgrep_filters = []
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -703,9 +705,45 @@ def transform_results(js_file, results):
     return err_file, html_file
 
 
+def re_from_checker_set(checker_set):
+    """return operand for the --checker option of csgrep based on checker_set"""
+    chk_re = "^("
+    first = True
+    for chk in checker_set:
+        if first:
+            first = False
+        else:
+            chk_re += "|"
+        chk_re += chk
+    chk_re += ")$"
+    return chk_re
+
+
 # transform scan-results.js to scan-results.{err,html} and write stats
 def finalize_results(js_file, results, props):
     (err_file, _) = transform_results(js_file, results)
+    if props.imp_checker_set:
+        # filter out "important" defects, first based on checkers only
+        cmd = "csgrep '%s' --mode=json --checker '%s'" % \
+                (js_file, re_from_checker_set(props.imp_checker_set))
+
+        # then apply custom per-checker filters
+        for (chk, csgrep_args) in props.imp_csgrep_filters:
+            chk_re = re_from_checker_set(props.imp_checker_set - set([chk]))
+            cmd += " | csdiff <(csgrep '%s' --mode=json --invert-regex --checker '%s' %s) -" \
+                    % (js_file, chk_re, csgrep_args)
+
+        # write the result into *-imp.js
+        imp_js_file = re.sub("\\.js", "-imp.js", js_file)
+        cmd += " > '%s'" % imp_js_file
+
+        # bash is needed to process <(...)
+        cmd = strlist_to_shell_cmd(["bash", "-c", cmd], escape_special=True)
+        results.exec_cmd(cmd, shell=True)
+
+        # generate *-imp.{err,html}
+        transform_results(imp_js_file, results)
+
     if props.print_defects:
         os.system("csgrep '%s'" % err_file)
 
