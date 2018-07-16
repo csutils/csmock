@@ -32,6 +32,23 @@ ADD_FLAGS_BY_LEVEL_CXX_ONLY = {
     2: ["-Wctor-dtor-privacy", "-Woverloaded-virtual"]}
 
 
+def add_custom_flag_opts(parser):
+    parser.add_argument(
+        "--gcc-add-flag", action="append", default=[],
+        help="append the given compiler flag when invoking gcc \
+(can be used multiple times)")
+
+    parser.add_argument(
+        "--gcc-add-c-only-flag", action="append", default=[],
+        help="append the given compiler flag when invoking gcc for C \
+(can be used multiple times)")
+
+    parser.add_argument(
+        "--gcc-add-cxx-only-flag", action="append", default=[],
+        help="append the given compiler flag when invoking gcc for C++ \
+(can be used multiple times)")
+
+
 def serialize_flags(flags):
     out = ""
     for f in flags:
@@ -47,6 +64,17 @@ class FlagsMatrix:
         self.del_cflags = []
         self.add_cxxflags = []
         self.del_cxxflags = []
+
+    def append_custom_flags(self, args):
+        self.add_cflags += args.gcc_add_flag
+        self.add_cflags += args.gcc_add_c_only_flag
+
+        self.add_cxxflags += args.gcc_add_flag
+        self.add_cxxflags += args.gcc_add_cxx_only_flag
+
+        return (0 < len(args.gcc_add_flag)) or \
+                (0 < len(args.gcc_add_c_only_flag)) or \
+                (0 < len(args.gcc_add_cxx_only_flag))
 
     def write_to_env(self, env):
         env["CSWRAP_ADD_CFLAGS"]   = serialize_flags(self.add_cflags)

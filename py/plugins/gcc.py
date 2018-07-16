@@ -17,7 +17,7 @@
 
 import csmock.common.util
 
-from csmock.common.cflags import flags_by_warning_level
+from csmock.common.cflags import add_custom_flag_opts, flags_by_warning_level
 
 
 class PluginProps:
@@ -44,20 +44,7 @@ class Plugin:
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings. \
 (automatically enables the GCC plug-in)")
 
-        parser.add_argument(
-            "--gcc-add-flag", action="append", default=[],
-            help="append the given compiler flag when invoking gcc \
-(can be used multiple times)")
-
-        parser.add_argument(
-            "--gcc-add-c-only-flag", action="append", default=[],
-            help="append the given compiler flag when invoking gcc for C \
-(can be used multiple times)")
-
-        parser.add_argument(
-            "--gcc-add-cxx-only-flag", action="append", default=[],
-            help="append the given compiler flag when invoking gcc for C++ \
-(can be used multiple times)")
+        add_custom_flag_opts(parser)
 
     def handle_args(self, parser, args, props):
         if args.gcc_warning_level is not None:
@@ -65,16 +52,7 @@ class Plugin:
             self.flags = flags_by_warning_level(args.gcc_warning_level)
 
         # serialize custom compiler flags
-        add_cflags = ""
-        add_cxxflags = ""
-        for flag in args.gcc_add_flag:
-            add_cflags += ":" + flag
-            add_cxxflags += ":" + flag
-        for flag in args.gcc_add_c_only_flag:
-            add_cflags += ":" + flag
-        for flag in args.gcc_add_cxx_only_flag:
-            add_cxxflags += ":" + flag
-        if add_cflags or add_cxxflags:
+        if self.flags.append_custom_flags(args):
             self.enable()
 
         if not self.enabled:
@@ -89,7 +67,5 @@ class Plugin:
 
         # write all compiler flags to the environment
         self.flags.write_to_env(props.env)
-        props.env["CSWRAP_ADD_CFLAGS"] += add_cflags
-        props.env["CSWRAP_ADD_CXXFLAGS"] += add_cxxflags
 
         csmock.common.util.install_default_toolver_hook(props, "gcc")
