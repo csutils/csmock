@@ -130,7 +130,7 @@ Requires: cscppc
 Requires: csclng
 Requires: csdiff >= 1.2.1
 Requires: cswrap
-Requires: csmock-common >= 1.8.0
+Requires: csmock-common > 2.1.1
 
 %description -n csbuild
 Tool for plugging static analyzers into the build process, free of mock.

@@ -49,6 +49,17 @@ def add_custom_flag_opts(parser):
 (can be used multiple times)")
 
 
+def encode_custom_flag_opts(args):
+    cmd = ""
+    for flag in args.gcc_add_flag:
+        cmd += " --gcc-add-flag='%s'" % flag
+    for flag in args.gcc_add_c_only_flag:
+        cmd += " --gcc-add-c-only-flag='%s'" % flag
+    for flag in args.gcc_add_cxx_only_flag:
+        cmd += " --gcc-add-cxx-only-flag='%s'" % flag
+    return cmd
+
+
 def serialize_flags(flags):
     out = ""
     for f in flags:

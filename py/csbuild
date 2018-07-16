@@ -29,7 +29,7 @@ import tempfile
 import git
 
 # local imports
-from csmock.common.cflags import flags_by_warning_level
+import csmock.common.cflags
 from csmock.common.util   import add_paired_flag
 
 
@@ -190,6 +190,8 @@ def encode_csbuild_args(args):
     if args.gcc_warning_level != DEFAULT_GCC_WARNING_LEVEL:
         cmd += " -w%d" % args.gcc_warning_level
 
+    cmd += csmock.common.cflags.encode_custom_flag_opts(args)
+
     cmd += encode_paired_flag(args, "print-current")
     cmd += encode_paired_flag(args, "print-added")
     cmd += encode_paired_flag(args, "print-fixed")
@@ -321,6 +323,8 @@ WARNING: The given command must (re)compile all sources for this option to work!
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
 (default).")
 
+    csmock.common.cflags.add_custom_flag_opts(parser)
+
     parser.add_argument(
         "-U", "--embed-context", type=int, default=DEFAULT_EMBED_CONTEXT,
         help="embed a number of lines of context from the source file for the \
@@ -406,7 +410,8 @@ key event (defaults to 3).")
     env["CSWRAP_TIMEOUT_FOR"] = "clang:clang++:cppcheck"
 
     # resolve compiler flags
-    flags = flags_by_warning_level(args.gcc_warning_level)
+    flags = csmock.common.cflags.flags_by_warning_level(args.gcc_warning_level)
+    flags.append_custom_flags(args)
     flags.write_to_env(env)
 
     # serialize environment
