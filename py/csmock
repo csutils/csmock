@@ -973,6 +973,7 @@ def do_scan(props, output, args, skip_patches):
     try:
         with ScanResults(output, props.keep_going) as results:
             results.ini_writer.append("mock-config", props.mock_profile)
+            results.ini_writer.append("project-name", props.nvr)
 
             if not props.any_tool:
                 # no tool enabled
