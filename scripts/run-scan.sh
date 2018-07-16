@@ -6,12 +6,12 @@ msg() {
 }
 
 die() {
-    msg "error: %s" "$*"
+    msg "error: $*"
     exit 1
 }
 
 warn() {
-    msg "warning: %s" "$*"
+    msg "warning: $*"
 }
 
 warn_not_in_path() {
