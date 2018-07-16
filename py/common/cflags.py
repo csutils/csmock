@@ -16,20 +16,20 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 DEL_FLAGS_BY_LEVEL_COMMON = {
-    0: set(["-Werror*", "-fdiagnostics-color*"])}
+    0: ["-Werror*", "-fdiagnostics-color*"]}
 
 ADD_FLAGS_BY_LEVEL_COMMON = {
-    1: set(["-Wall", "-Wextra"]),
-    2: set(["-Wunreachable-code", "-Wundef", "-Wcast-align",
+    1: ["-Wall", "-Wextra"],
+    2: ["-Wunreachable-code", "-Wundef", "-Wcast-align",
             "-Wpointer-arith", "-Wfloat-equal", "-Wshadow",
-            "-Wwrite-strings", "-Wformat=2"])}
+            "-Wwrite-strings", "-Wformat=2"]}
 
 ADD_FLAGS_BY_LEVEL_C_ONLY = {
-    0: set(["-Wno-unknown-pragmas"]),
-    2: set(["-Wstrict-prototypes"])}
+    0: ["-Wno-unknown-pragmas"],
+    2: ["-Wstrict-prototypes"]}
 
 ADD_FLAGS_BY_LEVEL_CXX_ONLY = {
-    2: set(["-Wctor-dtor-privacy", "-Woverloaded-virtual"])}
+    2: ["-Wctor-dtor-privacy", "-Woverloaded-virtual"]}
 
 
 def serialize_flags(flags):
@@ -43,10 +43,10 @@ def serialize_flags(flags):
 
 class FlagsMatrix:
     def __init__(self):
-        self.add_cflags = set()
-        self.del_cflags = set()
-        self.add_cxxflags = set()
-        self.del_cxxflags = set()
+        self.add_cflags = []
+        self.del_cflags = []
+        self.add_cxxflags = []
+        self.del_cxxflags = []
 
     def write_to_env(self, env):
         env["CSWRAP_ADD_CFLAGS"]   = serialize_flags(self.add_cflags)
@@ -59,16 +59,16 @@ def flags_by_warning_level(level):
     flags = FlagsMatrix()
     for l in range(0, level + 1):
         if l in DEL_FLAGS_BY_LEVEL_COMMON:
-            flags.del_cflags |= DEL_FLAGS_BY_LEVEL_COMMON[l]
-            flags.del_cxxflags |= DEL_FLAGS_BY_LEVEL_COMMON[l]
+            flags.del_cflags += DEL_FLAGS_BY_LEVEL_COMMON[l]
+            flags.del_cxxflags += DEL_FLAGS_BY_LEVEL_COMMON[l]
 
         if l in ADD_FLAGS_BY_LEVEL_COMMON:
-            flags.add_cflags |= ADD_FLAGS_BY_LEVEL_COMMON[l]
-            flags.add_cxxflags |= ADD_FLAGS_BY_LEVEL_COMMON[l]
+            flags.add_cflags += ADD_FLAGS_BY_LEVEL_COMMON[l]
+            flags.add_cxxflags += ADD_FLAGS_BY_LEVEL_COMMON[l]
 
         if l in ADD_FLAGS_BY_LEVEL_C_ONLY:
-            flags.add_cflags |= ADD_FLAGS_BY_LEVEL_C_ONLY[l]
+            flags.add_cflags += ADD_FLAGS_BY_LEVEL_C_ONLY[l]
 
         if l in ADD_FLAGS_BY_LEVEL_CXX_ONLY:
-            flags.add_cxxflags |= ADD_FLAGS_BY_LEVEL_CXX_ONLY[l]
+            flags.add_cxxflags += ADD_FLAGS_BY_LEVEL_CXX_ONLY[l]
     return flags
