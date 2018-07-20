@@ -50,8 +50,7 @@ class Plugin:
         props.enable_cswrap()
         props.env["CSWRAP_TIMEOUT_FOR"] += ":clang:clang++"
         props.cswrap_filters += \
-                ["csgrep --invert-match --checker CLANG_WARNING --event error",
-                 "csgrep --invert-match --checker CLANG_WARNING --msg \"Value stored to '.*' is never read\""]
+                ["csgrep --invert-match --checker CLANG_WARNING --event error"]
 
         props.install_pkgs += ["clang"]
 
