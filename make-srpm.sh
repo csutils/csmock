@@ -1,6 +1,6 @@
 #/bin/bash
 
-# Copyright (C) 2012-2015 Red Hat, Inc.
+# Copyright (C) 2012-2018 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -203,6 +203,19 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.
 
+%package -n csmock-plugin-smatch
+Summary: csmock plug-in providing the support for smatch
+Requires: csdiff > 1.4.0
+Requires: csmatch
+Requires: csmock-common
+Requires: cswrap > 1.4.0
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
+
+%description -n csmock-plugin-smatch
+This package contains the smatch plug-in for csmock.
+
 %prep
 %setup -q
 
@@ -283,6 +296,12 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{csmock_python_sitelib}/csmock/plugins/shellcheck.py*
 %if %{force_py3}
 %{csmock_python_sitelib}/csmock/plugins/__pycache__/shellcheck.*
+%endif
+
+%files -n csmock-plugin-smatch
+%{csmock_python_sitelib}/csmock/plugins/smatch.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/smatch.*
 %endif
 EOF
 
