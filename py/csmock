@@ -71,8 +71,7 @@ RAWBUILD_RPM_OPTS = [
     "--define", "_with_vanilla 1"]
 
 DEFAULT_CSWRAP_FILTERS = [
-    "csgrep --quiet --path '^/builddir/build/BUILD/' \
---event='error|warning' --remove-duplicates"]
+    "csgrep --quiet --path '^/builddir/build/BUILD/' --remove-duplicates"]
 
 # remember to use --mode=json for csgrep (TODO: improve csgrep's interface)
 DEFAULT_RESULT_FILTERS = [
