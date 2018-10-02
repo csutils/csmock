@@ -48,6 +48,8 @@ DEFAULT_EMBED_CONTEXT = 3
 
 DEFAULT_GCC_WARNING_LEVEL = 2
 
+DEFAULT_HELP_SUFFIX = " (default: %(default)s)"
+
 TOOL_NAME = sys.argv[0]
 
 
@@ -264,7 +266,7 @@ def main():
     # optional arguments
     parser.add_argument(
         "-g", "--git-commit-range",
-        help="range of git revisions for a differential scan")
+        help="range of git revisions for a differential scan in format OLD_REV..NEW_REV")
 
     parser.add_argument(
         "--git-bisect", action="store_true",
@@ -273,11 +275,12 @@ WARNING: The given command must (re)compile all sources for this option to work!
 
     parser.add_argument(
         "--added-exit-code", type=int, default=DEFAULT_ADDED_EXIT_CODE,
-        help="exit code to return if there is any defect added in the new version")
+        help="exit code to return if there is any defect added in the new version" \
+                + DEFAULT_HELP_SUFFIX)
 
     parser.add_argument(
         "--base-fail-exit-code", type=int, default=DEFAULT_BASE_FAIL_EXIT_CODE,
-        help="exit code to return if the base scan fails")
+        help="exit code to return if the base scan fails" + DEFAULT_HELP_SUFFIX)
 
     add_paired_flag(
         parser, "print-current",
@@ -299,7 +302,8 @@ WARNING: The given command must (re)compile all sources for this option to work!
 
     parser.add_argument(
         "--cswrap-timeout", type=int, default=DEFAULT_CSWRAP_TIMEOUT,
-        help="maximal amount of time taken by analysis of a single module [s]")
+        help="maximal amount of time in seconds taken by analysis of a single module" \
+                + DEFAULT_HELP_SUFFIX)
 
     add_paired_flag(
         parser, "color",
@@ -320,15 +324,15 @@ WARNING: The given command must (re)compile all sources for this option to work!
     parser.add_argument(
         "-w", "--gcc-warning-level", type=int, default=DEFAULT_GCC_WARNING_LEVEL,
         help="Adjust GCC warning level.  -w0 means no additional warnings, \
--w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings \
-(default).")
+-w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings" \
++ DEFAULT_HELP_SUFFIX)
 
     csmock.common.cflags.add_custom_flag_opts(parser)
 
     parser.add_argument(
         "-U", "--embed-context", type=int, default=DEFAULT_EMBED_CONTEXT,
         help="embed a number of lines of context from the source file for the \
-key event (defaults to 3).")
+key event" + DEFAULT_HELP_SUFFIX)
 
     # needed for help2man
     parser.add_argument(
