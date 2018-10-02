@@ -266,7 +266,7 @@ def main():
     # optional arguments
     parser.add_argument(
         "-g", "--git-commit-range",
-        help="range of git revisions for a differential scan")
+        help="range of git revisions for a differential scan in format OLD_REV..NEW_REV")
 
     parser.add_argument(
         "--git-bisect", action="store_true",
