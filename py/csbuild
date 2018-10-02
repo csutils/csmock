@@ -89,10 +89,7 @@ class StatusWriter:
         os.system("csgrep --mode=stat %s %s \"%s\"" %
                   (self.csgrep_args, self.color_opt, err_file))
 
-    def print_defects_if_any(self, err_file, title):
-        if os.path.getsize(err_file) <= 0:
-            return
-
+    def print_defect_list(self, err_file, title):
         hline = "=" * len(title)
         print("\n%s%s\n%s%s" % (self.color_b, title, hline, self.color_n))
 
@@ -477,11 +474,11 @@ key event" + DEFAULT_HELP_SUFFIX)
 
     # print the results selected by the command-line options
     if args.print_current:
-        sw.print_defects_if_any("%s/current.err" % res_dir, "CURRENT DEFECTS")
+        sw.print_defect_list("%s/current.err" % res_dir, "CURRENT DEFECTS")
     if args.print_fixed:
-        sw.print_defects_if_any("%s/fixed.err" % res_dir, "FIXED DEFECTS")
+        sw.print_defect_list("%s/fixed.err" % res_dir, "FIXED DEFECTS")
     if args.print_added:
-        sw.print_defects_if_any(res_added, "ADDED DEFECTS")
+        sw.print_defect_list(res_added, "ADDED DEFECTS")
 
     if args.clean:
         # purge the temporary directory
