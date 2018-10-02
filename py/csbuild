@@ -19,6 +19,7 @@
 
 # standard imports
 import argparse
+import inspect
 import os
 import shutil
 import subprocess
@@ -364,7 +365,13 @@ key event (defaults to 3).")
             parser.error("not a range of git revisions: " + args.git_commit_range)
 
         try:
-            repo = git.Repo(".")
+            git_repo_args = inspect.getargspec(git.Repo.__init__).args
+            if 'search_parent_directories' in git_repo_args:
+                # search_parent_directories=True was the default behavior until
+                # the arg was actually introduced (and we would like to keep it)
+                repo = git.Repo(".", search_parent_directories=True)
+            else:
+                repo = git.Repo(".")
         except:
             parser.error("failed to open git repository: .")
 
