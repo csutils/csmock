@@ -112,11 +112,10 @@ fi
 
 # process the given filters and sort the results
 CURR_ERR="${RES_DIR}/current.err"
-(set -x; csgrep --path "^${PWD}/" --strip-path-prefix "${PWD}/" <"$RAW_CURR_ERR" \
-    | csgrep --invert-match --path '^ksh-.*[0-9]+\.c$' \
+(set -x; csgrep --invert-match --path '^ksh-.*[0-9]+\.c$' <"$RAW_CURR_ERR" \
     | csgrep --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c' \
     | cssort --key=path \
-    | $FILTER_CMD >"$CURR_ERR")
+    | eval $FILTER_CMD >"$CURR_ERR")
 
 # compare the results with base (if we got one)
 ADDED_ERR="${RES_DIR}/added.err"

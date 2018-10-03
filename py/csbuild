@@ -436,12 +436,19 @@ key event" + DEFAULT_HELP_SUFFIX)
     for var in env:
         cmd_prefix += "%s='%s' " % (var, env[var])
 
+    # chain all filters, starting with --embed-context propagation
+    filter_cmd = "csgrep --embed-context %d" % args.embed_context
+    if repo is not None:
+        # if we are in a git repo, filter out results out of the repository
+        filter_cmd += ' | csgrep --path "^%s/" --strip-path-prefix "%s/"' \
+                % (repo_dir, repo_dir)
+
     # prepare template for running the run-scan.sh script
     cmd = "%s %s %s %s %s" % (
         cmd_prefix, RUN_SCAN_SH,
         shell_quote(res_dir),
         shell_quote(args.build_cmd),
-        shell_quote("csgrep --embed-context %d" % args.embed_context))
+        shell_quote(filter_cmd))
 
     curr = "%s/current.err" % res_dir
 
