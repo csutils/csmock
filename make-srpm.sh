@@ -47,14 +47,14 @@ VER="`echo "$VER" | sed "s/-.*-/.$TIMESTAMP./"`"
 
 BRANCH="`git rev-parse --abbrev-ref HEAD`"
 test -n "$BRANCH" || die "failed to get current branch name"
-test master = "${BRANCH}" || VER="${VER}.${BRANCH}"
+test master = "${BRANCH}" || VER="${VER}.${BRANCH//-/_}"
 test -z "`git diff HEAD`" || VER="${VER}.dirty"
 
 NV="${PKG}-${VER}"
 printf "%s: preparing a release of \033[1;32m%s\033[0m\n" "$SELF" "$NV"
 
 TMP="`mktemp -d`"
-trap "echo --- $SELF: removing $TMP... 2>&1; rm -rf '$TMP'" EXIT
+trap "rm -rf '$TMP'" EXIT
 cd "$TMP" >/dev/null || die "mktemp failed"
 
 # clone the repository
