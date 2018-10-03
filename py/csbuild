@@ -359,6 +359,20 @@ key event" + DEFAULT_HELP_SUFFIX)
     if args.color:
         sw.enable_colors()
 
+    # check whether we are in a git repository
+    try:
+        git_repo_args = inspect.getargspec(git.Repo.__init__).args
+        if 'search_parent_directories' in git_repo_args:
+            # search_parent_directories=True was the default behavior until
+            # the arg was actually introduced (and we would like to keep it)
+            repo = git.Repo(".", search_parent_directories=True)
+        else:
+            repo = git.Repo(".")
+        repo_dir = repo.working_dir
+        sw.emit_status("using git repository: %s" % repo_dir)
+    except:
+        repo = None
+
     diff_scan = args.git_commit_range is not None
     if diff_scan:
         # parse git commit range
@@ -368,15 +382,7 @@ key event" + DEFAULT_HELP_SUFFIX)
         if len(tokenized) != 2:
             parser.error("not a range of git revisions: " + args.git_commit_range)
 
-        try:
-            git_repo_args = inspect.getargspec(git.Repo.__init__).args
-            if 'search_parent_directories' in git_repo_args:
-                # search_parent_directories=True was the default behavior until
-                # the arg was actually introduced (and we would like to keep it)
-                repo = git.Repo(".", search_parent_directories=True)
-            else:
-                repo = git.Repo(".")
-        except:
+        if repo is None:
             parser.error("failed to open git repository: .")
 
         try:
@@ -387,7 +393,7 @@ key event" + DEFAULT_HELP_SUFFIX)
                          args.git_commit_range)
 
         if hasattr(repo.is_dirty, "__call__") and repo.is_dirty():
-            sw.emit_warning("git repository is dirty: .")
+            sw.emit_warning("git repository is dirty: %s" % repo_dir)
 
     # initialize defaults where necessary
     if args.print_current is None:
