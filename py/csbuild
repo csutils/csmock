@@ -21,6 +21,7 @@
 import argparse
 import inspect
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -160,7 +161,14 @@ def stable_commit_ref(repo, ref):
 
 def do_git_checkout(repo, commit):
     sw.emit_status("checking out %s" % commit)
-    repo.git.checkout(commit)
+    try:
+        repo.git.checkout(commit)
+    except git.exc.GitCommandError as e:
+        # if 'git checkout' fails, report it in a user-friendly way
+        err = e.stderr
+        err = re.sub("[^']*'error: ", "", err)
+        err = re.sub("'$", "", err)
+        sw.die(err)
 
 
 def encode_paired_flag(args, flag):
