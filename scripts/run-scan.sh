@@ -85,6 +85,25 @@ then
     BUILD_CMD_WRAP="cov-build --dir=${COV_INT_DIR}"
 fi
 
+if test -r CMakeCache.txt; then
+    # if CMakeCache.txt contains absolute path to the compiler, check that it
+    # matches the path to our wrapper
+    for i in C CXX; do
+        echo "message(STATUS \${CMAKE_${i}_COMPILER})" > "${RES_DIR}/print-${i}.cmake"
+        abs_path="$(cmake -NC CMakeCache.txt -P "${RES_DIR}/print-${i}.cmake" \
+            2>/dev/null | cut -c4-)"
+        test -n "$abs_path" || continue
+        rel_path="$(basename "$abs_path")"
+        exp_path="$(which "$rel_path")"
+        if test "$abs_path" != "$exp_path"; then
+            die "$(realpath CMakeCache.txt) contains \
+'CMAKE_${i}_COMPILER=${abs_path}' instead of \
+'CMAKE_${i}_COMPILER=${exp_path}', which is required to wrap \
+the compiler.  Please run cmake through csbuild to fix this."
+        fi
+    done
+fi
+
 # run the specified BUILD_CMD
 msg "Running the build!"
 (set -x; $BUILD_CMD_WRAP "$SHELL" -xc "$BUILD_CMD")
