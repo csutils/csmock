@@ -414,13 +414,6 @@ key event" + DEFAULT_HELP_SUFFIX)
             parser.error("options --git-bisect, --added-exit-code, --print-added, \
 --base-fail-exit-code, and --print-fixed make sense only with --git-commit-range")
 
-    if args.prep_cmd is not None:
-        # run the command given by --prep-cmd
-        scan_or_die(args.prep_cmd, "prep")
-
-    # create a temporary directory for the results
-    res_dir = tempfile.mkdtemp(prefix="csbuild")
-
     # prepare environment
     env = {}
     env["CSWRAP_TIMEOUT"] = "%d" % args.cswrap_timeout
@@ -436,6 +429,17 @@ key event" + DEFAULT_HELP_SUFFIX)
     for var in env:
         cmd_prefix += "%s='%s' " % (var, env[var])
 
+    # append path of the run-scan.sh script
+    cmd_prefix += RUN_SCAN_SH
+
+    # create a temporary directory for the results
+    res_dir = tempfile.mkdtemp(prefix="csbuild")
+    cmd_prefix += " " + shell_quote(res_dir)
+
+    if args.prep_cmd is not None:
+        # run the command given by --prep-cmd through run-scan.sh
+        scan_or_die(cmd_prefix + " " + shell_quote(args.prep_cmd), "prep")
+
     # chain all filters, starting with --embed-context propagation
     filter_cmd = "csgrep --embed-context %d" % args.embed_context
     if repo is not None:
@@ -443,10 +447,8 @@ key event" + DEFAULT_HELP_SUFFIX)
         filter_cmd += ' | csgrep --path "^%s/" --strip-path-prefix "%s/"' \
                 % (repo_dir, repo_dir)
 
-    # prepare template for running the run-scan.sh script
-    cmd = "%s %s %s %s %s" % (
-        cmd_prefix, RUN_SCAN_SH,
-        shell_quote(res_dir),
+    # prepare template for running build_cmd through the run-scan.sh script
+    cmd = "%s %s %s" % (cmd_prefix,
         shell_quote(args.build_cmd),
         shell_quote(filter_cmd))
 
