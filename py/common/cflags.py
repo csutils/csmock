@@ -16,7 +16,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 DEL_FLAGS_BY_LEVEL_COMMON = {
-    0: ["-Werror*", "-fdiagnostics-color*"]}
+    0: ["-Werror*", "-fdiagnostics-color*", "-no-canonical-prefixes"]}
 
 ADD_FLAGS_BY_LEVEL_COMMON = {
     1: ["-Wall", "-Wextra"],
