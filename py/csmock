@@ -257,7 +257,8 @@ class ScanResults:
                 tar_opts += "J"
             tar_cmd = "tar %s -f '%s' -C '%s' '%s'" % (
                 tar_opts, self.output, self.tmpdir, self.dirname)
-            if os.system(tar_cmd) != 0:
+            # do not treat 'tar: file changed as we read it' as fatal error
+            if os.system(tar_cmd) > 1:
                 self.fatal_error(
                     "failed to write '%s', not removing '%s'..." % (
                         self.output, self.tmpdir))
