@@ -52,6 +52,10 @@ DEFAULT_GCC_WARNING_LEVEL = 2
 
 DEFAULT_HELP_SUFFIX = " (default: %(default)s)"
 
+HELP_CMD_COMMON = "  It runs in @BUILD" + "DIR@ (which defaults to $PWD \
+if --build-dir is not specified).  @SRC" + "DIR@ expands to $PWD at the \
+time of csbuild's invocation."
+
 TOOL_NAME = sys.argv[0]
 
 
@@ -250,6 +254,14 @@ def gen_travis_yml(args):
     return 0
 
 
+def cmd_subst(cmd, src_dir, build_dir):
+    if cmd is None:
+        return None
+    cmd = cmd.replace("@SRC" + "DIR@", src_dir)
+    cmd = cmd.replace("@BUILD" + "DIR@", build_dir)
+    return cmd
+
+
 # argparse._VersionAction would write to stderr, which breaks help2man
 class VersionPrinter(argparse.Action):
     def __init__(self, option_strings, dest=None, default=None, help=None):
@@ -267,7 +279,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c", "--build-cmd", required=True,
-        help="shell command used to build the sources (runs in $PWD)")
+        help="Shell command used to build the sources." + HELP_CMD_COMMON)
 
     # optional arguments
     parser.add_argument(
@@ -304,7 +316,8 @@ WARNING: The given command must (re)compile all sources for this option to work!
 
     add_paired_flag(
         parser, "clean",
-        help="clean the temporary directory with results on exit (default)")
+        help="clean the temporary directory with results (and @BUILD" + "DIR@) \
+on exit (default)")
 
     parser.add_argument(
         "--cswrap-timeout", type=int, default=DEFAULT_CSWRAP_TIMEOUT,
@@ -325,7 +338,15 @@ WARNING: The given command must (re)compile all sources for this option to work!
 
     parser.add_argument(
         "--prep-cmd",
-        help="shell command to run before the build (runs in $PWD)")
+        help="Shell command to run before the build." + HELP_CMD_COMMON)
+
+    parser.add_argument(
+        "--build-dir",
+        help="Directory to be created to run the prep and build commands in \
+(optional).  If not specified, the commands run in $PWD.  @BUILD" + "DIR@ in \
+the operand of --build-cmd and --prep-cmd expands to the --build-dir operand \
+converted to an absolute path.  Use --no-clean to preserve @BUILD" + "DIR@ \
+on exit.")
 
     parser.add_argument(
         "-w", "--gcc-warning-level", type=int, default=DEFAULT_GCC_WARNING_LEVEL,
@@ -429,6 +450,24 @@ key event" + DEFAULT_HELP_SUFFIX)
     flags.append_custom_flags(args)
     flags.write_to_env(env)
 
+    # resolve src_dir and build_dir
+    src_dir = os.getcwd()
+    if args.build_dir is None:
+        build_dir = src_dir
+    else:
+        build_dir = os.path.abspath(args.build_dir)
+        try:
+            # create build_dir and enter the diretory
+            os.mkdir(build_dir, 0o755)
+            os.chdir(build_dir)
+            sw.emit_status("entered build directory: %s" % build_dir)
+        except OSError as err:
+            parser.error("failed to create %s: %s" % (build_dir, err))
+
+    # substitute prep_cmd and build_cmd
+    prep_cmd = cmd_subst(args.prep_cmd, src_dir, build_dir)
+    build_cmd = cmd_subst(args.build_cmd, src_dir, build_dir)
+
     # serialize environment
     cmd_prefix = ""
     for var in env:
@@ -441,9 +480,9 @@ key event" + DEFAULT_HELP_SUFFIX)
     res_dir = tempfile.mkdtemp(prefix="csbuild")
     cmd_prefix += " " + shell_quote(res_dir)
 
-    if args.prep_cmd is not None:
+    if prep_cmd is not None:
         # run the command given by --prep-cmd through run-scan.sh
-        scan_or_die(cmd_prefix + " " + shell_quote(args.prep_cmd), "prep")
+        scan_or_die(cmd_prefix + " " + shell_quote(prep_cmd), "prep")
 
     # chain all filters, starting with --embed-context propagation
     filter_cmd = "csgrep --embed-context %d" % args.embed_context
@@ -454,7 +493,7 @@ key event" + DEFAULT_HELP_SUFFIX)
 
     # prepare template for running build_cmd through the run-scan.sh script
     cmd = "%s %s %s" % (cmd_prefix,
-        shell_quote(args.build_cmd),
+        shell_quote(build_cmd),
         shell_quote(filter_cmd))
 
     curr = "%s/current.err" % res_dir
@@ -506,7 +545,14 @@ key event" + DEFAULT_HELP_SUFFIX)
     if args.clean:
         # purge the temporary directory
         shutil.rmtree(res_dir)
+        if args.build_dir is not None:
+            assert build_dir != src_dir
+            shutil.rmtree(build_dir)
     else:
+        if args.build_dir is not None:
+            dst = "%s/csbuild" % build_dir
+            shutil.move(res_dir, dst)
+            res_dir = dst
         print("\nScan results: %s\n" % res_dir)
 
     if ret != 0:
