@@ -54,7 +54,7 @@ class Plugin:
 
         props.install_pkgs += ["clang"]
 
-        # resolve csclng_path by querying csmock binary
+        # resolve csclng_path by querying csclng binary
         cmd = ["csclng", "--print-path-to-wrap"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = p.communicate()

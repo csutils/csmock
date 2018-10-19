@@ -57,7 +57,7 @@ class Plugin:
 --checker CPPCHECK_WARNING \
 --event 'cppcheckError|preprocessorErrorDirective|syntaxError'"]
 
-        # resolve cscppc_path by querying csmock binary
+        # resolve cscppc_path by querying cscppc binary
         cmd = ["cscppc", "--print-path-to-wrap"]
         subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = subproc.communicate()

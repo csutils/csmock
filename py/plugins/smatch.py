@@ -54,7 +54,7 @@ class Plugin:
 
         props.install_pkgs += ["smatch"]
 
-        # resolve csmatch_path by querying csmock binary
+        # resolve csmatch_path by querying csmatch binary
         cmd = ["csmatch", "--print-path-to-wrap"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = p.communicate()
