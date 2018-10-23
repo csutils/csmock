@@ -94,7 +94,7 @@ if test -r CMakeCache.txt; then
             2>/dev/null | cut -c4-)"
         test -n "$abs_path" || continue
         rel_path="$(basename "$abs_path")"
-        exp_path="$(which "$rel_path")"
+        exp_path="$(command -v "$rel_path")"
         if test "$abs_path" != "$exp_path"; then
             die "$(realpath CMakeCache.txt) contains \
 'CMAKE_${i}_COMPILER=${abs_path}' instead of \
