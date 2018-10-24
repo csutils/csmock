@@ -85,10 +85,12 @@ class StatusWriter:
     def emit_warning(self, msg):
         sys.stderr.write("%s: %swarning%s: %s\n" %
                          (TOOL_NAME, self.color_y, self.color_n, msg))
+        sys.stderr.flush()
 
     def emit_status(self, msg):
         sys.stderr.write("%s: %sstatus%s: %s\n" %
                          (TOOL_NAME, self.color_g, self.color_n, msg))
+        sys.stderr.flush()
 
     def print_stats(self, err_file):
         os.system("csgrep --mode=stat %s %s \"%s\"" %
@@ -97,6 +99,7 @@ class StatusWriter:
     def print_defect_list(self, err_file, title):
         hline = "=" * len(title)
         print("\n%s%s\n%s%s" % (self.color_b, title, hline, self.color_n))
+        sys.stdout.flush()
 
         # pass the --[no-]color option to csgrep
         os.system("csgrep %s %s \"%s\"" %
