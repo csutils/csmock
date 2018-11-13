@@ -25,6 +25,8 @@ def install_default_toolver_hook(props, tool):
         cmd = "grep '^%s-[0-9]' %s/rpm-list-mock.txt" % (tool, results.dbgdir)
         (rc, nvr) = results.get_cmd_output(cmd)
         if rc != 0:
+            results.error("tool \"%s\" does not seem to be installed in build root" \
+                    % tool, ec=0)
             return rc
 
         ver = re.sub("-[0-9].*$", "", re.sub("^%s-" % tool, "", nvr.strip()))
