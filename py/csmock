@@ -124,7 +124,7 @@ def is_ignored_dep(pkg):
     return re.match("^.*rpmlib\\(.*\\)", pkg) is not None
 
 
-def find_missing_pkgs(pkgs, results, mock):
+def find_missing_pkgs(pkgs, results, mock, ignore_with=False):
     # dump list of RPMs installed in the chroot (for debugging purposes)
     tmp_var_lib = "%s/var/lib" % results.tmpdir
     if os.path.isdir(tmp_var_lib):
@@ -150,6 +150,8 @@ def find_missing_pkgs(pkgs, results, mock):
             pkg = re.sub(" .*$", "", l.strip())
             installed.add(pkg)
     for dep in pkgs:
+        if ignore_with:
+            dep = re.sub('^\((.*) with (.*)\)$', '\\1', dep)
         if is_ignored_dep(dep) or '/' in dep:
             continue
         pkg = re.sub(" .*$", "", dep)
@@ -492,7 +494,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
             for tried_dnf in [False, True]:
                 # check that all dependencies are installed
-                missing_deps = find_missing_pkgs(pkgs, self.results, self)
+                missing_deps = find_missing_pkgs(pkgs, self.results, self, ignore_with=tried_dnf)
                 if not missing_deps:
                     # no missing dependencies
                     return True
