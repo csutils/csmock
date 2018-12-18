@@ -511,7 +511,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 # try to install/configure dnf in chroot and run it from there
                 if not self.prepare_dnf_in_chroot():
                     break
-                cmd = strlist_to_shell_cmd(["dnf", "install"] + missing_deps, escape_special=True)
+                cmd_as_list = ["dnf", "install", "--allowerasing"] + missing_deps
+                cmd = strlist_to_shell_cmd(cmd_as_list, escape_special=True)
                 self.exec_chroot_cmd(cmd)
 
             self.results.error("failed to install dependencies: %s" %
