@@ -155,8 +155,11 @@ def find_missing_pkgs(pkgs, results, mock, ignore_with=False):
         if is_ignored_dep(dep) or '/' in dep:
             continue
         pkg = re.sub(" .*$", "", dep)
-        if pkg not in installed:
-            missing += [dep]
+        if pkg in installed:
+            continue
+        if pkg == 'perl' and 'perl-interpreter' in installed:
+            continue
+        missing += [dep]
     return missing
 
 
