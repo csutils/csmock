@@ -110,7 +110,6 @@ BuildRequires: python2-devel
 Requires: csmock-common                 >= %{version}-%{release}
 Requires: csmock-plugin-clang           >= %{version}-%{release}
 Requires: csmock-plugin-cppcheck        >= %{version}-%{release}
-Requires: csmock-plugin-pylint          >= %{version}-%{release}
 Requires: csmock-plugin-shellcheck      >= %{version}-%{release}
 
 BuildArch: noarch
