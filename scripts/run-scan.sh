@@ -125,7 +125,7 @@ if test -n "$COV_INT_DIR" && test -e "${COV_INT_DIR}/emit/"*/emit-db.write-lock
 then
     msg "Running Coverity Analysis..."
     (set -x; cov-analyze "--dir=${COV_INT_DIR}" --security --concurrency \
-        && cov-format-errors "--dir=${COV_INT_DIR}" --emacs-style \
+        && cov-format-errors "--dir=${COV_INT_DIR}" --json-output-v2 /dev/stdout \
         | csgrep --prune-events=1 >> "$RAW_CURR_ERR")
 fi
 

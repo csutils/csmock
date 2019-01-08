@@ -127,7 +127,7 @@ Requires: GitPython
 %endif
 Requires: cscppc
 Requires: csclng
-Requires: csdiff >= 1.2.1
+Requires: csdiff >= 1.5.0
 Requires: cswrap
 Requires: csmock-common > 2.1.1
 
