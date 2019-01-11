@@ -157,8 +157,13 @@ def find_missing_pkgs(pkgs, results, mock, ignore_with=False):
         pkg = re.sub(" .*$", "", dep)
         if pkg in installed:
             continue
+
+        # FIXME: avoid such hard-coding (perhaps match provides instead?)
         if pkg == 'perl' and 'perl-interpreter' in installed:
             continue
+        if pkg == 'python3-pip' and 'platform-python-pip' in installed:
+            continue
+
         missing += [dep]
     return missing
 
