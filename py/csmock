@@ -45,6 +45,8 @@ PATCH_RAWBUILD = CSMOCK_DATADIR + "/scripts/patch-rawbuild.sh"
 
 CWE_LIST_FILE = CSMOCK_DATADIR + "/cwe-map.csv"
 
+DEFAULT_DEFECT_BLACKLIST = CSMOCK_DATADIR + "/defect-blacklist.err"
+
 PLUGIN_DIR = "@PLUGIN_DIR@"
 
 DEFAULT_CSWRAP_TIMEOUT = 30
@@ -898,6 +900,17 @@ key event (defaults to 3).")
         "-c", "--shell-cmd",
         help="use shell command to build the given tarball (instead of SRPM)")
 
+    # --defect-blacklist
+    default_dbl = DEFAULT_DEFECT_BLACKLIST
+    if os.path.exists(default_dbl):
+        default_dbl_text = " (defaults to \"%s\")" % default_dbl
+    else:
+        default_dbl_text = " (defaults to \"%s\" if available)" % default_dbl
+        default_dbl = ""
+    parser.add_argument(
+        "--defect-blacklist", default=default_dbl,
+        help=("suppress known false positives loaded from the given file" + default_dbl_text))
+
     # needed for help2man
     parser.add_argument(
         "--version", action=VersionPrinter,
@@ -1000,6 +1013,12 @@ key event (defaults to 3).")
     if os.path.exists(output) and not args.force:
         parser.error("'%s' already exists, use --force to proceed" % output)
 
+    # handle --defect-blacklist
+    if args.defect_blacklist:
+        require_file(parser, args.defect_blacklist)
+        props.result_filters += [ "csdiff --json-output \"%s\" -" % args.defect_blacklist ]
+    props.defect_blacklist = args.defect_blacklist
+
     # poll plug-ins to reflect themselves in ScanProps
     plugins.handle_args(parser, args, props)
     props.any_tool = (plugins.num_enabled() > 0)
@@ -1023,6 +1042,8 @@ def do_scan(props, output, args, skip_patches):
         with ScanResults(output, props.keep_going) as results:
             results.ini_writer.append("mock-config", props.mock_profile)
             results.ini_writer.append("project-name", props.nvr)
+            if props.defect_blacklist:
+                results.ini_writer.append("defect-blacklist", props.defect_blacklist)
 
             if not props.any_tool:
                 # no tool enabled
