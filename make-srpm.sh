@@ -77,7 +77,6 @@ Version:    $VER
 Release:    1%{?dist}
 Summary:    A mock wrapper for Static Analysis tools
 
-Group:      Development/Tools
 License:    GPLv3+
 URL:        https://github.com/kdudka/%{name}
 Source0:    https://github.com/kdudka/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.xz
