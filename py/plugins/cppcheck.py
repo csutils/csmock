@@ -73,8 +73,12 @@ class Plugin:
             if os.system(cmd) == 0:
                 props.install_pkgs += ["tinyxml2"]
 
-            # copy cppcheck's binaries into the chroot
+            # copy cppcheck's executable into the chroot
             props.copy_in_files += ["/usr/bin/cppcheck"]
+
+            # copy cppcheck's data files into the chroot
+            if os.path.isdir("/usr/share/Cppcheck"):
+                props.copy_in_files += ["/usr/share/Cppcheck"]
             if os.path.isdir("/usr/share/cppcheck"):
                 props.copy_in_files += ["/usr/share/cppcheck"]
         else:
