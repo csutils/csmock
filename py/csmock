@@ -1243,8 +1243,8 @@ cd %%s*/ || cd *\n\
                 ini_file = "%s/scan.ini" % results.resdir
                 js_file = "%s/scan-results.js" % results.resdir
                 all_file = "%s/scan-results-all.js" % results.dbgdir
-                cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' $(ls %s/*.err) \
-> '%s'" % (CWE_LIST_FILE, ini_file, results.dbgdir_uni, all_file)
+                cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' '%s'/* > '%s'" \
+                        % (CWE_LIST_FILE, ini_file, results.dbgdir_uni, all_file)
                 results.exec_cmd(cmd, shell=True)
 
                 if args.embed_context > 0:
