@@ -1016,7 +1016,8 @@ key event (defaults to 3).")
     # handle --defect-blacklist
     if args.defect_blacklist:
         require_file(parser, args.defect_blacklist)
-        props.result_filters += [ "csdiff --json-output \"%s\" -" % args.defect_blacklist ]
+        filter_cmd = 'csdiff --json-output --show-internal "%s" -' % args.defect_blacklist
+        props.result_filters += [ filter_cmd ]
     props.defect_blacklist = args.defect_blacklist
 
     # poll plug-ins to reflect themselves in ScanProps
