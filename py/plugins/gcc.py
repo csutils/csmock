@@ -37,6 +37,12 @@ class Plugin:
     def enable(self):
         self.enabled = True
 
+    def enable_sanitize(self, props, pkgs, flags):
+        self.enabled = True
+        props.run_check = True
+        props.install_pkgs += pkgs
+        self.flags.append_flags(flags)
+
     def init_parser(self, parser):
         parser.add_argument(
             "-w", "--gcc-warning-level", type=int,
@@ -44,12 +50,54 @@ class Plugin:
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings. \
 (automatically enables the GCC plug-in)")
 
+        # -fsanitize={address,leak} cannot be combined with -fsanitize=thread
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument(
+            "--gcc-sanitize-address", action="store_true",
+            help="enable %%check and compile with -fsanitize=address")
+
+        group.add_argument(
+            "--gcc-sanitize-leak", action="store_true",
+            help="enable %%check and compile with -fsanitize=leak")
+
+        group.add_argument(
+            "--gcc-sanitize-thread", action="store_true",
+            help="enable %%check and compile with -fsanitize=thread")
+
+        parser.add_argument(
+            "--gcc-sanitize-undefined", action="store_true",
+            help="enable %%check and compile with -fsanitize=undefined")
+
         add_custom_flag_opts(parser)
 
     def handle_args(self, parser, args, props):
         if args.gcc_warning_level is not None:
             self.enable()
             self.flags = flags_by_warning_level(args.gcc_warning_level)
+
+        if args.gcc_sanitize_address:
+            self.enable_sanitize(props, ["libasan"], ["-fsanitize=address"])
+
+            # leak checker is currently too picky even for standard libs
+            props.env["ASAN_OPTIONS"] = "detect_leaks=0"
+
+            # -fsanitize=address does not seem to be supported with -static
+            self.flags.remove_flags(["-static"])
+
+        if args.gcc_sanitize_leak:
+            self.enable_sanitize(props, ["liblsan"], ["-fsanitize=leak"])
+
+            # -fsanitize=leak does not seem to work well with -static
+            self.flags.remove_flags(["-static"])
+
+        if args.gcc_sanitize_thread:
+            self.enable_sanitize(props, ["libtsan"], ["-fsanitize=thread"])
+
+            # -fsanitize=thread does not seem to be supported with -static
+            self.flags.remove_flags(["-static"])
+
+        if args.gcc_sanitize_undefined:
+            self.enable_sanitize(props, ["libubsan", "libubsan-static"], ["-fsanitize=undefined"])
 
         # serialize custom compiler flags
         if self.flags.append_custom_flags(args):

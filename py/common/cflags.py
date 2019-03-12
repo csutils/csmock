@@ -84,6 +84,14 @@ class FlagsMatrix:
         self.add_cxxflags = []
         self.del_cxxflags = []
 
+    def append_flags(self, flags):
+        self.add_cflags += flags
+        self.add_cxxflags += flags
+
+    def remove_flags(self, flags):
+        self.del_cflags += flags
+        self.del_cxxflags += flags
+
     def append_custom_flags(self, args):
         self.add_cflags += args.gcc_add_flag
         self.add_cflags += args.gcc_add_c_only_flag
