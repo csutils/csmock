@@ -549,6 +549,7 @@ class ScanProps:
         self.no_scan = False
         self.print_defects = False
         self.need_rpm_bi = False
+        self.run_check = False
         self.shell_cmd_to_build = None
         self.srpm = None
         self.base_srpm = None
@@ -877,6 +878,10 @@ key event (defaults to 3).")
         help="do not analyze any package, just check versions of the analyzers")
 
     csmock.common.util.add_paired_flag(
+        parser, "run-check",
+        help="run the %%check section of specfile (disabled by default)")
+
+    csmock.common.util.add_paired_flag(
         parser, "print-defects",
         help="print the resulting list of defects (default if connected to a tty)")
 
@@ -972,6 +977,10 @@ key event (defaults to 3).")
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
         props.install_opt_pkgs += ["csdiff >= 1.2.1"]
 
+    if args.run_check:
+        # run the %check section of specfile
+        props.run_check = True
+
     # initialize the %{_smp_mflags} RPM macro
     mflags_rpmm = "_smp_mflags"
     mflags_rpmm += " -j%d" % args.jobs
@@ -1023,6 +1032,10 @@ key event (defaults to 3).")
     # poll plug-ins to reflect themselves in ScanProps
     plugins.handle_args(parser, args, props)
     props.any_tool = (plugins.num_enabled() > 0)
+
+    if props.run_check:
+        # we need to run %install to be able to run %check
+        props.need_rpm_bi = True
 
     if args.diff_patches:
         ec = do_diff_scan(props, output, args, diff_patches=True)
@@ -1188,14 +1201,15 @@ cd %%s*/ || cd *\n\
                         results.error("%build failed", ec=ec)
 
                     if props.need_rpm_bi:
-                        # disable %check while running 'rpmbuild -bi'
                         rpm_opts = props.rpm_opts
-                        if mock.exec_chroot_cmd("rpmbuild --nocheck") == 0:
-                            rpm_opts += ["--nocheck"]
-                        else:
-                            # fragile compatiblity workaround for older versions of rpm-build,
-                            # known to break if unescaped %check appears in a change log entry
-                            rpm_opts += ["--define", "check\\\n%%check\\\nexit 0"]
+                        if not props.run_check:
+                            # disable %check while running 'rpmbuild -bi'
+                            if mock.exec_chroot_cmd("rpmbuild --nocheck") == 0:
+                                rpm_opts += ["--nocheck"]
+                            else:
+                                # fragile compatiblity workaround for older versions of rpm-build,
+                                # known to break if unescaped %check appears in a change log entry
+                                rpm_opts += ["--define", "check\\\n%%check\\\nexit 0"]
 
                         if props.shell_cmd_to_build is not None:
                             results.fatal_error("SRPM is required by a plug-in")
