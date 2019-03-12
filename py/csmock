@@ -835,7 +835,7 @@ def main():
         help="list available tools and exit")
 
     parser.add_argument(
-        "--install", dest="list_of_pkgs",
+        "--install", action="append", default=[],
         help="space-separated list of packages to install into the chroot")
 
     parser.add_argument(
@@ -988,9 +988,9 @@ key event (defaults to 3).")
         props.base_mock_profile = args.base_mock_profile
         require_file(parser, "/etc/mock/%s.cfg" % props.base_mock_profile)
 
-    if args.list_of_pkgs is not None:
-        # append the list of packages to install specified on command-line
-        props.install_pkgs += args.list_of_pkgs.split()
+    # append the list of packages to install specified on command-line
+    for pkg in args.install:
+        props.install_pkgs += pkg.split()
 
     if not props.no_scan:
         # make sure that 'srpm' is a file (it can be a tar archive instead of SRPM)
@@ -1105,8 +1105,8 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 mock.init_and_install(props.install_pkgs)
 
                 # install optional packages (if any)
-                if props.install_opt_pkgs:
-                    mock.try_install(props.install_opt_pkgs)
+                for pkg in props.install_opt_pkgs:
+                    mock.try_install([pkg])
                     # just to update rpm-list-mock.txt
                     find_missing_pkgs([], results, mock)
 
