@@ -49,6 +49,11 @@ def add_custom_flag_opts(parser):
         help="append the given compiler flag when invoking gcc for C++ \
 (can be used multiple times)")
 
+    parser.add_argument(
+        "--gcc-del-flag", action="append", default=[],
+        help="drop the given compiler flag when invoking gcc \
+(can be used multiple times)")
+
 
 def encode_custom_flag_opts(args):
     cmd = ""
@@ -58,6 +63,8 @@ def encode_custom_flag_opts(args):
         cmd += " --gcc-add-c-only-flag='%s'" % flag
     for flag in args.gcc_add_cxx_only_flag:
         cmd += " --gcc-add-cxx-only-flag='%s'" % flag
+    for flag in args.gcc_del_flag:
+        cmd += " --gcc-del-flag='%s'" % flag
     return cmd
 
 
@@ -84,9 +91,13 @@ class FlagsMatrix:
         self.add_cxxflags += args.gcc_add_flag
         self.add_cxxflags += args.gcc_add_cxx_only_flag
 
+        self.del_cflags   += args.gcc_del_flag
+        self.del_cxxflags += args.gcc_del_flag
+
         return (0 < len(args.gcc_add_flag)) or \
                 (0 < len(args.gcc_add_c_only_flag)) or \
-                (0 < len(args.gcc_add_cxx_only_flag))
+                (0 < len(args.gcc_add_cxx_only_flag)) or \
+                (0 < len(args.gcc_del_flag))
 
     def write_to_env(self, env):
         env["CSWRAP_ADD_CFLAGS"]   = serialize_flags(self.add_cflags)
