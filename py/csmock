@@ -530,6 +530,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 class ScanProps:
     def __init__(self):
         self.install_pkgs = []
+        self.install_pkgs_blacklist = []
         self.install_opt_pkgs = []
         self.copy_in_files = [CHROOT_FIXUPS]
         self.pre_mock_hooks = []
@@ -1112,7 +1113,10 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                     # use the rebuilt SRPM to get the dependency list
                     mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
-                    props.install_pkgs += deplist_from_srpm(results, srpm_dup)
+                    deps = deplist_from_srpm(results, srpm_dup)
+                    for pkg in deps:
+                        if pkg not in props.install_pkgs_blacklist:
+                            props.install_pkgs += [pkg]
 
                 # run 'mock --init' and 'mock --install'
                 mock.init_and_install(props.install_pkgs)

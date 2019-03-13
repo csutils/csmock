@@ -43,6 +43,9 @@ class Plugin:
         props.install_pkgs += pkgs
         self.flags.append_flags(flags)
 
+        # GCC sanitizers usually do not work well with valgrind
+        props.install_pkgs_blacklist += ["valgrind"]
+
     def init_parser(self, parser):
         parser.add_argument(
             "-w", "--gcc-warning-level", type=int,
