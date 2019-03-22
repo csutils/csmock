@@ -293,12 +293,7 @@ class ScanResults:
         self.error(msg, err_prefix="fatal ", ec=ec)
         raise FatalError(ec)
 
-    def exec_cmd(self, cmd, shell=False, emul_pty=False, echo=True):
-        if emul_pty:
-            # workaround for bug https://bugzilla.redhat.com/1166609
-            sh_cmd = strlist_to_shell_cmd(cmd, escape_special=True)
-            cmd = ["script", "-aefqc", sh_cmd, "/dev/null"]
-
+    def exec_cmd(self, cmd, shell=False, echo=True):
         if echo:
             if shell:
                 self.print_with_ts(shell_quote(cmd))
@@ -362,7 +357,6 @@ class MockWrapper:
         self.pid = os.getpid()
         self.skip_init = skip_init
         self.init_done = skip_init
-        self.emul_pty = False
         # just to silence pylint, will be initialized in __enter__()
         self.def_cmd = None
 
@@ -410,11 +404,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         # (see <https://bugzilla.redhat.com/1190100> for details)
         self.def_cmd += ["--plugin-option=tmpfs:keep_mounted=True"]
 
-        # workaround for bug https://bugzilla.redhat.com/1166609
-        cmd = "script -aefqc \"echo test\" /dev/null 2>/dev/null"
-        (ec, out) = self.results.get_cmd_output(cmd)
-        if ec == 0 and out.strip() == "test":
-            self.emul_pty = True
+        # re-enable verbose output per https://bugzilla.redhat.com/1166609
+        self.def_cmd += ["--config-opts=print_main_output=True"]
 
         return self
 
@@ -428,7 +419,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
     def exec_mock_cmd(self, args):
         cmd = self.get_mock_cmd(args)
-        return self.results.exec_cmd(cmd, emul_pty=self.emul_pty)
+        return self.results.exec_cmd(cmd)
 
     def exec_chroot_cmd(self, cmd):
         return self.exec_mock_cmd(["--chroot", cmd])
