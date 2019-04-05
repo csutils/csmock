@@ -49,6 +49,9 @@ DEFAULT_DEFECT_BLACKLIST = CSMOCK_DATADIR + "/defect-blacklist.err"
 
 PLUGIN_DIR = "@PLUGIN_DIR@"
 
+# how long should we wait before checking mock profile availability again
+MOCK_WAITING_TICK = 60
+
 DEFAULT_CSWRAP_TIMEOUT = 30
 
 DEFAULT_JOBS_CNT = 13
@@ -361,7 +364,7 @@ class MockWrapper:
         self.def_cmd = None
 
     def __enter__(self):
-        cmd = "flock -w15 '%s' -c '\
+        cmd = "flock -w%u '%s' -c '\
 lock_file=\"%s\" \n\
 self_pid=\"%d\" \n\
 if test -e \"$lock_file\"; then \n\
@@ -371,7 +374,7 @@ if test -e \"$lock_file\"; then \n\
     echo \"warning: purging stray lock file $lock_file (PID $pid)\" >&2 \n\
 fi \n\
 echo \"$self_pid\" > \"$lock_file\"'" \
-            % (self.meta_lock_file, self.lock_file, self.pid)
+            % (MOCK_WAITING_TICK, self.meta_lock_file, self.lock_file, self.pid)
         while os.system(cmd) != 0:
             f = open(self.lock_file)
             other_pid = ""
@@ -380,7 +383,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 f.close()
             msg = "waiting till %s (PID %s) disappears..."
             self.results.print_with_ts(msg % (self.lock_file, other_pid))
-            time.sleep(15)
+            time.sleep(MOCK_WAITING_TICK)
 
         # prepare the mock command template with default arguments
         if os.path.exists("/usr/bin/mock-unbuffered"):
