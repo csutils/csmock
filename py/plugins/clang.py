@@ -20,6 +20,7 @@ import os
 import subprocess
 
 # local imports
+import csmock.common.cflags
 import csmock.common.util
 
 
@@ -40,8 +41,10 @@ class Plugin:
         self.enabled = True
 
     def init_parser(self, parser):
-        # TODO: introduce options to enable/disable checkers
-        pass
+        parser.add_argument(
+            "--clang-add-flag", action="append", default=[],
+            help="append the given flag when invoking clang static analyzer \
+(can be used multiple times)")
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
@@ -49,6 +52,10 @@ class Plugin:
 
         props.enable_cswrap()
         props.env["CSWRAP_TIMEOUT_FOR"] += ":clang:clang++"
+        if args.clang_add_flag:
+            # propagate custom clang flags
+            props.env["CSCLNG_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.clang_add_flag)
+
         props.cswrap_filters += \
                 ["csgrep --invert-match --checker CLANG_WARNING --event error"]
 
