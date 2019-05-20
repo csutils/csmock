@@ -206,6 +206,8 @@ def encode_csbuild_args(args):
         cmd += " -w%d" % args.gcc_warning_level
 
     cmd += csmock.common.cflags.encode_custom_flag_opts(args)
+    for flag in args.clang_add_flag:
+        cmd += " --clang-add-flag='%s'" % flag
 
     cmd += encode_paired_flag(args, "print-current")
     cmd += encode_paired_flag(args, "print-added")
@@ -360,6 +362,11 @@ on exit.")
     csmock.common.cflags.add_custom_flag_opts(parser)
 
     parser.add_argument(
+        "--clang-add-flag", action="append", default=[],
+        help="append the given flag when invoking clang static analyzer \
+(can be used multiple times)")
+
+    parser.add_argument(
         "-U", "--embed-context", type=int, default=DEFAULT_EMBED_CONTEXT,
         help="embed a number of lines of context from the source file for the \
 key event" + DEFAULT_HELP_SUFFIX)
@@ -447,6 +454,15 @@ key event" + DEFAULT_HELP_SUFFIX)
     env = {}
     env["CSWRAP_TIMEOUT"] = "%d" % args.cswrap_timeout
     env["CSWRAP_TIMEOUT_FOR"] = "clang:clang++:cppcheck"
+
+    if args.clang_add_flag:
+        # propagate custom clang flags
+        clang_opts = csmock.common.cflags.serialize_flags(args.clang_add_flag)
+        clang_opts_env = os.getenv("CSCLNG_ADD_OPTS")
+        if clang_opts_env:
+            # prepend ${CSCLNG_ADD_OPTS} from env
+            clang_opts = "%s:%s" % (clang_opts_env, clang_opts)
+        env["CSCLNG_ADD_OPTS"] = clang_opts
 
     # resolve compiler flags
     flags = csmock.common.cflags.flags_by_warning_level(args.gcc_warning_level)
