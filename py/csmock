@@ -1236,7 +1236,7 @@ cd %%s*/ || cd *\n\
 
                         cmd += " | tar -xC '%s'" % results.dbgdir_raw
                         if results.exec_cmd(cmd, shell=True) != 0:
-                            results.error("field to get intermediate results from mock")
+                            results.error("failed to get intermediate results from mock")
 
                 if not props.no_scan:
                     if props.pick_cswrap_results(results) != 0:
