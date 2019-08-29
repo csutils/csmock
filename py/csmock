@@ -462,7 +462,13 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
 
     def init_and_install(self, pkgs):
-        for scrub_root in [False, True]:
+        scrub_root_passes = [False, True]
+        for pkg in pkgs:
+            if pkg.startswith("supermin"):
+                # force all installed packages to also be available in dnf cache
+                scrub_root_passes = [True]
+                break
+        for scrub_root in scrub_root_passes:
             if scrub_root:
                 self.exec_mock_cmd(["--scrub=root-cache"])
                 if self.exec_mock_cmd(["--init"]) != 0:
