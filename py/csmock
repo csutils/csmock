@@ -438,6 +438,10 @@ echo \"$self_pid\" > \"$lock_file\"'" \
     def try_install(self, pkgs):
         return (self.exec_mock_cmd(["--install"] + pkgs) == 0)
 
+    def copy_in_resolv_conf(self):
+        resconf = "/etc/resolv.conf"
+        return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
+
     def prepare_dnf_in_chroot(self):
         self.try_install(["dnf"])
         if find_missing_pkgs(["dnf"], self.results, self):
@@ -458,16 +462,13 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             return False
 
         # copy DNS configuration from host into chroot for dnf to work
-        resconf = "/etc/resolv.conf"
-        return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
+        return self.copy_in_resolv_conf()
 
-    def init_and_install(self, pkgs):
-        scrub_root_passes = [False, True]
-        for pkg in pkgs:
-            if pkg.startswith("supermin"):
-                # force all installed packages to also be available in dnf cache
-                scrub_root_passes = [True]
-                break
+    def init_and_install(self, pkgs, force_scrub=False):
+        if force_scrub:
+            scrub_root_passes = [True]
+        else:
+            scrub_root_passes = [False, True]
         for scrub_root in scrub_root_passes:
             if scrub_root:
                 self.exec_mock_cmd(["--scrub=root-cache"])
@@ -1095,6 +1096,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     results.error("pre-mock hook failed", ec=rv)
 
             with MockWrapper(results, props.mock_profile, args.skip_init) as mock:
+                supermin_in_use = False
                 if not props.no_scan and props.shell_cmd_to_build is None:
                     # first rebuild the given SRPM
                     mock.init_and_install([])
@@ -1118,8 +1120,15 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                         if pkg not in props.install_pkgs_blacklist:
                             props.install_pkgs += [pkg]
 
+                            if pkg.startswith("supermin"):
+                                # force all installed packages to also be available in dnf cache
+                                supermin_in_use = True
+
                 # run 'mock --init' and 'mock --install'
-                mock.init_and_install(props.install_pkgs)
+                mock.init_and_install(props.install_pkgs, force_scrub=supermin_in_use)
+                if supermin_in_use:
+                    # attempt to make name resolving work in the chroot
+                    mock.copy_in_resolv_conf()
 
                 # install optional packages (if any)
                 for pkg in props.install_opt_pkgs:
