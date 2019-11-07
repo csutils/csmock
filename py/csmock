@@ -826,7 +826,7 @@ def do_scan(props, output, args, skip_patches):
         props.rpm_opts += RAWBUILD_RPM_OPTS
 
     try:
-        with ScanResults(output, props.keep_going) as results:
+        with ScanResults(output, "csmock", "@VERSION@", props.keep_going) as results:
             results.ini_writer.append("mock-config", props.mock_profile)
             results.ini_writer.append("project-name", props.nvr)
             if props.defect_blacklist:
@@ -1078,7 +1078,7 @@ cd %%s*/ || cd *\n\
 
 def do_diff_scan(props, output, args, diff_patches):
     try:
-        with ScanResults(output, props.keep_going, create_dbgdir=False) as results:
+        with ScanResults(output, "csmock", "@VERSION@", props.keep_going, create_dbgdir=False) as results:
             run0_props = copy.deepcopy(props)
             csdiff = "csdiff"
             if diff_patches:

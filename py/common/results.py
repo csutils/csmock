@@ -46,8 +46,10 @@ class FatalError(Exception):
 
 
 class ScanResults:
-    def __init__(self, output, keep_going=False, create_dbgdir=True):
+    def __init__(self, output, tool, tool_version, keep_going=False, create_dbgdir=True):
         self.output = output
+        self.tool = tool
+        self.tool_version = tool_version
         self.keep_going = keep_going
         self.create_dbgdir = create_dbgdir
         self.use_xz = False
@@ -83,7 +85,7 @@ class ScanResults:
             fd, self.codec.streamreader, self.codec.streamwriter)
 
     def __enter__(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="csmock")
+        self.tmpdir = tempfile.mkdtemp(prefix=self.tool)
         if self.use_tar:
             self.resdir = "%s/%s" % (self.tmpdir, self.dirname)
         else:
@@ -129,7 +131,7 @@ class ScanResults:
                 self.subproc.wait()
             except Exception:
                 pass
-        self.print_with_ts("csmock exit code: %d\n" % self.ec, prefix="<<< ")
+        self.print_with_ts("%s exit code: %d\n" % (self.tool, self.ec), prefix="<<< ")
         self.log_fd.close()
         self.log_fd = sys.stderr
         self.log_pid.wait()
@@ -195,8 +197,8 @@ class IniWriter:
         self.results = results
         self.ini = self.results.open_res_file("scan.ini")
         self.write("[scan]\n")
-        self.append("tool", "csmock")
-        self.append("tool-version", "@VERSION@")
+        self.append("tool", self.results.tool)
+        self.append("tool-version", self.results.tool_version)
         self.append("tool-args", strlist_to_shell_cmd(sys.argv))
         self.append("host", socket.gethostname())
         self.append("store-results-to", self.results.output)
