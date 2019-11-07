@@ -18,6 +18,35 @@
 import re
 
 
+def shell_quote(str_in):
+    str_out = ""
+    for i in range(0, len(str_in)):
+        c = str_in[i]
+        if c == "\\":
+            str_out += "\\\\"
+        elif c == "\"":
+            str_out += "\\\""
+        elif c == "$":
+            str_out += "\\$"
+        else:
+            str_out += c
+    return "\"" + str_out + "\""
+
+
+def strlist_to_shell_cmd(cmd_in, escape_special=False):
+    def translate_one(i):
+        if escape_special:
+            return shell_quote(i)
+        return "'%s'" % i
+
+    if type(cmd_in) is str:
+        return "sh -c %s" % translate_one(cmd_in)
+    cmd_out = ""
+    for i in cmd_in:
+        cmd_out += " " + translate_one(i)
+    return cmd_out.lstrip()
+
+
 def install_default_toolver_hook(props, tool):
     tool_key = tool.lower()
 

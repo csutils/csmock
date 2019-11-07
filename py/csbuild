@@ -33,6 +33,7 @@ import git
 # local imports
 import csmock.common.cflags
 from csmock.common.util   import add_paired_flag
+from csmock.common.util   import shell_quote
 
 
 CSBUILD_TRAVIS_MIRROR = \
@@ -107,21 +108,6 @@ class StatusWriter:
 
 # FIXME: global instance
 sw = StatusWriter()
-
-# FIXME: copy/paste from csmock
-
-
-def shell_quote(str_in):
-    str_out = ""
-    for i in range(0, len(str_in)):
-        c = str_in[i]
-        if c == "\\":
-            str_out += "\\\\"
-        elif c == "\"":
-            str_out += "\\\""
-        else:
-            str_out += c
-    return "\"" + str_out + "\""
 
 
 def scan_or_die(cmd, what, fail_exit_code=1):

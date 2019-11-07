@@ -35,6 +35,8 @@ import time
 
 # local imports
 import csmock.common.util
+from csmock.common.util         import shell_quote
+from csmock.common.util         import strlist_to_shell_cmd
 
 
 CSMOCK_DATADIR = "/usr/share/csmock"
@@ -93,35 +95,6 @@ def current_iso_date():
     now = datetime.datetime.now()
     return "%04u-%02u-%02u %02u:%02u:%02u" % \
            (now.year, now.month, now.day, now.hour, now.minute, now.second)
-
-
-def shell_quote(str_in):
-    str_out = ""
-    for i in range(0, len(str_in)):
-        c = str_in[i]
-        if c == "\\":
-            str_out += "\\\\"
-        elif c == "\"":
-            str_out += "\\\""
-        elif c == "$":
-            str_out += "\\$"
-        else:
-            str_out += c
-    return "\"" + str_out + "\""
-
-
-def strlist_to_shell_cmd(cmd_in, escape_special=False):
-    def translate_one(i):
-        if escape_special:
-            return shell_quote(i)
-        return "'%s'" % i
-
-    if type(cmd_in) is str:
-        return "sh -c %s" % translate_one(cmd_in)
-    cmd_out = ""
-    for i in cmd_in:
-        cmd_out += " " + translate_one(i)
-    return cmd_out.lstrip()
 
 
 def is_ignored_dep(pkg):
