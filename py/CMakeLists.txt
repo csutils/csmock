@@ -41,6 +41,7 @@ set(dst_dir "${PYTHON_SITELIB}/csmock")
 install(FILES ${src_dir}/__init__.py DESTINATION ${dst_dir})
 install(FILES ${src_dir}/__init__.py DESTINATION ${dst_dir}/common)
 install(FILES ${src_dir}/cflags.py   DESTINATION ${dst_dir}/common)
+install(FILES ${src_dir}/results.py  DESTINATION ${dst_dir}/common)
 install(FILES ${src_dir}/util.py     DESTINATION ${dst_dir}/common)
 
 macro(install_executable FILE_NAME)
