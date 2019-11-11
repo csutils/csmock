@@ -31,6 +31,9 @@ import tempfile
 from csmock.common.util         import shell_quote
 from csmock.common.util         import strlist_to_shell_cmd
 
+CSGREP_FINAL_FILTER_ARGS = "--invert-match --event \"internal warning\" \
+--prune-events=1"
+
 def current_iso_date():
     now = datetime.datetime.now()
     return "%04u-%02u-%02u %02u:%02u:%02u" % \
@@ -213,3 +216,16 @@ class IniWriter:
 
     def append(self, key, value):
         self.write("%s = %s\n" % (key, value))
+
+
+def transform_results(js_file, results):
+    err_file  = re.sub("\\.js", ".err",  js_file)
+    html_file = re.sub("\\.js", ".html", js_file)
+    stat_file = re.sub("\\.js", "-summary.txt", js_file)
+    results.exec_cmd("csgrep --mode=grep %s '%s' > '%s'" %
+                     (CSGREP_FINAL_FILTER_ARGS, js_file,  err_file), shell=True)
+    results.exec_cmd("csgrep --mode=json %s '%s' | cshtml - > '%s'" %
+                     (CSGREP_FINAL_FILTER_ARGS, js_file, html_file), shell=True)
+    results.exec_cmd("csgrep --mode=stat %s '%s' | tee '%s'" % \
+                     (CSGREP_FINAL_FILTER_ARGS, err_file, stat_file), shell=True)
+    return err_file, html_file
