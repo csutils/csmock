@@ -723,7 +723,7 @@ key event (defaults to 3).")
     if args.SRPM is None:
         if args.no_scan:
             if output is None:
-                parser.error("unable to infer --output (despite --no-scan was given)")
+                parser.error("unable to infer --output (because --no-scan was given)")
         else:
             parser.error("no SRPM (or tarball) specified on the command line")
 
