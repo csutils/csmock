@@ -23,6 +23,7 @@ import re
 import shutil
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import tempfile
@@ -107,6 +108,7 @@ class ScanResults:
             os.mkdir(self.dbgdir)
             os.mkdir(self.dbgdir_raw)
             os.mkdir(self.dbgdir_uni)
+            os.mknod(os.path.join(self.dbgdir_uni, "empty.err"), stat.S_IFREG|0o444)
 
         tee = ["tee", "%s/scan.log" % self.resdir]
         self.log_pid = subprocess.Popen(
