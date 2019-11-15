@@ -86,6 +86,7 @@ BuildRequires: help2man
 
 %if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
 BuildRequires: python-argparse
+BuildRequires: python-importlib
 %endif
 
 # force using Python 3 Fedora 23+
@@ -140,6 +141,7 @@ Requires: cswrap >= 1.3.1
 Requires: mock
 %if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
 Requires: python-argparse
+Requires: python-importlib
 %endif
 %if %{force_py3}
 Provides: csmock-common(python3) = %{version}-%{release}
