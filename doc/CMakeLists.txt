@@ -21,8 +21,9 @@ set(MAN_PAGES "")
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/py/csmock
     COMMAND mkdir -pv ${PROJECT_BINARY_DIR}/py/csmock VERBATIM)
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/py/csmock/common
-    COMMAND ln -fsv ${PROJECT_SOURCE_DIR}/py/common
-                    ${PROJECT_SOURCE_DIR}/py/common/__init__.py
+    COMMAND ln -fsv ${PROJECT_SOURCE_DIR}/py/__init__.py
+                    ${PROJECT_SOURCE_DIR}/py/common
+                    ${PROJECT_SOURCE_DIR}/py/plugins
                     ${PROJECT_BINARY_DIR}/py/csmock/
     DEPENDS ${PROJECT_BINARY_DIR}/py/csmock VERBATIM)
 

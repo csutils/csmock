@@ -20,7 +20,8 @@
 # standard imports
 import argparse
 import copy
-import imp
+import importlib
+import pkgutil
 import os
 import re
 import shutil
@@ -46,8 +47,6 @@ PATCH_RAWBUILD = CSMOCK_DATADIR + "/scripts/patch-rawbuild.sh"
 CWE_LIST_FILE = CSMOCK_DATADIR + "/cwe-map.csv"
 
 DEFAULT_DEFECT_BLACKLIST = CSMOCK_DATADIR + "/defect-blacklist.err"
-
-PLUGIN_DIR = "@PLUGIN_DIR@"
 
 # how long should we wait before checking mock profile availability again
 MOCK_WAITING_TICK = 60
@@ -409,34 +408,22 @@ class PluginManager:
         self.plug_by_prio = {}
         self.plug_by_name = {}
 
-    def try_load(self, modname, path):
-        fp, pathname, description = imp.find_module(modname, [path])
-        try:
-            mod = imp.load_module(modname, fp, pathname, description)
-            plugin = mod.Plugin()
-        finally:
-            fp.close()
+    def try_load(self, mod_name):
+        full_name = "csmock.plugins." + mod_name
+        mod = importlib.import_module(full_name)
+        plugin = mod.Plugin()
 
         props = plugin.get_props()
         # TODO: check API version
         prio = props.pass_priority
         assert prio not in self.plug_by_prio
         self.plug_by_prio[prio] = plugin
-        self.plug_by_name[modname] = plugin
+        self.plug_by_name[mod_name] = plugin
 
     def load_default_plugins(self):
-        try:
-            files = os.listdir(PLUGIN_DIR)
-        except:
-            return
-
-        for fname in files:
-            parts = fname.split(".")
-            if len(parts) != 2:
-                continue
-            if parts[1] != "py":
-                continue
-            self.try_load(parts[0], path=PLUGIN_DIR)
+        pkg = importlib.import_module("csmock.plugins")
+        for (_, mod_name, _) in pkgutil.iter_modules(pkg.__path__):
+            self.try_load(mod_name)
 
     # Print description of each available plugin in format TOOL [:indent:] DESCRIPTION
     def print_plugin_descriptions(self):

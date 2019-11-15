@@ -256,9 +256,11 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
 %{csmock_python_sitelib}/csmock/__init__.py*
 %{csmock_python_sitelib}/csmock/common
+%{csmock_python_sitelib}/csmock/plugins/__init__.py*
 %{csmock_python_sitelib}/csmock/plugins/gcc.py*
 %if %{force_py3}
 %{csmock_python_sitelib}/csmock/__pycache__/__init__.*
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/__init__.*
 %{csmock_python_sitelib}/csmock/plugins/__pycache__/gcc.*
 %endif
 %doc COPYING README
