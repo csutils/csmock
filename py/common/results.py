@@ -150,7 +150,12 @@ class ScanResults:
                         self.output, self.tmpdir))
 
         sys.stderr.write("Wrote: %s\n\n" % self.output)
-        shutil.rmtree(self.tmpdir)
+        try:
+            shutil.rmtree(self.tmpdir)
+        except Exception:
+            sys.stderr.write("%s: warning: failed to remove tmp dir: %s\n" \
+                    % (self.tool, self.tmpdir))
+
 
     def print_with_ts(self, msg, prefix=">>> "):
         self.log_fd.write("%s%s\t%s\n" % (prefix, current_iso_date(), msg))
