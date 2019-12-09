@@ -24,6 +24,7 @@ import importlib
 import pkgutil
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -612,6 +613,10 @@ def main():
         help="maximal number of jobs running in parallel (passed to 'make')")
 
     parser.add_argument(
+        "--rpm-build-opts", action="append", default=[],
+        help="shell-quoted options passed to rpm-build")
+
+    parser.add_argument(
         "--cswrap-timeout", type=int, default=DEFAULT_CSWRAP_TIMEOUT,
         help="maximal amount of time taken by analysis of a single module [s]")
 
@@ -740,6 +745,10 @@ key event (defaults to 3).")
     if args.run_check:
         # run the %check section of specfile
         props.run_check = True
+
+    # parse and append rpm-build opts
+    for opt in args.rpm_build_opts:
+        props.rpm_opts += shlex.split(opt)
 
     # initialize the %{_smp_mflags} RPM macro
     mflags_rpmm = "_smp_mflags"
