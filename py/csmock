@@ -213,7 +213,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
     def exec_mockbuild_cmd(self, cmd):
         return self.exec_chroot_cmd(
-            "/bin/su mockbuild -c %s" % shell_quote(cmd))
+            "/bin/su mockbuild -lc %s" % shell_quote(cmd))
 
     def copy_out(self, args):
         cmd = ["--disable-plugin=selinux", "--copyout"] + args
