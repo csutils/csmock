@@ -256,6 +256,9 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         for scrub_root in scrub_root_passes:
             if scrub_root:
                 self.exec_mock_cmd(["--scrub=root-cache"])
+                if force_scrub:
+                    # yet another hack for libguestfs/supermin
+                    self.exec_mock_cmd(["--scrub=dnf-cache"])
                 if self.exec_mock_cmd(["--init"]) != 0:
                     self.results.fatal_error(
                         "failed to init mock profile: %s" % self.mock_profile)
