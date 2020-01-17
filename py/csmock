@@ -999,6 +999,9 @@ cd %%s*/ || cd *\n\
                         cmd = "rpmbuild -bi --nodeps --short-circuit %s %s" \
                             % (spec_in, strlist_to_shell_cmd(rpm_opts))
 
+                        # wrap %install cmd by all %build cmd wrappers (workaround for buggy pkgs)
+                        cmd = props.wrap_build_cmd(cmd)
+
                         # initialize environment variables according to ScanProps
                         cmd = props.wrap_shell_cmd_by_env(cmd)
 
