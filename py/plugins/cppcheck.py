@@ -55,7 +55,7 @@ class Plugin:
         props.env["CSWRAP_TIMEOUT_FOR"] += ":cppcheck"
         props.cswrap_filters += ["csgrep --invert-match \
 --checker CPPCHECK_WARNING \
---event 'cppcheckError|preprocessorErrorDirective|syntaxError'"]
+--event 'cppcheckError|internalAstError|preprocessorErrorDirective|syntaxError'"]
 
         # resolve cscppc_path by querying cscppc binary
         cmd = ["cscppc", "--print-path-to-wrap"]
