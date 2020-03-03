@@ -18,6 +18,7 @@
 # standard imports
 import codecs
 import datetime
+import errno
 import os
 import re
 import shutil
@@ -178,10 +179,19 @@ class ScanResults:
                 self.print_with_ts(shell_quote(cmd))
             else:
                 self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
-        self.subproc = subprocess.Popen(
-            cmd, stdout=self.log_fd, stderr=self.log_fd, shell=shell)
-        rv = self.subproc.wait()
-        self.log_fd.write("\n")
+        try:
+            self.subproc = subprocess.Popen(
+                cmd, stdout=self.log_fd, stderr=self.log_fd, shell=shell)
+            rv = self.subproc.wait()
+            self.log_fd.write("\n")
+        except OSError as e:
+            self.log_fd.write("%s\n" % str(e))
+            if e.errno == errno.ENOENT:
+                # command not found
+                return 0x7F
+            else:
+                # command not executable
+                return 0x7E
         if rv >= 128:
             # if the child has been signalled, signal self with the same signal
             os.kill(os.getpid(), rv - 128)
