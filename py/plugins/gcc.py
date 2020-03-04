@@ -53,6 +53,10 @@ class Plugin:
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings. \
 (automatically enables the GCC plug-in)")
 
+        parser.add_argument(
+            "--gcc-set-env", action="store_true",
+            help="set $CC and $CXX to gcc and g++, respectively, for build")
+
         # -fsanitize={address,leak} cannot be combined with -fsanitize=thread
         group = parser.add_mutually_exclusive_group()
         group.add_argument(
@@ -77,6 +81,11 @@ class Plugin:
         if args.gcc_warning_level is not None:
             self.enable()
             self.flags = flags_by_warning_level(args.gcc_warning_level)
+
+        if args.gcc_set_env:
+            self.enable()
+            props.env["CC"]  = "gcc"
+            props.env["CXX"] = "g++"
 
         if args.gcc_sanitize_address:
             self.enable_sanitize(props, ["libasan"], ["-fsanitize=address"])
