@@ -136,7 +136,7 @@ def find_missing_pkgs(pkgs, results, mock, ignore_with=False):
 
 
 class MockWrapper:
-    def __init__(self, results, mock_profile, skip_init=False):
+    def __init__(self, results, mock_profile, skip_init=False, use_login_shell=True):
         self.results = results
         self.mock_profile = mock_profile
         self.lock_file = "/tmp/.csmock-%s.lock" % mock_profile
@@ -144,6 +144,7 @@ class MockWrapper:
         self.pid = os.getpid()
         self.skip_init = skip_init
         self.init_done = skip_init
+        self.use_login_shell = use_login_shell
         # just to silence pylint, will be initialized in __enter__()
         self.def_cmd = None
 
@@ -212,8 +213,11 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return self.exec_mock_cmd(["--chroot", cmd])
 
     def exec_mockbuild_cmd(self, cmd):
+        args = ""
+        if self.use_login_shell:
+            args = " -l"
         return self.exec_chroot_cmd(
-            "/bin/su mockbuild -lc %s" % shell_quote(cmd))
+            "/bin/su mockbuild%s -c %s" % (args, shell_quote(cmd)))
 
     def copy_out(self, args):
         cmd = ["--disable-plugin=selinux", "--copyout"] + args
@@ -339,6 +343,7 @@ class ScanProps:
         self.print_defects = False
         self.need_rpm_bi = False
         self.run_check = False
+        self.use_login_shell = True
         self.shell_cmd_to_build = None
         self.srpm = None
         self.base_srpm = None
@@ -684,6 +689,10 @@ key event (defaults to 3).")
         "--defect-blacklist", default=default_dbl,
         help=("suppress known false positives loaded from the given file" + default_dbl_text))
 
+    csmock.common.util.add_paired_flag(
+        parser, "use-login-shell",
+        help="use login shell for build (default)")
+
     # needed for help2man
     parser.add_argument(
         "--version", action=VersionPrinter,
@@ -737,6 +746,7 @@ key event (defaults to 3).")
     props.keep_going            = args.keep_going
     props.no_scan               = args.no_scan
     props.print_defects         = args.print_defects
+    props.use_login_shell       = args.use_login_shell in [True, None]
     props.shell_cmd_to_build    = args.shell_cmd
     props.srpm                  = args.SRPM
     props.base_srpm             = args.base_srpm
@@ -865,7 +875,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 if rv != 0:
                     results.error("pre-mock hook failed", ec=rv)
 
-            with MockWrapper(results, props.mock_profile, args.skip_init) as mock:
+            with MockWrapper(results, props.mock_profile, args.skip_init, props.use_login_shell) as mock:
                 supermin_in_use = False
                 if not props.no_scan and props.shell_cmd_to_build is None:
                     # first rebuild the given SRPM
