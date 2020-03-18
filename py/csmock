@@ -1107,12 +1107,13 @@ def do_diff_scan(props, output, args, diff_patches):
             run0 = "%s/run0" % results.resdir
             ec = do_scan(run0_props, run0, args, skip_patches=(args.skip_patches or diff_patches))
             if ec != 0:
-                results.error("base scan failed", ec=ec)
+                results.error("scan of baseline package failed, cannot continue with scan of %s" %
+                        props.nvr, ec=ec)
 
             run1 = "%s/run1" % results.resdir
             ec = do_scan(props, run1, args, skip_patches=args.skip_patches)
             if ec != 0:
-                results.error("regular scan failed", ec=ec)
+                results.error("scan of %s failed" % props.nvr, ec=ec)
 
             # diff and process fixed defects
             run0_file = "%s/scan-results.js" % run0
