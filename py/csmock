@@ -182,12 +182,6 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             mock = "mock"
         self.def_cmd = [mock, "-r", self.mock_profile]
 
-        # avoid using systemd-nspawn, which looses files in /tmp
-        self.def_cmd += ["--old-chroot"]
-
-        # disable unneeded expensive plug-in 'package_state'
-        self.def_cmd += ["--disable-plugin=package_state"]
-
         # make csmock work in case the 'tmpfs' plug-in is enabled
         # (see <https://bugzilla.redhat.com/1190100> for details)
         self.def_cmd += ["--plugin-option=tmpfs:keep_mounted=True"]
