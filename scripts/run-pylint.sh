@@ -7,4 +7,5 @@ find "$@" -type f -print0 \
         } >/dev/null && readlink -f "$i"; done' "$0" \
     | sort -V | tee /dev/fd/2 \
     | xargs -r pylint -rn --msg-template '{abspath}:{line}:{column}: {msg_id}[pylint]: {msg}' \
+    | grep --invert-match '^\** Module ' \
     | tee /dev/fd/2
