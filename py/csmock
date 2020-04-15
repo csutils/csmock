@@ -136,15 +136,16 @@ def find_missing_pkgs(pkgs, results, mock, ignore_with=False):
 
 
 class MockWrapper:
-    def __init__(self, results, mock_profile, skip_init=False, use_login_shell=True):
+    def __init__(self, results, props):
         self.results = results
-        self.mock_profile = mock_profile
-        self.lock_file = "/tmp/.csmock-%s.lock" % mock_profile
-        self.meta_lock_file = "/tmp/.csmock-%s.metalock" % mock_profile
+        self.mock_profile = props.mock_profile
+        self.lock_file = "/tmp/.csmock-%s.lock" % self.mock_profile
+        self.meta_lock_file = "/tmp/.csmock-%s.metalock" % self.mock_profile
         self.pid = os.getpid()
-        self.skip_init = skip_init
-        self.init_done = skip_init
-        self.use_login_shell = use_login_shell
+        self.skip_init = props.skip_mock_init
+        self.init_done = props.skip_mock_init
+        self.skip_clean = props.skip_mock_clean
+        self.use_login_shell = props.use_login_shell
         # just to silence pylint, will be initialized in __enter__()
         self.def_cmd = None
 
@@ -192,6 +193,12 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if not self.skip_clean:
+            # clean up mock chroot
+            if self.exec_mock_cmd(["--clean"]) != 0:
+                self.results.error("failed to clean mock chroot: %s" % self.mock_profile, ec=0)
+
+        # release the lock file
         cmd = "test -r '%s' && test %d = \"$(<%s)\" && rm -f '%s'" % (
             self.lock_file, self.pid, self.lock_file, self.lock_file)
         os.system(cmd)
@@ -338,6 +345,8 @@ class ScanProps:
         self.need_rpm_bi = False
         self.run_check = False
         self.use_login_shell = True
+        self.skip_mock_init = False
+        self.skip_mock_clean = False
         self.shell_cmd_to_build = None
         self.srpm = None
         self.base_srpm = None
@@ -744,6 +753,8 @@ key event (defaults to 3).")
     props.shell_cmd_to_build    = args.shell_cmd
     props.srpm                  = args.SRPM
     props.base_srpm             = args.base_srpm
+    props.skip_mock_init        = args.skip_init
+    props.skip_mock_clean       = args.no_clean
 
     if args.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
@@ -869,7 +880,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 if rv != 0:
                     results.error("pre-mock hook failed", ec=rv)
 
-            with MockWrapper(results, props.mock_profile, args.skip_init, props.use_login_shell) as mock:
+            with MockWrapper(results, props) as mock:
                 supermin_in_use = False
                 if not props.no_scan and props.shell_cmd_to_build is None:
                     # first rebuild the given SRPM
@@ -1060,11 +1071,6 @@ cd %%s*/ || cd *\n\
                     cmd += " < '%s' > '%s'" % (all_file, tmp_file)
                     if results.exec_cmd(cmd, shell=True) == 0:
                         shutil.move(tmp_file, all_file)
-
-                if not args.no_clean:
-                    # clean up thhe mock root
-                    if mock.exec_mock_cmd(["--clean"]) != 0:
-                        results.error("failed to clean mock profile", ec=0)
 
             # we are done with mock
 
