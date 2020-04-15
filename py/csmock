@@ -1023,7 +1023,7 @@ cd %%s*/ || cd *\n\
                     if props.copy_out_files:
                         cmd = strlist_to_shell_cmd(
                             mock.get_mock_cmd(
-                                ["--shell", "tar -c " + strlist_to_shell_cmd(
+                                ["--shell", "tar -c --remove-files " + strlist_to_shell_cmd(
                                     props.copy_out_files)]))
 
                         cmd += " | tar -xC '%s'" % results.dbgdir_raw
