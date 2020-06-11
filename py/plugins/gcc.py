@@ -15,10 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+# standard imports
+import subprocess
+
+# local imports
 import csmock.common.util
 
 from csmock.common.cflags import add_custom_flag_opts, flags_by_warning_level
 
+CSGCCA_BIN="/usr/bin/csgcca"
 
 class PluginProps:
     def __init__(self):
@@ -30,6 +35,7 @@ class Plugin:
         self.enabled = False
         self.flags = flags_by_warning_level(0)
         self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
+        self.csgcca_path = None
 
     def get_props(self):
         return PluginProps()
@@ -52,6 +58,15 @@ class Plugin:
             help="Adjust GCC warning level.  -w0 means default flags, \
 -w1 appends -Wall and -Wextra, and -w2 enables some other useful warnings. \
 (automatically enables the GCC plug-in)")
+
+        parser.add_argument(
+            "--gcc-analyze", action="store_true",
+            help="run `gcc -fanalyzer` in a separate process")
+
+        parser.add_argument(
+            "--gcc-analyze-add-flag", action="append", default=[],
+            help="append the given flag when invoking `gcc -fanalyzer` \
+(can be used multiple times)")
 
         parser.add_argument(
             "--gcc-set-env", action="store_true",
@@ -81,6 +96,17 @@ class Plugin:
         if args.gcc_warning_level is not None:
             self.enable()
             self.flags = flags_by_warning_level(args.gcc_warning_level)
+
+        if args.gcc_analyze:
+            self.enable()
+            # resolve csgcca_path by querying csclng binary
+            cmd = [CSGCCA_BIN, "--print-path-to-wrap"]
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (out, _) = p.communicate()
+            if 0 != p.returncode:
+                parser.error("--gcc-analyze requires %s to be available" % CSGCCA_BIN)
+            self.csgcca_path = out.decode("utf8").strip()
+            props.copy_in_files += [CSGCCA_BIN, self.csgcca_path]
 
         if args.gcc_set_env:
             self.enable()
@@ -129,3 +155,23 @@ class Plugin:
         self.flags.write_to_env(props.env)
 
         csmock.common.util.install_default_toolver_hook(props, "gcc")
+
+        if self.csgcca_path is not None:
+            def csgcca_hook(results, mock):
+                cmd = "echo 'int main() {}'"
+                cmd += " | gcc -xc - -c -o /dev/null"
+                cmd += " -fanalyzer -fdiagnostics-path-format=separate-events"
+                if 0 != mock.exec_mockbuild_cmd(cmd):
+                    results.error("`gcc -fanalyzer` does not seem to work, disabling the tool", ec=0)
+                    return 0
+
+                # XXX: changing props this way is extremely fragile
+                props.path = [self.csgcca_path] + props.path
+                props.env["CSWRAP_TIMEOUT_FOR"] += ":gcc"
+                if args.gcc_analyze_add_flag:
+                    # propagate custom clang flags
+                    props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
+
+                return 0
+
+            props.post_depinst_hooks += [csgcca_hook]
