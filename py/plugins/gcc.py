@@ -172,6 +172,8 @@ class Plugin:
                     # propagate custom clang flags
                     props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
 
+                # record that `gcc -fanalyzer` was used for this scan
+                csmock.common.util.write_toolver_from_rpmlist(results, mock, "gcc", "gcc-analyzer")
                 return 0
 
             props.post_depinst_hooks += [csgcca_hook]
