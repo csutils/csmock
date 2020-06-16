@@ -97,7 +97,7 @@ class Plugin:
             self.enable()
             self.flags = flags_by_warning_level(args.gcc_warning_level)
 
-        if args.gcc_analyze:
+        if args.gcc_analyze or getattr(args, "all_tools", False):
             self.enable()
             # resolve csgcca_path by querying csclng binary
             cmd = [CSGCCA_BIN, "--print-path-to-wrap"]
