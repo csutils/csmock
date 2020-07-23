@@ -231,7 +231,7 @@ cd csmock_build
 %cmake \\
     -DVERSION='%{name}-%{version}-%{release}' \\
     -DPYTHON_EXECUTABLE='%{csmock_python_executable}' \\
-    ..
+    -B. ..
 make %{?_smp_mflags} VERBOSE=yes
 
 %install
