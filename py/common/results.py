@@ -59,6 +59,7 @@ class ScanResults:
         self.dirname = os.path.basename(output)
         self.codec = codecs.lookup('utf8')
         self.ec = 0
+        self.dying = False
 
         # just to silence pylint, will be initialized in __enter__()
         self.tmpdir = None
@@ -117,9 +118,19 @@ class ScanResults:
         self.log_fd = self.utf8_wrap(self.log_pid.stdin)
 
         def signal_handler(signum, frame):
-            # FIXME: we should use Async-signal-safe functions only
-            self.fatal_error("caught signal %d" % signum, ec=(0x80 + signum))
-        for i in [signal.SIGINT, signal.SIGTERM]:
+            # avoid throwing FatalError out of a signal handler
+            self.dying = True
+            self.error("caught signal %d" % signum, 128 + signum)
+            if self.subproc is not None:
+                # forward the signal to the child process being executed
+                try:
+                    os.kill(self.subproc.pid, signum)
+                except Exception as e:
+                    self.error("failed to kill child process: %s" % e)
+            # this will make the foreground process throw FatalError synchronously
+            self.dying = False
+
+        for i in [signal.SIGINT, signal.SIGPIPE, signal.SIGQUIT, signal.SIGTERM]:
             signal.signal(i, signal_handler)
 
         self.ini_writer = IniWriter(self)
@@ -127,13 +138,6 @@ class ScanResults:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.ini_writer.close()
-        if self.subproc is not None and self.subproc.returncode is None:
-            # FIXME: TOCTOU race
-            try:
-                os.kill(self.subproc.pid, signal.SIGTERM)
-                self.subproc.wait()
-            except Exception:
-                pass
         self.print_with_ts("%s exit code: %d\n" % (self.tool, self.ec), prefix="<<< ")
         self.log_fd.close()
         self.log_fd = sys.stderr
@@ -161,19 +165,38 @@ class ScanResults:
     def print_with_ts(self, msg, prefix=">>> "):
         self.log_fd.write("%s%s\t%s\n" % (prefix, current_iso_date(), msg))
         self.log_fd.flush()
+        # eventually handle terminating signals
+        self.handle_ec()
+
+    def update_ec(self, ec):
+        if self.ec < ec:
+            self.ec = ec
 
     def error(self, msg, ec=1, err_prefix=""):
         self.print_with_ts("%serror: %s\n" % (err_prefix, msg), prefix="!!! ")
-        if self.ec < ec:
-            self.ec = ec
-        if not self.keep_going and (self.ec != 0):
+        self.update_ec(ec)
+        if not self.dying and not self.keep_going and (self.ec != 0):
             raise FatalError(ec)
 
     def fatal_error(self, msg, ec=1):
+        # avoid recursive handling of errors, handle synchronous shutdown
+        self.dying = True
         self.error(msg, err_prefix="fatal ", ec=ec)
         raise FatalError(ec)
 
+    def handle_ec(self):
+        if not self.dying and (128 < self.ec):
+            # caught terminating signal, handle synchronous shutdown
+            self.fatal_error("caught signal %d" % (self.ec - 128), self.ec)
+
+    def handle_rv(self, rv):
+        if 128 < rv:
+            # command terminated by signal, handle synchronous shutdown
+            self.update_ec(rv)
+            self.handle_ec()
+
     def exec_cmd(self, cmd, shell=False, echo=True):
+        self.handle_ec()
         if echo:
             if shell:
                 self.print_with_ts(shell_quote(cmd))
@@ -183,6 +206,7 @@ class ScanResults:
             self.subproc = subprocess.Popen(
                 cmd, stdout=self.log_fd, stderr=self.log_fd, shell=shell)
             rv = self.subproc.wait()
+            self.subproc = None
             self.log_fd.write("\n")
         except OSError as e:
             self.log_fd.write("%s\n" % str(e))
@@ -192,17 +216,19 @@ class ScanResults:
             else:
                 # command not executable
                 return 0x7E
-        if rv >= 128:
-            # if the child has been signalled, signal self with the same signal
-            os.kill(os.getpid(), rv - 128)
+        self.handle_rv(rv)
         return rv
 
     def get_cmd_output(self, cmd, shell=True):
+        self.handle_ec()
         self.subproc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=self.log_fd, shell=shell)
         (out, _) = self.subproc.communicate()
+        rv = self.subproc.returncode
+        self.subproc = None
+        self.handle_rv(rv)
         out = out.decode("utf8")
-        return self.subproc.returncode, out
+        return (rv, out)
 
     def open_res_file(self, rel_path):
         abs_path = "%s/%s" % (self.resdir, rel_path)
