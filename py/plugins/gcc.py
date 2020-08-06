@@ -166,7 +166,15 @@ class Plugin:
                     return 0
 
                 # XXX: changing props this way is extremely fragile
-                props.path = [self.csgcca_path] + props.path
+                # insert csgcca right before cswrap to avoid chaining
+                # csclng/cscppc while invoking `gcc -fanalyzer`
+                idx_cswrap = 0
+                for idx in range(0, len(props.path)):
+                    if props.path[idx].endswith("/cswrap"):
+                        idx_cswrap = idx
+                        break
+                props.path.insert(idx_cswrap, self.csgcca_path)
+
                 props.env["CSWRAP_TIMEOUT_FOR"] += ":gcc"
                 if args.gcc_analyze_add_flag:
                     # propagate custom clang flags
