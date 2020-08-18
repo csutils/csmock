@@ -19,6 +19,9 @@ import os
 import re
 import subprocess
 
+# local imports
+import csmock.common.cflags
+
 
 class PluginProps:
     def __init__(self):
@@ -43,6 +46,11 @@ class Plugin:
             help="use host's Cppcheck instead of the one in chroot \
 (automatically enables the Cppcheck plug-in)")
 
+        parser.add_argument(
+            "--cppcheck-add-flag", action="append", default=[],
+            help="append the given flag when invoking cppcheck \
+(can be used multiple times)")
+
     def handle_args(self, parser, args, props):
         self.use_host_cppcheck = args.use_host_cppcheck
         if self.use_host_cppcheck:
@@ -56,6 +64,10 @@ class Plugin:
         props.cswrap_filters += ["csgrep --invert-match \
 --checker CPPCHECK_WARNING \
 --event 'cppcheckError|internalAstError|preprocessorErrorDirective|syntaxError'"]
+
+        if args.cppcheck_add_flag:
+            # propagate custom cppcheck flags
+            props.env["CSCPPC_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.cppcheck_add_flag)
 
         # resolve cscppc_path by querying cscppc binary
         cmd = ["cscppc", "--print-path-to-wrap"]
