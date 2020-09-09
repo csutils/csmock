@@ -507,7 +507,6 @@ def re_from_checker_set(checker_set):
 
 # transform scan-results.js to scan-results.{err,html} and write stats
 def finalize_results(js_file, results, props):
-    (err_file, _) = transform_results(js_file, results)
     if props.imp_checker_set:
         # filter out "important" defects, first based on checkers only
         cmd = "csgrep '%s' --mode=json --checker '%s'" % \
@@ -529,6 +528,14 @@ def finalize_results(js_file, results, props):
 
         # generate *-imp.{err,html}
         transform_results(imp_js_file, results)
+
+        # initialize the "imp" flag in the resulting full .js output file
+        tmp_js_file = re.sub("\\.js", "-tmp.js", js_file)
+        cmd = "cslinker --implist '%s' '%s' > '%s' && mv -v '%s' '%s'" \
+                % (imp_js_file, js_file, tmp_js_file, tmp_js_file, js_file)
+        results.exec_cmd(cmd, shell=True)
+
+    (err_file, _) = transform_results(js_file, results)
 
     if props.print_defects:
         os.system("csgrep '%s'" % err_file)
