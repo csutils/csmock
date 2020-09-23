@@ -93,21 +93,17 @@ def is_ignored_dep(pkg):
 
 def find_missing_pkgs(pkgs, results, mock, ignore_with=False):
     # dump list of RPMs installed in the chroot (for debugging purposes)
-    tmp_var_lib = "%s/var/lib" % results.tmpdir
-    if os.path.isdir(tmp_var_lib):
-        shutil.rmtree(tmp_var_lib)
-    os.makedirs(tmp_var_lib)
-    mock.copy_out(["/var/lib/rpm", "%s/rpm" % tmp_var_lib])
-    tmp_rpm = "%s/rpm" % tmp_var_lib
-    installed = "%s/rpm-list-mock.txt" % results.dbgdir
+    cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell", "rpm -qa"]))
+    cmd += " | sort -V > %s/rpm-list-mock.txt" % results.dbgdir
+    if results.exec_cmd(cmd, shell=True) != 0:
+        results.error("failed to get list of packages installed in chroot")
+
+    # get full list of provides
     provides = "%s/rpm-list-mock-provides.txt" % results.tmpdir
-    cmd_tpl = "chmod -w '%s' && rpm -qa --root '%s' | sort -V \
-> '%s' && rpm -qa --provides --root '%s' > '%s' && chmod u+w '%s'"
-    results.exec_cmd(
-        cmd_tpl % (
-            tmp_rpm, results.tmpdir, installed, results.tmpdir, provides,
-            tmp_rpm),
-        shell=True)
+    cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell", "rpm -qa --provides"]))
+    cmd += " | sort -V > %s" % provides
+    if results.exec_cmd(cmd, shell=True) != 0:
+        results.error("failed to get list of RPM provides in chroot")
 
     missing = []
     installed = set()
