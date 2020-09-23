@@ -479,13 +479,15 @@ class PluginManager:
         return cnt
 
 
-def deplist_from_srpm(results, srpm):
+def deplist_from_srpm(results, srpm, deny_list=[]):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
     raw_deps = filter(None, deps.split("\n"))
     deps = []
     for d in raw_deps:
         pkg = d.strip()
         if is_ignored_dep(pkg):
+            continue
+        if pkg in deny_list:
             continue
         deps += [pkg]
     return deps
@@ -893,6 +895,10 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     # first rebuild the given SRPM
                     mock.init_and_install([])
 
+                    # some dependencies might be required even for the rebuild
+                    deps = deplist_from_srpm(results, srpm_dup, props.install_pkgs_blacklist)
+                    mock.try_install(deps)
+
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
                     mock.exec_mock_cmd(["--copyin", srpm_dup, srpm_in])
@@ -907,14 +913,12 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                     # use the rebuilt SRPM to get the dependency list
                     mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
-                    deps = deplist_from_srpm(results, srpm_dup)
+                    deps = deplist_from_srpm(results, srpm_dup, props.install_pkgs_blacklist)
+                    props.install_pkgs += deps
                     for pkg in deps:
-                        if pkg not in props.install_pkgs_blacklist:
-                            props.install_pkgs += [pkg]
-
-                            if pkg.startswith("supermin"):
-                                # force all installed packages to also be available in dnf cache
-                                supermin_in_use = True
+                        if pkg.startswith("supermin"):
+                            # force all installed packages to also be available in dnf cache
+                            supermin_in_use = True
 
                 # run 'mock --init' and 'mock --install'
                 mock.init_and_install(props.install_pkgs, force_scrub=supermin_in_use)
