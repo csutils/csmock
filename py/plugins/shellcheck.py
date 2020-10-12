@@ -23,7 +23,7 @@ RUN_SHELLCHECK_SH = "/usr/share/csmock/scripts/run-shellcheck.sh"
 SHELLCHECK_CAPTURE = "/builddir/shellcheck-capture.err"
 
 FILTER_CMD = "csgrep --quiet '%s' " \
-        "| csgrep --invert-match --event '^note$' " \
+        "| csgrep --invert-match --event '^note' " \
         "> '%s'"
 
 
