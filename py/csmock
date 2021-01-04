@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2014 Red Hat, Inc.
+# Copyright (C) 2014 - 2021 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -85,6 +85,8 @@ DEFAULT_RESULT_FILTERS = [
     "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\\.c$'",
     "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
 
+# path to csexec-loader is hard-coded for now
+CSEXEC_ENABLE_FLAG = "-Wl,--dynamic-linker,/usr/bin/csexec-loader"
 
 def is_ignored_dep(pkg):
     # we do not install/check this kind of dependencies
@@ -318,6 +320,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
 class ScanProps:
     def __init__(self):
+        self.plugins = None
         self.install_pkgs = []
         self.install_pkgs_blacklist = []
         self.install_opt_pkgs = []
@@ -328,6 +331,7 @@ class ScanProps:
         self.path = []
         self.env = {}
         self.copy_out_files = []
+        self.csexec_enabled = False
         self.cswrap_enabled = False
         self.cswrap_filters = DEFAULT_CSWRAP_FILTERS
         self.result_filters = DEFAULT_RESULT_FILTERS
@@ -372,6 +376,24 @@ class ScanProps:
         self.env["CSWRAP_TIMEOUT_FOR"] = ":"
         self.copy_out_files += ["/builddir/cswrap-capture.err"]
 
+    def enable_csexec(self):
+        if self.csexec_enabled:
+            # already enabled
+            return
+        self.csexec_enabled = True
+
+        # copy statically linked csexec binaries into chroot
+        self.copy_in_files += [
+                "/usr/bin/csexec",
+                "/usr/bin/csexec-loader",
+                "/usr/lib64/libcsexec-preload.so"]
+
+        # use the "gcc" plug-in to inject linker flags
+        gcc = self.plugins["gcc"]
+        gcc.enable()
+        # FIXME: This only works if Plugin::handle_args() of gcc.py has not yet been called
+        gcc.flags.append_flags([CSEXEC_ENABLE_FLAG])
+
     def pick_cswrap_results(self, results):
         if not self.cswrap_enabled:
             # not enabled --> succeeded trivially
@@ -404,7 +426,7 @@ class ScanProps:
         # serialize self.env
         assert "PATH" not in self.env
         for var in self.env:
-            cmd_out += "%s='%s' " % (var, self.env[var])
+            cmd_out += "%s=$'%s' " % (var, self.env[var])
 
         # run a new instance of shell for the specified command
         cmd_out += "sh -c %s" % shell_quote(cmd_in)
@@ -750,6 +772,7 @@ key event (defaults to 3).")
             parser.error("options --diff-patches and --base-scan are mutually exclusive")
 
     props = ScanProps()
+    props.plugins               = plugins.plug_by_name
     props.cswrap_timeout        = args.cswrap_timeout
     props.keep_going            = args.keep_going
     props.no_scan               = args.no_scan

@@ -68,11 +68,11 @@ def encode_custom_flag_opts(args):
     return cmd
 
 
-def serialize_flags(flags):
+def serialize_flags(flags, separator=":"):
     out = ""
     for f in flags:
         if out:
-            out += ":"
+            out += separator
         out += f
     return out
 
