@@ -217,6 +217,17 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-smatch
 This package contains the smatch plug-in for csmock.
 
+%package -n csmock-plugin-strace
+Summary: csmock plug-in providing the support for strace
+Requires: csexec
+Requires: csmock-common > 2.6.0
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
+
+%description -n csmock-plugin-strace
+This package contains the strace plug-in for csmock.
+
 %package -n csmock-plugin-valgrind
 Summary: csmock plug-in providing the support for valgrind
 Requires: csexec
@@ -316,6 +327,12 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{csmock_python_sitelib}/csmock/plugins/smatch.py*
 %if %{force_py3}
 %{csmock_python_sitelib}/csmock/plugins/__pycache__/smatch.*
+%endif
+
+%files -n csmock-plugin-strace
+%{csmock_python_sitelib}/csmock/plugins/strace.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/strace.*
 %endif
 
 %files -n csmock-plugin-valgrind
