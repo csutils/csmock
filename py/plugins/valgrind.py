@@ -68,7 +68,8 @@ class Plugin:
         wrap_cmd_list = ["valgrind",
                 "--xml=yes",
                 "--xml-file=%s/pid-%%p-%%n.xml" % VALGRIND_CAPTURE_DIR,
-                "--log-file=%s/pid-%%p-%%n.log" % VALGRIND_CAPTURE_DIR]
+                "--log-file=%s/pid-%%p-%%n.log" % VALGRIND_CAPTURE_DIR,
+                "--child-silent-after-fork=yes"]
 
         # append custom args if specified
         wrap_cmd_list += args.valgrind_add_flag
