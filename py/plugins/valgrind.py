@@ -87,4 +87,10 @@ class Plugin:
         # pick the captured files when %check is complete
         props.copy_out_files += [VALGRIND_CAPTURE_DIR]
 
+        # delete empty log files
+        def cleanup_hook(results):
+            return results.exec_cmd(["find", results.dbgdir_raw + VALGRIND_CAPTURE_DIR,
+                "-name", "pid-*.log", "-empty", "-delete"])
+        props.post_process_hooks += [cleanup_hook]
+
         # TODO: add filter_hook to transform XML files into csdiff format
