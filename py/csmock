@@ -47,7 +47,10 @@ PATCH_RAWBUILD = CSMOCK_DATADIR + "/scripts/patch-rawbuild.sh"
 
 CWE_LIST_FILE = CSMOCK_DATADIR + "/cwe-map.csv"
 
-DEFAULT_DEFECT_BLACKLIST = CSMOCK_DATADIR + "/defect-blacklist.err"
+DEFAULT_KNOWN_FALSE_POSITIVES = CSMOCK_DATADIR + "/known-false-positives.js"
+
+# original name of the file, which could have sounded offensive to people
+DEFAULT_KNOWN_FALSE_POSITIVES_FALLBACK = CSMOCK_DATADIR + "/defect-blacklist.err"
 
 # how long should we wait before checking mock profile availability again
 MOCK_WAITING_TICK = 60
@@ -708,16 +711,19 @@ key event (defaults to 3).")
         "-c", "--shell-cmd",
         help="use shell command to build the given tarball (instead of SRPM)")
 
-    # --defect-blacklist
-    default_dbl = DEFAULT_DEFECT_BLACKLIST
-    if os.path.exists(default_dbl):
-        default_dbl_text = " (defaults to \"%s\")" % default_dbl
+    # --known-false-positives
+    if os.path.exists(DEFAULT_KNOWN_FALSE_POSITIVES):
+        default_kfp = DEFAULT_KNOWN_FALSE_POSITIVES
+        default_kfp_text = " (defaults to \"%s\")" % default_kfp
+    elif os.path.exists(DEFAULT_KNOWN_FALSE_POSITIVES_FALLBACK):
+        default_kfp = DEFAULT_KNOWN_FALSE_POSITIVES_FALLBACK
+        default_kfp_text = " (defaults to \"%s\")" % default_kfp
     else:
-        default_dbl_text = " (defaults to \"%s\" if available)" % default_dbl
-        default_dbl = ""
+        default_kfp = ""
+        default_kfp_text = " (defaults to \"%s\" if available)" % DEFAULT_KNOWN_FALSE_POSITIVES
     parser.add_argument(
-        "--defect-blacklist", default=default_dbl,
-        help=("suppress known false positives loaded from the given file" + default_dbl_text))
+        "--known-false-positives", default=default_kfp,
+        help=("suppress known false positives loaded from the given file" + default_kfp_text))
 
     csmock.common.util.add_paired_flag(
         parser, "use-login-shell",
@@ -837,12 +843,12 @@ key event (defaults to 3).")
     if os.path.exists(output) and not args.force:
         parser.error("'%s' already exists, use --force to proceed" % output)
 
-    # handle --defect-blacklist
-    if args.defect_blacklist:
-        require_file(parser, args.defect_blacklist)
-        filter_cmd = 'csdiff --json-output --show-internal "%s" -' % args.defect_blacklist
+    # handle --known-false-positives
+    if args.known_false_positives:
+        require_file(parser, args.known_false_positives)
+        filter_cmd = 'csdiff --json-output --show-internal "%s" -' % args.known_false_positives
         props.result_filters += [ filter_cmd ]
-    props.defect_blacklist = args.defect_blacklist
+    props.known_false_positives = args.known_false_positives
 
     # poll plug-ins to reflect themselves in ScanProps
     plugins.handle_args(parser, args, props)
@@ -871,8 +877,8 @@ def do_scan(props, output, args, skip_patches):
         with ScanResults(output, "csmock", "@VERSION@", props.keep_going) as results:
             results.ini_writer.append("mock-config", props.mock_profile)
             results.ini_writer.append("project-name", props.nvr)
-            if props.defect_blacklist:
-                results.ini_writer.append("defect-blacklist", props.defect_blacklist)
+            if props.known_false_positives:
+                results.ini_writer.append("known-false-positives", props.known_false_positives)
 
             if not props.any_tool:
                 # no tool enabled
