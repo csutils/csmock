@@ -93,4 +93,11 @@ class Plugin:
                 "-name", "pid-*.log", "-empty", "-delete"])
         props.post_process_hooks += [cleanup_hook]
 
-        # TODO: add filter_hook to transform XML files into csdiff format
+        # transform XML files produced by valgrind into csdiff format
+        def filter_hook(results):
+            src_dir = results.dbgdir_raw + VALGRIND_CAPTURE_DIR
+            dst = "%s/valgrind-capture.js" % results.dbgdir_uni
+            cmd = "csgrep --mode=json --quiet --remove-duplicates '%s'/*.xml > '%s'" \
+                    % (src_dir, dst)
+            return results.exec_cmd(cmd, shell=True)
+        props.post_process_hooks += [filter_hook]
