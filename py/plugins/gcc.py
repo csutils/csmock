@@ -28,13 +28,13 @@ CSGCCA_BIN="/usr/bin/csgcca"
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x10
+        self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
 
 
 class Plugin:
     def __init__(self):
         self.enabled = False
         self.flags = flags_by_warning_level(0)
-        self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
         self.csgcca_path = None
 
     def get_props(self):

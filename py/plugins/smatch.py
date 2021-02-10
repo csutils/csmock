@@ -27,12 +27,12 @@ class PluginProps:
     def __init__(self):
         self.pass_priority = 0x38
         self.experimental = True
+        self.description = "Source code analysis for C, based on sparse."
 
 
 class Plugin:
     def __init__(self):
         self.enabled = False
-        self.description = "Source code analysis for C, based on sparse."
 
     def get_props(self):
         return PluginProps()

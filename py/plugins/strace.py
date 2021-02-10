@@ -28,12 +28,12 @@ class PluginProps:
         # for ScanProps::enable_csexec() to work.
         self.pass_priority = 0x02
         self.experimental = True
+        self.description = "A dynamic analysis tool that records system calls associated with a running process."
 
 
 class Plugin:
     def __init__(self):
         self.enabled = False
-        self.description = "A dynamic analysis tool that records system calls associated with a running process."
 
     def get_props(self):
         return PluginProps()

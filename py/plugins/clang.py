@@ -27,12 +27,12 @@ import csmock.common.util
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x30
+        self.description = "Source code analysis tool that finds bugs in C, C++, and Objective-C programs."
 
 
 class Plugin:
     def __init__(self):
         self.enabled = False
-        self.description = "Source code analysis tool that finds bugs in C, C++, and Objective-C programs."
 
     def get_props(self):
         return PluginProps()

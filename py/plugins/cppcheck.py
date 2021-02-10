@@ -26,13 +26,13 @@ import csmock.common.cflags
 class PluginProps:
     def __init__(self):
         self.pass_priority = 0x20
+        self.description = "Static analysis tool for C/C++ code."
 
 
 class Plugin:
     def __init__(self):
         self.enabled = False
         self.use_host_cppcheck = False
-        self.description = "Static analysis tool for C/C++ code."
 
     def get_props(self):
         return PluginProps()

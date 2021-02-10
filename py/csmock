@@ -468,7 +468,7 @@ class PluginManager:
         min_indent_len = 8
         description_indent = max_key_len + min_indent_len
         for key, plugin in sorted(self.plug_by_name.items()):
-            desc = getattr(plugin, "description", "")
+            desc = getattr(plugin.get_props(), "description", "")
             sys.stdout.write("{}{}{}\n".format(
                 key, " " * (description_indent - len(key)),
                 desc.replace('\n', '\n%s' % (" " * description_indent))))

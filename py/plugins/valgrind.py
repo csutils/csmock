@@ -27,13 +27,13 @@ class PluginProps:
         # FIXME: This needs to be lower than priority of the "gcc" plugin
         # for ScanProps::enable_csexec() to work.
         self.pass_priority = 0x01
+        self.description = "A dynamic analysis tool for finding memory management bugs in programs."
         self.experimental = True
 
 
 class Plugin:
     def __init__(self):
         self.enabled = False
-        self.description = "A dynamic analysis tool for finding memory management bugs in programs."
 
     def get_props(self):
         return PluginProps()
