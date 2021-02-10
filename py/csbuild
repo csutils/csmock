@@ -94,7 +94,7 @@ class StatusWriter:
         sys.stderr.flush()
 
     def print_stats(self, err_file):
-        os.system("csgrep --mode=stat %s %s \"%s\"" %
+        os.system("csgrep --mode=evtstat %s %s \"%s\"" %
                   (self.csgrep_args, self.color_opt, err_file))
 
     def print_defect_list(self, err_file, title):
