@@ -483,6 +483,9 @@ class PluginManager:
     def enable_all(self):
         for prio in sorted(self.plug_by_prio):
             plugin = self.plug_by_prio[prio]
+            experimental= getattr(plugin.get_props(), "experimental", False)
+            if experimental:
+                continue
             plugin.enable()
 
     def init_parser(self, parser):

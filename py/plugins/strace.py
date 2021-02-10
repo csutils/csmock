@@ -27,6 +27,7 @@ class PluginProps:
         # FIXME: This needs to be lower than priority of the "gcc" plugin
         # for ScanProps::enable_csexec() to work.
         self.pass_priority = 0x02
+        self.experimental = True
 
 
 class Plugin:
