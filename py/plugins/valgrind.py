@@ -21,6 +21,8 @@ import csmock.common.util
 
 VALGRIND_CAPTURE_DIR = "/builddir/valgrind-capture"
 
+DEFAULT_VALGRIND_TIMEOUT = 30
+
 
 class PluginProps:
     def __init__(self):
@@ -47,6 +49,10 @@ class Plugin:
             help="append the given flag when invoking valgrind \
 (can be used multiple times)")
 
+        parser.add_argument(
+            "--valgrind-timeout", type=int, default=DEFAULT_VALGRIND_TIMEOUT,
+            help="maximal amount of time taken by analysis of a single process [s]")
+
     def handle_args(self, parser, args, props):
         if not self.enabled:
             return
@@ -66,7 +72,13 @@ class Plugin:
         props.post_depinst_hooks += [create_cap_dir_hook]
 
         # default valgrind cmd-line
-        wrap_cmd_list = ["valgrind",
+        wrap_cmd_list = [
+                # timeout wrapper
+                "/usr/bin/timeout",
+                "--signal=KILL",
+                "%d" % args.valgrind_timeout,
+                # valgrind invocation
+                "/usr/bin/valgrind",
                 "--xml=yes",
                 "--xml-file=%s/pid-%%p-%%n.xml" % VALGRIND_CAPTURE_DIR,
                 "--log-file=%s/pid-%%p-%%n.log" % VALGRIND_CAPTURE_DIR,
