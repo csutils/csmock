@@ -79,7 +79,7 @@ RAWBUILD_RPM_OPTS = [
     "--define", "_with_vanilla 1"]
 
 DEFAULT_CSWRAP_FILTERS = [
-    "csgrep --quiet --path '^/builddir/build/BUILD/' --remove-duplicates"]
+    "csgrep --mode=json --quiet --path '^/builddir/build/BUILD/' --remove-duplicates"]
 
 # remember to use --mode=json for csgrep (TODO: improve csgrep's interface)
 DEFAULT_RESULT_FILTERS = [
@@ -408,7 +408,7 @@ class ScanProps:
 
         # apply all filters using a shell pipe
         fin = "%s/builddir/cswrap-capture.err" % results.dbgdir_raw
-        out = "%s/cswrap-capture.err" % results.dbgdir_uni
+        out = "%s/cswrap-capture.js" % results.dbgdir_uni
         cmd = "cat '%s'" % fin
         for filt in self.cswrap_filters:
             cmd += " | %s" % filt

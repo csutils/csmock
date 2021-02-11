@@ -57,7 +57,7 @@ class Plugin:
             props.env["CSCLNG_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.clang_add_flag)
 
         props.cswrap_filters += \
-                ["csgrep --invert-match --checker CLANG_WARNING --event error"]
+                ["csgrep --mode=json --invert-match --checker CLANG_WARNING --event error"]
 
         props.install_pkgs += ["clang"]
 

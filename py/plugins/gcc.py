@@ -144,12 +144,12 @@ class Plugin:
         if not self.enabled:
             # drop COMPILER_WARNING defects mistakenly enabled by other plug-ins
             props.cswrap_filters += \
-                ["csgrep --invert-match --checker COMPILER_WARNING"]
+                ["csgrep --mode=json --invert-match --checker COMPILER_WARNING"]
             return
 
         props.enable_cswrap()
         props.cswrap_filters += \
-            ["csgrep --invert-match --checker COMPILER_WARNING --event error"]
+            ["csgrep --mode=json --invert-match --checker COMPILER_WARNING --event error"]
 
         # write all compiler flags to the environment
         self.flags.write_to_env(props.env)

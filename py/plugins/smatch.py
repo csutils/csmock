@@ -51,7 +51,7 @@ class Plugin:
         props.enable_cswrap()
         props.env["CSWRAP_TIMEOUT_FOR"] += ":smatch"
         props.cswrap_filters += \
-                ["csgrep --invert-match --checker SMATCH_WARNING --event error"]
+                ["csgrep --mode=json --invert-match --checker SMATCH_WARNING --event error"]
 
         props.install_pkgs += ["smatch"]
 

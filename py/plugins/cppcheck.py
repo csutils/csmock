@@ -61,7 +61,7 @@ class Plugin:
 
         props.enable_cswrap()
         props.env["CSWRAP_TIMEOUT_FOR"] += ":cppcheck"
-        props.cswrap_filters += ["csgrep --invert-match \
+        props.cswrap_filters += ["csgrep --mode=json --invert-match \
 --checker CPPCHECK_WARNING \
 --event 'cppcheckError|internalAstError|preprocessorErrorDirective|syntaxError'"]
 
