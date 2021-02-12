@@ -118,7 +118,7 @@ def find_missing_pkgs(pkgs, results, mock, ignore_with=False):
             pkg = re.sub(" .*$", "", l.strip())
             installed.add(pkg)
     for dep in pkgs:
-        if re.match('^\(.* or .*\)$', dep):
+        if re.match('^\(.* (and|or) .*\)$', dep):
             # we do not support checking of rich dependencies
             # FIXME: we should rely on mock/yum for checking installed dependencies
             continue
