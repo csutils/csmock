@@ -232,61 +232,69 @@ echo \"$self_pid\" > \"$lock_file\"'" \
     def try_install(self, pkgs):
         return (self.exec_mock_cmd(["--install"] + pkgs) == 0)
 
+    def install_deps(self, srpm):
+        return (self.exec_mock_cmd(["--installdeps", srpm]) == 0)
+
+    def remove(self, pkgs):
+        return (self.exec_mock_cmd(["--remove"] + pkgs) == 0)
+
     def copy_in_resolv_conf(self):
         resconf = "/etc/resolv.conf"
         return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
 
-    def init_and_install(self, pkgs, force_scrub=False):
+    def init_and_install(self, srpm, pkgs=[], force_scrub=False):
         if force_scrub:
             scrub_root_passes = [True]
+            # yet another hack for libguestfs/supermin
+            self.exec_mock_cmd(["--scrub=dnf-cache"])
         else:
             scrub_root_passes = [False, True]
+
         for scrub_root in scrub_root_passes:
             if scrub_root:
                 self.exec_mock_cmd(["--scrub=root-cache"])
-                if force_scrub:
-                    # yet another hack for libguestfs/supermin
-                    self.exec_mock_cmd(["--scrub=dnf-cache"])
-                if self.exec_mock_cmd(["--init"]) != 0:
-                    self.results.fatal_error(
-                        "failed to init mock profile: %s" % self.mock_profile)
+                self.init_done = False
 
-            elif not self.init_done and self.exec_mock_cmd(["--init"]) != 0:
-                # try --scrub=root-cache
-                continue
-
+            # run `mock --init` if not disabled
+            if not self.init_done and (self.exec_mock_cmd(["--init"]) != 0):
+                if scrub_root:
+                    self.results.fatal_error("failed to init mock profile (%s)" % self.mock_profile)
+                else:
+                    self.results.error("failed to init mock profile (%s), trying to scrub cache..." \
+                            % self.mock_profile, ec=0)
+                    continue
             self.init_done = True
+
+            # run `mock --installdeps`
+            if not self.install_deps(srpm):
+                srpm_base = os.path.basename(srpm)
+                if self.skip_init or scrub_root:
+                    self.results.error("failed to install build dependencies of %s" % srpm_base)
+                    return False
+                else:
+                    self.results.error("failed to install build dependencies of %s, trying to scrub cache..." \
+                            % srpm_base, ec=0)
+                    continue
+
             if not pkgs:
                 return True
 
-            # install required packages (all at once)
+            # run `mock --install`
             self.try_install(pkgs)
             missing_deps = find_missing_pkgs(pkgs, self.results, self)
             if not missing_deps:
                 # no misssing dependencies
                 return True
 
-            self.results.error(
-                "hard to install dependencies (%s), still trying..." %
-                strlist_to_shell_cmd(missing_deps), ec=0)
-
-            if not scrub_root and not self.skip_init:
-                # try --scrub=root-cache
+            if self.skip_init or scrub_root:
+                self.results.error("failed to install required packages (%s)" % strlist_to_shell_cmd(missing_deps))
+                return False
+            else:
+                self.results.error("failed to install required packages (%s), trying to scrub cache..." \
+                        % strlist_to_shell_cmd(missing_deps), ec=0)
                 continue
 
-            # try to install the missing packages one by one
-            for pkg in missing_deps:
-                self.try_install([pkg])
-
-            # check that all dependencies are installed
-            missing_deps = find_missing_pkgs(pkgs, self.results, self, ignore_with=tried_dnf)
-            if not missing_deps:
-                # no missing dependencies
-                return True
-
-            self.results.error("failed to install dependencies: %s" %
-                               strlist_to_shell_cmd(missing_deps))
-            return False
+        return False
 
 
 class ScanProps:
@@ -471,16 +479,12 @@ class PluginManager:
         return cnt
 
 
-def deplist_from_srpm(results, srpm, deny_list=[]):
+def deplist_from_srpm(results, srpm):
     (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
     raw_deps = filter(None, deps.split("\n"))
     deps = []
     for d in raw_deps:
         pkg = d.strip()
-        if is_ignored_dep(pkg):
-            continue
-        if pkg in deny_list:
-            continue
         deps += [pkg]
     return deps
 
@@ -888,12 +892,8 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
             with MockWrapper(results, props) as mock:
                 supermin_in_use = False
                 if not props.no_scan and props.shell_cmd_to_build is None:
-                    # first rebuild the given SRPM
-                    mock.init_and_install([])
-
-                    # some dependencies might be required even for the rebuild
-                    deps = deplist_from_srpm(results, srpm_dup, props.install_pkgs_blacklist)
-                    mock.try_install(deps)
+                    # first rebuild the given SRPM (some deps might be required even for the rebuild)
+                    mock.init_and_install(srpm_dup)
 
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
@@ -909,24 +909,30 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                     # use the rebuilt SRPM to get the dependency list
                     mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
-                    deps = deplist_from_srpm(results, srpm_dup, props.install_pkgs_blacklist)
-                    props.install_pkgs += deps
+                    deps = deplist_from_srpm(results, srpm_dup)
                     for pkg in deps:
                         if pkg.startswith("supermin"):
                             # force all installed packages to also be available in dnf cache
                             supermin_in_use = True
 
-                # run 'mock --init' and 'mock --install'
-                mock.init_and_install(props.install_pkgs, force_scrub=supermin_in_use)
+                # run `mock --init`, `mock --installdeps`, and `mock --install`
+                mock.init_and_install(srpm_dup, props.install_pkgs, force_scrub=supermin_in_use)
+
+                # install optional packages (if any)
+                if props.install_opt_pkgs:
+                    mock.try_install(props.install_opt_pkgs)
+                    # just to update rpm-list-mock.txt
+                    find_missing_pkgs([], results, mock)
+
+                # remove unwanted packages (if any)
+                if props.install_pkgs_blacklist:
+                    mock.remove(props.install_pkgs_blacklist)
+                    # just to update rpm-list-mock.txt
+                    find_missing_pkgs([], results, mock)
+
                 if supermin_in_use:
                     # attempt to make name resolving work in the chroot
                     mock.copy_in_resolv_conf()
-
-                # install optional packages (if any)
-                for pkg in props.install_opt_pkgs:
-                    mock.try_install([pkg])
-                    # just to update rpm-list-mock.txt
-                    find_missing_pkgs([], results, mock)
 
                 if props.shell_cmd_to_build is not None:
                     # prepare a build script in our tmp dir
