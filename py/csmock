@@ -462,16 +462,6 @@ class PluginManager:
         return cnt
 
 
-def deplist_from_srpm(results, srpm):
-    (_, deps) = results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
-    raw_deps = filter(None, deps.split("\n"))
-    deps = []
-    for d in raw_deps:
-        pkg = d.strip()
-        deps += [pkg]
-    return deps
-
-
 def re_from_checker_set(checker_set):
     """return operand for the --checker option of csgrep based on checker_set"""
     chk_re = "^("
@@ -875,8 +865,11 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
             with MockWrapper(results, props) as mock:
                 supermin_in_use = False
                 if not props.no_scan and props.shell_cmd_to_build is None:
+                    (ec, _) = results.get_cmd_output("rpm -qp '%s' --requires | grep '^supermin'" % srpm_dup)
+                    supermin_in_use = (ec == 0)
+
                     # first rebuild the given SRPM (some deps might be required even for the rebuild)
-                    mock.init_and_install(srpm_dup)
+                    mock.init_and_install(srpm_dup, force_scrub=supermin_in_use)
 
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
@@ -892,14 +885,9 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                     # use the rebuilt SRPM to get the dependency list
                     mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
-                    deps = deplist_from_srpm(results, srpm_dup)
-                    for pkg in deps:
-                        if pkg.startswith("supermin"):
-                            # force all installed packages to also be available in dnf cache
-                            supermin_in_use = True
 
                 # run `mock --init`, `mock --installdeps`, and `mock --install`
-                mock.init_and_install(srpm_dup, props.install_pkgs, force_scrub=supermin_in_use)
+                mock.init_and_install(srpm_dup, props.install_pkgs)
 
                 # install optional packages (if any)
                 if props.install_opt_pkgs:
