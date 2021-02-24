@@ -68,7 +68,8 @@ class Plugin:
 
         # create directory for valgrind's results
         def create_cap_dir_hook(results, mock):
-            return mock.exec_mockbuild_cmd("mkdir -pv '%s'" % VALGRIND_CAPTURE_DIR)
+            cmd = "mkdir -pv '%s' && touch '%s/empty.xml'" % (VALGRIND_CAPTURE_DIR, VALGRIND_CAPTURE_DIR)
+            return mock.exec_mockbuild_cmd(cmd)
         props.post_depinst_hooks += [create_cap_dir_hook]
 
         # default valgrind cmd-line
