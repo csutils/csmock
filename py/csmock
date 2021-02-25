@@ -47,6 +47,8 @@ CSMOCK_SCRIPTS = CSMOCK_DATADIR + "/scripts"
 
 CHROOT_FIXUPS = CSMOCK_SCRIPTS + "/chroot-fixups"
 
+ENABLE_KEEP_GOING_SCRIPT = CSMOCK_SCRIPTS + "/enable-keep-going.sh"
+
 PATCH_RAWBUILD = CSMOCK_SCRIPTS + "/patch-rawbuild.sh"
 
 DEFAULT_KNOWN_FALSE_POSITIVES = CSMOCK_DATADIR + "/known-false-positives.js"
@@ -756,8 +758,6 @@ key event (defaults to 3).")
     # initialize the %{_smp_mflags} RPM macro
     mflags_rpmm = "_smp_mflags"
     mflags_rpmm += " -j%d" % args.jobs
-    if props.keep_going:
-        mflags_rpmm += " -k"
     props.rpm_opts += ["--define", mflags_rpmm]
 
     # make sure that we have a configuration for the selected mock profile
@@ -939,6 +939,11 @@ cd %%s*/ || cd *\n\
                         mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
                         # make the installed SRPM accessible (if the maintainer did not)
                         mock.exec_chroot_cmd("chmod -R +r /builddir")
+
+                    if props.keep_going:
+                        # include ENABLE_KEEP_GOING_SCRIPT into CHROOT_FIXUPS
+                        cmd = "ln -fv '%s' '%s'" % (ENABLE_KEEP_GOING_SCRIPT, CHROOT_FIXUPS)
+                        mock.exec_mock_cmd(["--chroot", cmd])
 
                     # run fixups scripts
                     cmd_tpl = "for i in %s/*; do test -x $i && echo RUN: $i >&2 && $i; done"

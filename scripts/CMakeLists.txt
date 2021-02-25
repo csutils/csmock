@@ -28,6 +28,7 @@ if(ENABLE_CSMOCK)
         DESTINATION ${SHARE_INSTALL_PREFIX}/csmock/scripts)
 
     install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/enable-keep-going.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/patch-rawbuild.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-bandit.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-pylint.sh
