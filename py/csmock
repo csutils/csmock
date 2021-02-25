@@ -132,7 +132,7 @@ class MockWrapper:
         self.lock_file = "/tmp/.csmock-%s.lock" % self.mock_profile
         self.meta_lock_file = "/tmp/.csmock-%s.metalock" % self.mock_profile
         self.pid = os.getpid()
-        self.skip_init = props.skip_mock_init
+        self.scrub_done = props.skip_mock_init
         self.init_done = props.skip_mock_init
         self.skip_clean = props.skip_mock_clean
         self.use_login_shell = props.use_login_shell
@@ -236,8 +236,9 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             scrub_root_passes = [False, True]
 
         for scrub_root in scrub_root_passes:
-            if scrub_root:
+            if scrub_root and not self.scrub_done:
                 self.exec_mock_cmd(["--scrub=root-cache"])
+                self.scrub_done = True
                 self.init_done = False
 
             # run `mock --init` if not disabled
@@ -253,7 +254,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             # run `mock --installdeps`
             if not self.install_deps(srpm):
                 srpm_base = os.path.basename(srpm)
-                if self.skip_init or scrub_root:
+                if self.scrub_done:
                     self.results.error("failed to install build dependencies of %s" % srpm_base)
                     return False
                 else:
@@ -271,7 +272,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 # no misssing dependencies
                 return True
 
-            if self.skip_init or scrub_root:
+            if self.scrub_done:
                 self.results.error("failed to install required packages (%s)" % strlist_to_shell_cmd(missing_deps))
                 return False
             else:
