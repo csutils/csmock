@@ -55,7 +55,6 @@ class Plugin:
             parser, args, props, "shellcheck")
 
         props.install_pkgs += ["ShellCheck"]
-        props.copy_in_files += [RUN_SHELLCHECK_SH]
         cmd = "%s %s > %s" % (RUN_SHELLCHECK_SH, dirs_to_scan, SHELLCHECK_CAPTURE)
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [SHELLCHECK_CAPTURE]

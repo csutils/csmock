@@ -60,7 +60,6 @@ class Plugin:
             parser, args, props, "pylint")
 
         props.install_pkgs += ["pylint"]
-        props.copy_in_files += [RUN_PYLINT_SH]
         cmd = "%s %s > %s" % (RUN_PYLINT_SH, dirs_to_scan, PYLINT_CAPTURE)
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [PYLINT_CAPTURE]

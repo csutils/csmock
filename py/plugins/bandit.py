@@ -61,8 +61,6 @@ class Plugin:
         dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(
             parser, args, props, "bandit")
 
-        props.copy_in_files += [RUN_BANDIT_SH]
-
         # Note: bandit is running on python3, pbr needs git to assert correct version
         props.install_pkgs += ["bandit"]
 

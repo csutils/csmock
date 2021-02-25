@@ -41,11 +41,13 @@ from csmock.common.results      import transform_results
 
 CSMOCK_DATADIR = "/usr/share/csmock"
 
-CHROOT_FIXUPS = CSMOCK_DATADIR + "/scripts/chroot-fixups"
+CWE_MAP_FILE = CSMOCK_DATADIR + "/cwe-map.csv"
 
-PATCH_RAWBUILD = CSMOCK_DATADIR + "/scripts/patch-rawbuild.sh"
+CSMOCK_SCRIPTS = CSMOCK_DATADIR + "/scripts"
 
-CWE_LIST_FILE = CSMOCK_DATADIR + "/cwe-map.csv"
+CHROOT_FIXUPS = CSMOCK_SCRIPTS + "/chroot-fixups"
+
+PATCH_RAWBUILD = CSMOCK_SCRIPTS + "/patch-rawbuild.sh"
 
 DEFAULT_KNOWN_FALSE_POSITIVES = CSMOCK_DATADIR + "/known-false-positives.js"
 
@@ -286,7 +288,7 @@ class ScanProps:
         self.install_pkgs = []
         self.install_pkgs_blacklist = []
         self.install_opt_pkgs = []
-        self.copy_in_files = [CHROOT_FIXUPS]
+        self.copy_in_files = [CSMOCK_SCRIPTS]
         self.pre_mock_hooks = []
         self.post_depinst_hooks = []
         self.rpm_opts = DEFAULT_RPM_OPTS
@@ -818,7 +820,6 @@ key event (defaults to 3).")
 
 def do_scan(props, output, args, skip_patches):
     if skip_patches:
-        props.copy_in_files += [PATCH_RAWBUILD]
         props.rpm_opts += RAWBUILD_RPM_OPTS
 
     try:
@@ -1043,7 +1044,7 @@ cd %%s*/ || cd *\n\
                 js_file = "%s/scan-results.js" % results.resdir
                 all_file = "%s/scan-results-all.js" % results.dbgdir
                 cmd = "cslinker --quiet --cwelist '%s' --inifile '%s' '%s'/* > '%s'" \
-                        % (CWE_LIST_FILE, ini_file, results.dbgdir_uni, all_file)
+                        % (CWE_MAP_FILE, ini_file, results.dbgdir_uni, all_file)
                 results.exec_cmd(cmd, shell=True)
 
                 if args.embed_context > 0:
