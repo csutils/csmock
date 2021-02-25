@@ -61,8 +61,6 @@ MOCK_WAITING_TICK = 60
 
 DEFAULT_CSWRAP_TIMEOUT = 30
 
-DEFAULT_JOBS_CNT = 13
-
 DEFAULT_RPM_OPTS = [
     "--define", "_without_testsuite 1",
     "--define", "apidocs 0",
@@ -615,7 +613,7 @@ def main():
         help="overwrite the resulting file or directory if it exists already")
 
     parser.add_argument(
-        "-j", "--jobs", type=int, default=DEFAULT_JOBS_CNT,
+        "-j", "--jobs", type=int, default=0,
         help="maximal number of jobs running in parallel (passed to 'make')")
 
     parser.add_argument(
@@ -767,10 +765,9 @@ key event (defaults to 3).")
     for opt in args.rpm_build_opts:
         props.rpm_opts += shlex.split(opt)
 
-    # initialize the %{_smp_mflags} RPM macro
-    mflags_rpmm = "_smp_mflags"
-    mflags_rpmm += " -j%d" % args.jobs
-    props.rpm_opts += ["--define", mflags_rpmm]
+    if 0 < args.jobs:
+        # initialize the %{_smp_mflags} RPM macro
+        props.rpm_opts += ["--define", "_smp_mflags -j%d" % args.jobs]
 
     # make sure that we have a configuration for the selected mock profile
     props.mock_profile = args.mock_profile
