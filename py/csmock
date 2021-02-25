@@ -98,14 +98,14 @@ CSEXEC_ENABLE_FLAG = "-Wl,--dynamic-linker,/usr/bin/csexec-loader"
 
 def find_missing_pkgs(pkgs, results, mock):
     # dump list of RPMs installed in the chroot (for debugging purposes)
-    cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--quiet", "--shell", "rpm -qa"]))
+    cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell", "rpm -qa"]))
     cmd += " | sort -V > %s/rpm-list-mock.txt" % results.dbgdir
     if results.exec_cmd(cmd, shell=True) != 0:
         results.error("failed to get list of packages installed in chroot")
 
     # get full list of provides
     provides = "%s/rpm-list-mock-provides.txt" % results.tmpdir
-    cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--quiet", "--shell", "rpm -qa --provides"]))
+    cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell", "rpm -qa --provides"]))
     cmd += " | sort -V > %s" % provides
     if results.exec_cmd(cmd, shell=True) != 0:
         results.error("failed to get list of RPM provides in chroot")
@@ -195,32 +195,35 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             self.lock_file, self.pid, self.lock_file, self.lock_file)
         os.system(cmd)
 
-    def get_mock_cmd(self, args):
-        return self.def_cmd + args
+    def get_mock_cmd(self, args, quiet=True):
+        cmd = self.def_cmd.copy()
+        if quiet:
+            cmd += ["--quiet"]
+        return cmd + args
 
-    def exec_mock_cmd(self, args):
-        cmd = self.get_mock_cmd(args)
+    def exec_mock_cmd(self, args, quiet=True):
+        cmd = self.get_mock_cmd(args, quiet=quiet)
         return self.results.exec_cmd(cmd)
 
-    def exec_chroot_cmd(self, cmd):
-        return self.exec_mock_cmd(["--chroot", cmd])
+    def exec_chroot_cmd(self, cmd, quiet=True):
+        return self.exec_mock_cmd(["--chroot", cmd], quiet=quiet)
 
-    def exec_mockbuild_cmd(self, cmd):
+    def exec_mockbuild_cmd(self, cmd, quiet=True):
         args = ""
         if self.use_login_shell:
             args = " -l"
-        return self.exec_chroot_cmd(
-            "/bin/su mockbuild%s -c %s" % (args, shell_quote(cmd)))
+        full_cmd = "/bin/su mockbuild%s -c %s" % (args, shell_quote(cmd))
+        return self.exec_chroot_cmd(full_cmd, quiet=quiet)
 
-    def copy_out(self, args):
+    def copy_out(self, args, quiet=True):
         cmd = ["--disable-plugin=selinux", "--copyout"] + args
-        return self.exec_mock_cmd(cmd)
+        return self.exec_mock_cmd(cmd, quiet=quiet)
 
-    def try_install(self, pkgs):
-        return (self.exec_mock_cmd(["--install"] + pkgs) == 0)
+    def try_install(self, pkgs, quiet=True):
+        return (self.exec_mock_cmd(["--install"] + pkgs, quiet=quiet) == 0)
 
-    def install_deps(self, srpm):
-        return (self.exec_mock_cmd(["--installdeps", srpm]) == 0)
+    def install_deps(self, srpm, quiet=True):
+        return (self.exec_mock_cmd(["--installdeps", srpm], quiet=quiet) == 0)
 
     def emergency_install_deps(self, srpm):
         (_, raw_deps) = self.results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
@@ -239,18 +242,18 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         if force_scrub:
             scrub_root_passes = [True]
             # yet another hack for libguestfs/supermin
-            self.exec_mock_cmd(["--scrub=dnf-cache"])
+            self.exec_mock_cmd(["--scrub=dnf-cache"], quiet=False)
         else:
             scrub_root_passes = [False, True]
 
         for scrub_root in scrub_root_passes:
             if scrub_root and not self.scrub_done:
-                self.exec_mock_cmd(["--scrub=root-cache"])
+                self.exec_mock_cmd(["--scrub=root-cache"], quiet=False)
                 self.scrub_done = True
                 self.init_done = False
 
             # run `mock --init` if not disabled
-            if not self.init_done and (self.exec_mock_cmd(["--init"]) != 0):
+            if not self.init_done and (self.exec_mock_cmd(["--init"], quiet=False) != 0):
                 if scrub_root:
                     self.results.fatal_error("failed to init mock profile (%s)" % self.mock_profile)
                 else:
@@ -960,9 +963,8 @@ cd %%s*/ || cd *\n\
 
                     if props.shell_cmd_to_build is None:
                         # run %prep phase without pluggin-in any static analyzers
-                        ec = mock.exec_mockbuild_cmd(
-                            "rpmbuild -bp --nodeps %s %s" % (
-                                spec_in, strlist_to_shell_cmd(props.rpm_opts)))
+                        cmd = "rpmbuild -bp --nodeps %s %s" % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
+                        ec = mock.exec_mockbuild_cmd(cmd, quiet=False)
                     else:
                         # extract the given archive (we got instead of SRPM)
                         if re.match("^.*\\.zip$", srpm_dup):
@@ -974,11 +976,11 @@ cd %%s*/ || cd *\n\
                         prep_cmd = prep_cmd_tpl % ("/builddir/build/BUILD", srpm_dup)
                         ec = mock.exec_mockbuild_cmd(prep_cmd)
 
-                    # make the unpacked contents accessible (if the maintainer did not)
-                    mock.exec_chroot_cmd("chmod -R +r /builddir/build")
-
                     if ec != 0:
                         results.error("%prep failed", ec=ec)
+
+                    # make the unpacked contents accessible (if the maintainer did not)
+                    mock.exec_chroot_cmd("chmod -R +r /builddir/build")
 
                     if props.shell_cmd_to_build is None:
                         # run %build phase with static analyzers plugged-in
@@ -994,7 +996,7 @@ cd %%s*/ || cd *\n\
                     # initialize environment variables according to ScanProps
                     build_cmd = props.wrap_shell_cmd_by_env(build_cmd)
 
-                    ec = mock.exec_mockbuild_cmd(build_cmd)
+                    ec = mock.exec_mockbuild_cmd(build_cmd, quiet=False)
                     if ec != 0:
                         results.error("%build failed", ec=ec)
 
@@ -1020,7 +1022,7 @@ cd %%s*/ || cd *\n\
                         # initialize environment variables according to ScanProps
                         cmd = props.wrap_shell_cmd_by_env(cmd)
 
-                        ec = mock.exec_mockbuild_cmd(cmd)
+                        ec = mock.exec_mockbuild_cmd(cmd, quiet=False)
                         if ec != 0:
                             results.error("%install failed", ec=ec)
                         bd_flt = "sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"
