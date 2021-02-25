@@ -194,7 +194,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         os.system(cmd)
 
     def get_mock_cmd(self, args, quiet=True):
-        cmd = self.def_cmd.copy()
+        cmd = self.def_cmd[:]
         if quiet:
             cmd += ["--quiet"]
         return cmd + args
