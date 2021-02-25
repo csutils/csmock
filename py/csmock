@@ -222,6 +222,12 @@ echo \"$self_pid\" > \"$lock_file\"'" \
     def install_deps(self, srpm):
         return (self.exec_mock_cmd(["--installdeps", srpm]) == 0)
 
+    def emergency_install_deps(self, srpm):
+        (_, raw_deps) = self.results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
+        for dep in raw_deps.split("\n"):
+            if (dep):
+                self.try_install([dep])
+
     def remove(self, pkgs):
         return (self.exec_mock_cmd(["--remove"] + pkgs) == 0)
 
@@ -229,7 +235,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         resconf = "/etc/resolv.conf"
         return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
 
-    def init_and_install(self, srpm, pkgs=[], force_scrub=False):
+    def init_and_install(self, srpm, pkgs=[], force_scrub=False, keep_going=False):
         if force_scrub:
             scrub_root_passes = [True]
             # yet another hack for libguestfs/supermin
@@ -254,25 +260,28 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             self.init_done = True
 
             # run `mock --installdeps`
-            if not self.install_deps(srpm):
+            srpm_deps_ok = self.install_deps(srpm)
+            if not srpm_deps_ok:
                 srpm_base = os.path.basename(srpm)
                 if self.scrub_done:
                     self.results.error("failed to install build dependencies of %s" % srpm_base)
-                    return False
                 else:
                     self.results.error("failed to install build dependencies of %s, trying to scrub cache..." \
                             % srpm_base, ec=0)
                     continue
 
+                if keep_going:
+                    self.emergency_install_deps(srpm)
+
             if not pkgs:
-                return True
+                return srpm_deps_ok
 
             # run `mock --install`
             self.try_install(pkgs)
             missing_deps = find_missing_pkgs(pkgs, self.results, self)
             if not missing_deps:
                 # no misssing dependencies
-                return True
+                return srpm_deps_ok
 
             if self.scrub_done:
                 self.results.error("failed to install required packages (%s)" % strlist_to_shell_cmd(missing_deps))
@@ -889,7 +898,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
 
                 # run `mock --init`, `mock --installdeps`, and `mock --install`
-                mock.init_and_install(srpm_dup, props.install_pkgs)
+                mock.init_and_install(srpm_dup, props.install_pkgs, keep_going=props.keep_going)
 
                 # install optional packages (if any)
                 if props.install_opt_pkgs:
