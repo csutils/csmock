@@ -261,7 +261,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             self.init_done = True
 
             # run `mock --installdeps`
-            srpm_deps_ok = self.install_deps(srpm)
+            srpm_deps_ok = srpm is None or self.install_deps(srpm)
             if not srpm_deps_ok:
                 srpm_base = os.path.basename(srpm)
                 if self.scrub_done:
@@ -849,7 +849,9 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 "rpm -qa | sort -V > '%s/rpm-list-host.txt'" % results.dbgdir,
                 shell=True)
 
-            if not props.no_scan:
+            if props.no_scan:
+                srpm_dup = None
+            else:
                 if props.shell_cmd_to_build is None:
                     # check the given SRPM
                     if results.get_cmd_output("rpm -pq '%s'" % props.srpm)[0] != 0:
