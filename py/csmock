@@ -892,14 +892,18 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     mock.exec_chroot_cmd("chown mockbuild -R /builddir")
                     mock.exec_mockbuild_cmd("rpm -Uvh --nodeps '%s'" % srpm_in)
 
+                    if props.keep_going:
+                        # ignore ExclusiveArch tags with --keep-going
+                        mock.exec_mockbuild_cmd("sed -e 's|^ExclusiveArch:.*$||' -i " + spec_in)
+
                     # rebuild the given SRPM (and rename to match the original one)
                     cmd_tpl = "rpmbuild -bs --nodeps %s %s && sh -c 'cd \
 /builddir/build/SRPMS && eval mv -v *.src.rpm %s || :'"
-                    mock.exec_mockbuild_cmd(
-                        cmd_tpl % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_base))
+                    cmd = cmd_tpl % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_in)
+                    mock.exec_mockbuild_cmd(cmd)
 
                     # use the rebuilt SRPM to get the dependency list
-                    mock.copy_out(["/builddir/build/SRPMS/%s" % srpm_base, srpm_dup])
+                    mock.copy_out([srpm_in, srpm_dup])
 
                 # run `mock --init`, `mock --installdeps`, and `mock --install`
                 mock.init_and_install(srpm_dup, props.install_pkgs, keep_going=props.keep_going)
