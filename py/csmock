@@ -236,7 +236,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         resconf = "/etc/resolv.conf"
         return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
 
-    def init_and_install(self, srpm, pkgs=[], force_scrub=False, keep_going=False):
+    def init_and_install(self, srpm, pkgs=[], force_scrub=False, keep_going=False, try_only=False):
         if force_scrub:
             scrub_root_passes = [True]
             # yet another hack for libguestfs/supermin
@@ -262,7 +262,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
             # run `mock --installdeps`
             srpm_deps_ok = srpm is None or self.install_deps(srpm)
-            if not srpm_deps_ok:
+            if not srpm_deps_ok and not try_only:
                 srpm_base = os.path.basename(srpm)
                 if self.scrub_done:
                     self.results.error("failed to install build dependencies of %s" % srpm_base)
@@ -283,6 +283,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             if not missing_deps:
                 # no misssing dependencies
                 return srpm_deps_ok
+            if try_only:
+                return False
 
             if self.scrub_done:
                 self.results.error("failed to install required packages (%s)" % strlist_to_shell_cmd(missing_deps))
@@ -882,7 +884,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     supermin_in_use = (ec == 0)
 
                     # first rebuild the given SRPM (some deps might be required even for the rebuild)
-                    mock.init_and_install(srpm_dup, force_scrub=supermin_in_use)
+                    mock.init_and_install(srpm_dup, force_scrub=supermin_in_use, try_only=True)
 
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
