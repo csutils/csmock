@@ -483,7 +483,7 @@ def re_from_checker_set(checker_set):
     """return operand for the --checker option of csgrep based on checker_set"""
     chk_re = "^("
     first = True
-    for chk in checker_set:
+    for chk in sorted(checker_set):
         if first:
             first = False
         else:
