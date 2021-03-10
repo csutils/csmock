@@ -272,5 +272,5 @@ def transform_results(js_file, results):
     results.exec_cmd("csgrep --mode=json %s '%s' | cshtml - > '%s'" %
                      (CSGREP_FINAL_FILTER_ARGS, js_file, html_file), shell=True)
     results.exec_cmd("csgrep --mode=evtstat %s '%s' | tee '%s'" % \
-                     (CSGREP_FINAL_FILTER_ARGS, err_file, stat_file), shell=True)
+                     (CSGREP_FINAL_FILTER_ARGS, js_file, stat_file), shell=True)
     return err_file, html_file
