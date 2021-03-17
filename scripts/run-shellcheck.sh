@@ -6,6 +6,7 @@ find "$@" -type f -print0 \
         || head -n1 "$i" | grep --text -Ev "(atf-|tcl|wi)sh\$" | grep --text "^#!.*sh\$"
         } >/dev/null && readlink -f "$i"; done' "$0" \
     | grep -v '^/builddir/build/BUILDROOT/[^/]\+/usr/share/dirsrv/script-templates/' \
+    | grep -Ev '^/builddir/build/BUILDROOT/[^/]+/usr/share/systemtap/(examples|testsuite)/' \
     | sort -V | tee /dev/fd/2 \
     | xargs -r shellcheck --format=gcc \
     | sed 's/$/ <--[shellcheck]/' \
