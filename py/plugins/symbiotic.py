@@ -1,0 +1,144 @@
+# Copyright (C) 2021 Red Hat, Inc.
+#
+# This file is part of csmock.
+#
+# csmock is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# csmock is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with csmock.  If not, see <http://www.gnu.org/licenses/>.
+
+import csmock.common.util
+
+from csmock.common.cflags import flags_by_warning_level
+
+
+SYMBIOTIC_CAPTURE_DIR = "/builddir/symbiotic-capture"
+
+DEFAULT_SYMBIOTIC_TIMEOUT = 30 # TODO
+
+
+class PluginProps:
+    def __init__(self):
+        self.description = "TODO:" # TODO
+        self.experimental = True
+
+        # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
+        self.pass_before = ["gcc"]
+
+
+class Plugin:
+    def __init__(self):
+        self.enabled = False
+        self.flags = flags_by_warning_level(0)
+
+    def get_props(self):
+        return PluginProps()
+
+    def enable(self):
+        self.enabled = True
+
+    def init_parser(self, parser):
+        parser.add_argument(
+            "--symbiotic-add-flag", action="append", default=[],
+            help="append the given flag when invoking symbiotic \
+(can be used multiple times)")
+
+        parser.add_argument(
+            "--symbiotic-timeout", type=int, default=DEFAULT_SYMBIOTIC_TIMEOUT,
+            help="maximal amount of time taken by analysis of a single process [s]")
+
+    def handle_args(self, parser, args, props):
+        if not self.enabled:
+            return
+
+        # make sure symbiotic and gllvm are installed in chroot
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/jamartis/symbiotic/fedora-$releasever-$basearch/"]
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/lzaoral/gllvm/fedora-$releasever-$basearch/"]
+        props.install_pkgs += ["symbiotic", "gllvm"]
+
+        # enable cswrap
+        props.enable_cswrap()
+        props.cswrap_filters += ["csgrep --mode=json --invert-match --checker CLANG_WARNING --event error"]
+
+        # FIXME: use gclang -> `ln gclang gcc` ???
+        props.env["CC"]  = "gclang"
+        props.env["CXX"] = "gclang++"
+
+        # TODO: assert that gllvm is installed properly
+
+        # Nuke default options
+        props.rpm_opts = ["--define", "toolchain clang", "--define", "optflags -O0", "--define", "build_ldflags -O0"]
+
+        # record version of the installed "symbiotic" tool
+        csmock.common.util.install_default_toolver_hook(props, "symbiotic")
+
+        # hook csexec into the binaries produced in %build
+        props.enable_csexec()
+
+        # create directory for symbiotic's results
+        def create_cap_dir_hook(results, mock):
+            cmd = "mkdir -pv '%s'" % SYMBIOTIC_CAPTURE_DIR
+            return mock.exec_mockbuild_cmd(cmd)
+        props.post_depinst_hooks += [create_cap_dir_hook]
+
+        # default symbiotic cmd-line
+        wrap_cmd_list = [
+                "--skip-ld-linux",
+                "csexec-symbiotic",
+                "-l", SYMBIOTIC_CAPTURE_DIR,
+                "-s", "--prp=memsafety --timeout=%d" % args.symbiotic_timeout]
+
+        # append custom args if specified
+        wrap_cmd_list += args.symbiotic_add_flag
+
+        # FIXME: multiple runs of %check for multiple dynamic analyzers not yet supported
+        assert "CSEXEC_WRAP_CMD" not in props.env
+
+        # configure csexec to use symbiotic as the execution wrapper
+        wrap_cmd = csmock.common.cflags.serialize_flags(wrap_cmd_list, separator="\\a")
+        props.env["CSEXEC_WRAP_CMD"] = wrap_cmd
+
+        # write all compiler flags to the environment
+        flags = ['-Wno-unused-command-line-argument',
+                 '-Wno-unused-parameter', '-Wno-unknown-attributes',
+                 '-Wno-unused-label', '-Wno-unknown-pragmas',
+                 '-Wno-unused-command-line-argument',
+                 '-Xclang', '-fsanitize-address-use-after-scope',
+                 '-O0', '-disable-llvm-passes', '-D__inline=', '-g',
+                 '-Wl,--dynamic-linker,/usr/bin/csexec-loader']
+        self.flags.append_flags(flags)
+        self.flags.remove_flags(['-O1', '-O2', '-O3', '-Os', '-Ofast', '-Og'])
+        self.flags.write_to_env(props.env)
+
+        # run %check (disabled by default for static analyzers)
+        props.run_check = True
+
+        # pick the captured files when %check is complete
+        props.copy_out_files += [SYMBIOTIC_CAPTURE_DIR]
+
+        # TODO delete empty log files
+        # def cleanup_hook(results):
+        #    return results.exec_cmd(["find", results.dbgdir_raw + SYMBIOTIC_CAPTURE_DIR,
+        #        "-name", "pid-*.log", "-empty", "-delete"])
+        # props.post_process_hooks += [cleanup_hook]
+
+        # transform log files produced by symbiotic into csdiff format
+        def filter_hook(results):
+            src_dir = results.dbgdir_raw + SYMBIOTIC_CAPTURE_DIR
+            dst = "%s/symbiotic-capture.js" % results.dbgdir_uni
+            cmd = """
+                  for file in %s/pid-*.out; do
+                      symbiotic2cs < \"$file\" > \"$file.conv\";
+                  done;
+                  csgrep --mode=json --quiet --remove-duplicates '%s'/pid-*.out.conv > '%s'""" \
+                    % (src_dir, src_dir, dst)
+            return results.exec_cmd(cmd, shell=True)
+        props.post_process_hooks += [filter_hook]

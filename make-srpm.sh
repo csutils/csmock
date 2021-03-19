@@ -148,6 +148,14 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-cppcheck
 This package contains the cppcheck plug-in for csmock.
 
+%package -n csmock-plugin-divine
+Summary: csmock plug-in providing the support for divine
+Requires: csexec
+Requires: csmock-common(python3)
+
+%description -n csmock-plugin-divine
+This package contains the divine plug-in for csmock.
+
 %package -n csmock-plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
 Requires: csmock-common(python3)
@@ -179,6 +187,14 @@ Requires: csmock-common(python3)
 
 %description -n csmock-plugin-strace
 This package contains the strace plug-in for csmock.
+
+%package -n csmock-plugin-symbiotic
+Summary: csmock plug-in providing the support for symbiotic
+Requires: csexec
+Requires: csmock-common(python3)
+
+%description -n csmock-plugin-symbiotic
+This package contains the symbiotic plug-in for csmock.
 
 %package -n csmock-plugin-valgrind
 Summary: csmock plug-in providing the support for valgrind
@@ -249,6 +265,10 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{python3_sitelib}/csmock/plugins/cppcheck.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/cppcheck.*
 
+%files -n csmock-plugin-divine
+%{python3_sitelib}/csmock/plugins/divine.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/divine.*
+
 %files -n csmock-plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
 %{python3_sitelib}/csmock/plugins/pylint.py*
@@ -266,6 +286,10 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %files -n csmock-plugin-strace
 %{python3_sitelib}/csmock/plugins/strace.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/strace.*
+
+%files -n csmock-plugin-symbiotic
+%{python3_sitelib}/csmock/plugins/symbiotic.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/symbiotic.*
 
 %files -n csmock-plugin-valgrind
 %{python3_sitelib}/csmock/plugins/valgrind.py*
