@@ -871,6 +871,11 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                 shutil.copyfile(props.srpm, srpm_dup)
                 props.copy_in_files += [srpm_dup]
 
+                if props.shell_cmd_to_build is not None:
+                    # do not query source tarball for build deps
+                    src_tar_dup = srpm_dup
+                    srpm_dup = None
+
             # run pre-mock hooks
             for hook in props.pre_mock_hooks:
                 rv = hook(results)
@@ -879,7 +884,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
             with MockWrapper(results, props) as mock:
                 supermin_in_use = False
-                if not props.no_scan and props.shell_cmd_to_build is None:
+                if srpm_dup is not None:
                     (ec, _) = results.get_cmd_output("rpm -qp '%s' --requires | grep '^supermin'" % srpm_dup)
                     supermin_in_use = (ec == 0)
 
@@ -972,13 +977,13 @@ cd %%s*/ || cd *\n\
                         ec = mock.exec_mockbuild_cmd(cmd, quiet=False)
                     else:
                         # extract the given archive (we got instead of SRPM)
-                        if re.match("^.*\\.zip$", srpm_dup):
+                        if re.match("^.*\\.zip$", src_tar_dup):
                             # ZIP archive
                             prep_cmd_tpl = "unzip -d '%s' '%s'"
                         else:
                             # assume TAR
                             prep_cmd_tpl = "tar -C '%s' -xvf '%s'"
-                        prep_cmd = prep_cmd_tpl % ("/builddir/build/BUILD", srpm_dup)
+                        prep_cmd = prep_cmd_tpl % ("/builddir/build/BUILD", src_tar_dup)
                         ec = mock.exec_mockbuild_cmd(prep_cmd)
 
                     if ec != 0:
