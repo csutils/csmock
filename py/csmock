@@ -90,6 +90,10 @@ DEFAULT_RESULT_FILTERS = [
     "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\\.c$'",
     "csgrep --mode=json --invert-match --path 'CMakeFiles/CMakeTmp|conftest.c'"]
 
+# path filter needed with `rpmbuild -bi`
+# TODO: introduce a csgrep option for this
+RPM_BI_FILTER = "sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"
+
 # path to csexec-loader is hard-coded for now
 CSEXEC_ENABLE_FLAG = "-Wl,--dynamic-linker,/usr/bin/csexec-loader"
 
@@ -1035,8 +1039,7 @@ cd %%s*/ || cd *\n\
                         ec = mock.exec_mockbuild_cmd(cmd, quiet=False)
                         if ec != 0:
                             results.error("%install failed", ec=ec)
-                        bd_flt = "sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"
-                        props.result_filters = [bd_flt] + props.result_filters
+                        props.result_filters = [RPM_BI_FILTER] + props.result_filters
 
                     # execute post-build commands in the chroot
                     for cmd in props.post_build_chroot_cmds:
@@ -1092,6 +1095,15 @@ cd %%s*/ || cd *\n\
                 cmd += " | %s" % filt
             cmd += " | cssort --key=path > '%s'" % js_file
             results.exec_cmd(cmd, shell=True)
+
+            # record suppressed results
+            js_supp = "%s/suppressed-results.js" % results.dbgdir
+            cmd = "%s '%s' " % (RPM_BI_FILTER, all_file)
+            cmd += "| csgrep --mode=json --strip-path-prefix /builddir/build/BUILD/ "
+            cmd += "| csdiff --show-internal '%s' - " % js_file
+            cmd += "| cssort > '%s'" % js_supp
+            results.exec_cmd(cmd, shell=True)
+            finalize_results(js_supp, results, props)
 
             finalize_results(js_file, results, props)
             return results.ec
