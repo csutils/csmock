@@ -34,6 +34,7 @@ class PluginProps:
 class Plugin:
     def __init__(self):
         self.enabled = False
+        self.sanitize = False
         self.flags = flags_by_warning_level(0)
         self.csgcca_path = None
 
@@ -45,6 +46,7 @@ class Plugin:
 
     def enable_sanitize(self, props, pkgs, flags):
         self.enabled = True
+        self.sanitize = True
         props.run_check = True
         props.install_pkgs += pkgs
         self.flags.append_flags(flags)
@@ -146,6 +148,9 @@ class Plugin:
             props.cswrap_filters += \
                 ["csgrep --mode=json --invert-match --checker COMPILER_WARNING"]
             return
+
+        if self.sanitize and "valgrind" in props.install_pkgs:
+            parser.error("GCC sanitizers are not compatible with valgrind")
 
         props.enable_cswrap()
         props.cswrap_filters += \
