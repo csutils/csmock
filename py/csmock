@@ -152,13 +152,13 @@ def query_build_id(results, nvr):
 
 
 def prepare_module_build_repo(results, nvr):
-    # query a module build in brew
-    build_id = query_build_id(results, nvr)
-    if build_id is None:
-        return None
-
     repo_dir = os.path.join(results.tmpdir, "local-build-repo")
     if not os.path.exists(repo_dir):
+        # query a module build in brew
+        build_id = query_build_id(results, nvr)
+        if build_id is None:
+            return None
+
         # use bld2repo to build a local build repo
         os.mkdir(repo_dir)
         cmd = ["bld2repo",
