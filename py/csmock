@@ -97,6 +97,11 @@ RPM_BI_FILTER = "sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//
 # path to csexec-loader is hard-coded for now
 CSEXEC_ENABLE_FLAG = "-Wl,--dynamic-linker,/usr/bin/csexec-loader"
 
+# static arguments passed to bld2repo
+BLD2REPO_ARGS = [
+        "--koji-host", "https://brewhub.engineering.redhat.com/brewhub",
+        "--koji-storage-host", "http://download.devel.redhat.com/brewroot"]
+
 
 def find_missing_pkgs(pkgs, results, mock):
     # dump list of RPMs installed in the chroot (for debugging purposes)
@@ -127,6 +132,60 @@ def find_missing_pkgs(pkgs, results, mock):
         missing += [dep]
 
     return missing
+
+
+def query_build_id(results, nvr):
+    # run `brew buildinfo` on the given NVR
+    results.print_with_ts("obtaining build info from brew: " + nvr)
+    cmd = ['brew', 'buildinfo', nvr]
+    (ec, info) = results.get_cmd_output(cmd, shell=False)
+    if ec != 0:
+        return None
+
+    # parse the first line of the output
+    head = info.splitlines()[0]
+    m = re.match("^.* \\[([0-9]+)\\]$", head)
+    if m:
+        return m.group(1)
+
+    return None
+
+
+def prepare_module_build_repo(results, nvr):
+    # query a module build in brew
+    build_id = query_build_id(results, nvr)
+    if build_id is None:
+        return None
+
+    repo_dir = os.path.join(results.tmpdir, "local-build-repo")
+    if not os.path.exists(repo_dir):
+        # use bld2repo to build a local build repo
+        os.mkdir(repo_dir)
+        cmd = ["bld2repo",
+                "--build-id", build_id,
+                "--result-dir", repo_dir]
+        cmd += BLD2REPO_ARGS
+        if (0 != results.exec_cmd(cmd)):
+            return None
+
+    # return local URL to the build repo
+    url = "file://" + repo_dir
+    return url
+
+
+def extra_build_repos(results, srpm):
+    urls = []
+
+    # check for a module build
+    m = re.match("^.*/(.*\.module\\+el.*)\\.src\\.rpm$", srpm)
+    if m:
+        nvr = m.group(1)
+        repo_url = prepare_module_build_repo(results, nvr)
+        if repo_url is not None:
+            # use a local build repo created by bld2repo
+            urls += [repo_url]
+
+    return urls
 
 
 class MockWrapper:
@@ -225,7 +284,10 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return (self.exec_mock_cmd(["--install"] + pkgs, quiet=quiet) == 0)
 
     def install_deps(self, srpm, quiet=True):
-        return (self.exec_mock_cmd(["--installdeps", srpm], quiet=quiet) == 0)
+        cmd = ["--installdeps", srpm]
+        for url in extra_build_repos(self.results, srpm):
+            cmd += ["--addrepo", url]
+        return (self.exec_mock_cmd(cmd, quiet=quiet) == 0)
 
     def emergency_install_deps(self, srpm):
         (_, raw_deps) = self.results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
