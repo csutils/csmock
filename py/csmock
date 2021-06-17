@@ -160,7 +160,6 @@ def prepare_module_build_repo(results, nvr):
             return None
 
         # use bld2repo to build a local build repo
-        os.mkdir(repo_dir)
         cmd = ["bld2repo",
                 "--build-id", build_id,
                 "--result-dir", repo_dir]
