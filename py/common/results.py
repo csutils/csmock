@@ -143,9 +143,9 @@ class ScanResults:
         self.log_fd = sys.stderr
         self.log_pid.wait()
         if self.use_tar:
-            tar_opts = "-c"
+            tar_opts = "-c --remove-files"
             if self.use_xz:
-                tar_opts += "J"
+                tar_opts += " -J"
             tar_cmd = "tar %s -f '%s' -C '%s' '%s'" % (
                 tar_opts, self.output, self.tmpdir, self.dirname)
             # do not treat 'tar: file changed as we read it' as fatal error
