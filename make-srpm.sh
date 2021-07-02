@@ -184,6 +184,17 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-cppcheck
 This package contains the cppcheck plug-in for csmock.
 
+%package -n csmock-plugin-divine
+Summary: csmock plug-in providing the support for divine
+Requires: csexec
+Requires: csmock-common > 2.8.0
+%if %{force_py3}
+Requires: csmock-common(python3)
+%endif
+
+%description -n csmock-plugin-divine
+This package contains the divine plug-in for csmock.
+
 %package -n csmock-plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
 Requires: csmock-common >= 1.8.0
@@ -231,7 +242,7 @@ This package contains the strace plug-in for csmock.
 %package -n csmock-plugin-symbiotic
 Summary: csmock plug-in providing the support for symbiotic
 Requires: csexec
-Requires: csmock-common > 2.6.0
+Requires: csmock-common > 2.8.0
 %if %{force_py3}
 Requires: csmock-common(python3)
 %endif
@@ -319,6 +330,12 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{csmock_python_sitelib}/csmock/plugins/cppcheck.py*
 %if %{force_py3}
 %{csmock_python_sitelib}/csmock/plugins/__pycache__/cppcheck.*
+%endif
+
+%files -n csmock-plugin-divine
+%{csmock_python_sitelib}/csmock/plugins/divine.py*
+%if %{force_py3}
+%{csmock_python_sitelib}/csmock/plugins/__pycache__/divine.*
 %endif
 
 %files -n csmock-plugin-pylint
