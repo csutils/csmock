@@ -25,7 +25,6 @@ import csmock.common.util
 
 class PluginProps:
     def __init__(self):
-        self.pass_priority = 0x38
         self.experimental = True
         self.description = "Source code analysis for C, based on sparse."
 

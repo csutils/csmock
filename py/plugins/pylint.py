@@ -29,7 +29,6 @@ FILTER_CMD = "csgrep --quiet '%s' " \
 
 class PluginProps:
     def __init__(self):
-        self.pass_priority = 0x50
         self.description = "Python source code analyzer which looks for programming errors.\n" \
                            "Helps enforcing a coding standard and sniffs for some code smells."
 

@@ -27,7 +27,6 @@ FILTER_CMD = "csgrep --quiet '%s' | csgrep --event '%s' > '%s'"
 
 class PluginProps:
     def __init__(self):
-        self.pass_priority = 0x44
         self.description = "A tool designed to find common security issues in Python code."
         self.experimental = True
 
