@@ -480,8 +480,10 @@ class ScanProps:
 
 class PluginManager:
     def __init__(self):
-        self.plug_by_prio = {}
+        self.plugins_sorted = []
         self.plug_by_name = {}
+        self.pass_before = {}
+        self.pass_after = {}
 
     def try_load(self, mod_name):
         full_name = "csmock.plugins." + mod_name
@@ -490,15 +492,45 @@ class PluginManager:
 
         props = plugin.get_props()
         # TODO: check API version
-        prio = props.pass_priority
-        assert prio not in self.plug_by_prio
-        self.plug_by_prio[prio] = plugin
+        if hasattr(props, "pass_priority"):
+            sys.stderr.write("%s: %s: ignoring pass_priority = %s defined by %s\n"
+                    % (sys.argv[0], self.__class__.__name__, str(props.pass_priority), mod))
+        for attr in ["pass_before", "pass_after"]:
+            if hasattr(props, attr):
+                getattr(self, attr)[mod_name] = getattr(props, attr)
         self.plug_by_name[mod_name] = plugin
+
+    # TODO: use graphlib.TopologicalSorter once we drop python2 support
+    def sort_topologically(self):
+        graph = {}
+        for plug in self.plug_by_name.keys():
+            graph[plug] = set()
+        for plug in self.pass_before.keys():
+            for before in self.pass_before[plug]:
+                if before in self.plug_by_name.keys():
+                    graph[before].add(plug)
+        for plug in self.pass_after.keys():
+            for after in self.pass_after[plug]:
+                if after in self.plug_by_name.keys():
+                    graph[plug].add(after)
+        # FIXME: lame placeholder for the topological sort implementation
+        order = []
+        for plug in sorted(self.plug_by_name.keys()):
+            for after in sorted(graph[plug]):
+                if after not in order:
+                    order += [after]
+        for plug in sorted(self.plug_by_name.keys()):
+            if plug not in order:
+                order += [plug]
+        self.plugins_sorted = []
+        for plug in order:
+            self.plugins_sorted += [self.plug_by_name[plug]]
 
     def load_default_plugins(self):
         pkg = importlib.import_module("csmock.plugins")
         for (_, mod_name, _) in pkgutil.iter_modules(pkg.__path__):
             self.try_load(mod_name)
+        self.sort_topologically()
 
     # Print description of each available plugin in format TOOL [:indent:] DESCRIPTION
     def print_plugin_descriptions(self):
@@ -519,27 +551,23 @@ class PluginManager:
         plugin.enable()
 
     def enable_all(self):
-        for prio in sorted(self.plug_by_prio):
-            plugin = self.plug_by_prio[prio]
+        for plugin in self.plugins_sorted:
             experimental= getattr(plugin.get_props(), "experimental", False)
             if experimental:
                 continue
             plugin.enable()
 
     def init_parser(self, parser):
-        for prio in sorted(self.plug_by_prio):
-            plugin = self.plug_by_prio[prio]
+        for plugin in self.plugins_sorted:
             plugin.init_parser(parser)
 
     def handle_args(self, parser, args, props):
-        for prio in sorted(self.plug_by_prio):
-            plugin = self.plug_by_prio[prio]
+        for plugin in self.plugins_sorted:
             plugin.handle_args(parser, args, props)
 
     def num_enabled(self):
         cnt = 0
-        for prio in sorted(self.plug_by_prio):
-            plugin = self.plug_by_prio[prio]
+        for plugin in self.plugins_sorted:
             if getattr(plugin, "enabled", False):
                 cnt = cnt + 1
         return cnt

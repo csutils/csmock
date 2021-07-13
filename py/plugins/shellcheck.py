@@ -29,7 +29,6 @@ FILTER_CMD = "csgrep --quiet '%s' " \
 
 class PluginProps:
     def __init__(self):
-        self.pass_priority = 0x58
         self.description = "A static analysis tool that gives warnings and suggestions for bash/sh shell scripts."
 
 
