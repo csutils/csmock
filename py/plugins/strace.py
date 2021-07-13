@@ -24,11 +24,11 @@ STRACE_CAPTURE_DIR = "/builddir/strace-capture"
 
 class PluginProps:
     def __init__(self):
-        # FIXME: This needs to be lower than priority of the "gcc" plugin
-        # for ScanProps::enable_csexec() to work.
-        self.pass_priority = 0x02
         self.experimental = True
         self.description = "A dynamic analysis tool that records system calls associated with a running process."
+
+        # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
+        self.pass_before = ["gcc"]
 
 
 class Plugin:

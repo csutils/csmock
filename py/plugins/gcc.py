@@ -27,7 +27,6 @@ CSGCCA_BIN="/usr/bin/csgcca"
 
 class PluginProps:
     def __init__(self):
-        self.pass_priority = 0x10
         self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
 
 
@@ -182,7 +181,7 @@ class Plugin:
 
                 props.env["CSWRAP_TIMEOUT_FOR"] += ":gcc"
                 if args.gcc_analyze_add_flag:
-                    # propagate custom clang flags
+                    # propagate custom GCC analyzer flags
                     props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
 
                 # record that `gcc -fanalyzer` was used for this scan

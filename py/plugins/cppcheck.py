@@ -25,7 +25,6 @@ import csmock.common.cflags
 
 class PluginProps:
     def __init__(self):
-        self.pass_priority = 0x20
         self.description = "Static analysis tool for C/C++ code."
 
 
