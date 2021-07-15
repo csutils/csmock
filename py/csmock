@@ -198,6 +198,7 @@ class MockWrapper:
         self.init_done = props.skip_mock_init
         self.skip_clean = props.skip_mock_clean
         self.use_login_shell = props.use_login_shell
+        self.add_repos = props.add_repos
         # just to silence pylint, will be initialized in __enter__()
         self.def_cmd = None
 
@@ -280,7 +281,11 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return self.exec_mock_cmd(cmd, quiet=quiet)
 
     def try_install(self, pkgs, quiet=True):
-        return (self.exec_mock_cmd(["--install"] + pkgs, quiet=quiet) == 0)
+        cmd = []
+        for repo in self.add_repos:
+            cmd += ["--addrepo", repo]
+        cmd += ["--install"] + pkgs
+        return (self.exec_mock_cmd(cmd, quiet=quiet) == 0)
 
     def install_deps(self, srpm, quiet=True):
         cmd = ["--installdeps", srpm]
@@ -368,6 +373,7 @@ class ScanProps:
         self.install_pkgs = []
         self.install_pkgs_blacklist = []
         self.install_opt_pkgs = []
+        self.add_repos = []
         self.copy_in_files = [CSMOCK_SCRIPTS]
         self.pre_mock_hooks = []
         self.post_depinst_hooks = []
