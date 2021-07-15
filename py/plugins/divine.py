@@ -27,11 +27,11 @@ DEFAULT_DIVINE_TIMEOUT = 150
 
 class PluginProps:
     def __init__(self):
-        # FIXME: This needs to be lower than priority of the "gcc" plugin
-        # for ScanProps::enable_csexec() to work.
-        self.pass_priority = 0x02
         self.description = "TODO:" # TODO
         self.experimental = True
+
+        # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
+        self.pass_before = ["gcc"]
 
 
 class Plugin:
@@ -59,8 +59,8 @@ class Plugin:
             return
 
         # make sure divine and gllvm are installed in chroot
-        props.enable_opt_copr_repos += ["lzaoral/Divine"]
-        props.install_opt_pkgs += ["divine"]
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/lzaoral/Divine/fedora-$releasever-$basearch/"]
+        props.install_pkgs += ["divine"]
 
         # enable cswrap
         props.enable_cswrap()

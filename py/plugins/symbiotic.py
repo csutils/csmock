@@ -22,16 +22,16 @@ from csmock.common.cflags import flags_by_warning_level
 
 SYMBIOTIC_CAPTURE_DIR = "/builddir/symbiotic-capture"
 
-DEFAULT_SYMBIOTIC_TIMEOUT = 1 # TODO
+DEFAULT_SYMBIOTIC_TIMEOUT = 30 # TODO
 
 
 class PluginProps:
     def __init__(self):
-        # FIXME: This needs to be lower than priority of the "gcc" plugin
-        # for ScanProps::enable_csexec() to work.
-        self.pass_priority = 0x01
         self.description = "TODO:" # TODO
         self.experimental = True
+
+        # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
+        self.pass_before = ["gcc"]
 
 
 class Plugin:
@@ -60,8 +60,9 @@ class Plugin:
             return
 
         # make sure symbiotic and gllvm are installed in chroot
-        props.enable_opt_copr_repos += ["jamartis/symbiotic", "lzaoral/gllvm"]
-        props.install_opt_pkgs += ["symbiotic", "gllvm"]
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/jamartis/symbiotic/fedora-$releasever-$basearch/"]
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/lzaoral/gllvm/fedora-$releasever-$basearch/"]
+        props.install_pkgs += ["symbiotic", "gllvm"]
 
         # enable cswrap
         props.enable_cswrap()
