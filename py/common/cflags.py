@@ -108,10 +108,13 @@ class FlagsMatrix:
                 (0 < len(args.gcc_del_flag))
 
     def write_to_env(self, env):
-        env["CSWRAP_ADD_CFLAGS"]   = serialize_flags(self.add_cflags)
-        env["CSWRAP_DEL_CFLAGS"]   = serialize_flags(self.del_cflags)
-        env["CSWRAP_ADD_CXXFLAGS"] = serialize_flags(self.add_cxxflags)
-        env["CSWRAP_DEL_CXXFLAGS"] = serialize_flags(self.del_cxxflags)
+        def append_to_env(key, arr):
+            env[key] = (env[key] + ":" if key in env else "") + serialize_flags(arr)
+
+        append_to_env("CSWRAP_ADD_CFLAGS", self.add_cflags)
+        append_to_env("CSWRAP_DEL_CFLAGS", self.del_cflags)
+        append_to_env("CSWRAP_ADD_CXXFLAGS", self.add_cxxflags)
+        append_to_env("CSWRAP_DEL_CXXFLAGS", self.del_cxxflags)
 
 
 def flags_by_warning_level(level):
