@@ -132,6 +132,14 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-bandit
 This package contains the bandit plug-in for csmock.
 
+%package -n csmock-plugin-cbmc
+Summary: csmock plug-in providing the support for cbmc
+Requires: csexec
+Requires: csmock-common(python3)
+
+%description -n csmock-plugin-cbmc
+This package contains the cbmc plug-in for csmock.
+
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
 Requires: csclng
@@ -256,6 +264,10 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{_datadir}/csmock/scripts/run-bandit.sh
 %{python3_sitelib}/csmock/plugins/bandit.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/bandit.*
+
+%files -n csmock-plugin-cbmc
+%{python3_sitelib}/csmock/plugins/cbmc.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/cbmc.*
 
 %files -n csmock-plugin-clang
 %{python3_sitelib}/csmock/plugins/clang.py*

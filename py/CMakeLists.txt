@@ -70,6 +70,7 @@ if(ENABLE_CSMOCK)
     endmacro()
 
     install_plugin(bandit)
+    install_plugin(cbmc)
     install_plugin(clang)
     install_plugin(cppcheck)
     install_plugin(divine)
