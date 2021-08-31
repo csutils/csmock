@@ -47,7 +47,7 @@ VER="`echo "$VER" | sed "s/-.*-/.$TIMESTAMP./"`"
 
 BRANCH="`git rev-parse --abbrev-ref HEAD`"
 test -n "$BRANCH" || die "failed to get current branch name"
-test master = "${BRANCH}" || VER="${VER}.${BRANCH//-/_}"
+test "main" = "${BRANCH}" || VER="${VER}.${BRANCH//-/_}"
 test -z "`git diff HEAD`" || VER="${VER}.dirty"
 
 NV="${PKG}-${VER}"
@@ -78,8 +78,8 @@ Release:    1%{?dist}
 Summary:    A mock wrapper for Static Analysis tools
 
 License:    GPLv3+
-URL:        https://github.com/kdudka/%{name}
-Source0:    https://github.com/kdudka/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.xz
+URL:        https://github.com/csutils/%{name}
+Source0:    https://github.com/csutils/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.xz
 
 BuildRequires: cmake
 BuildRequires: help2man

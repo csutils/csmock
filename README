@@ -3,7 +3,7 @@ csmock
 csmock is a tool for scanning SRPMs by Static Analysis tools in a fully
 automated way.  You can find the up2date sources in the following repository:
 
-    https://github.com/kdudka/csmock
+    https://github.com/csutils/csmock
 
 csmock is licensed under GPLv3+, see COPYING for details.  Please report bugs
 and feature requests on GitHub using the above URL.

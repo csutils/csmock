@@ -44,12 +44,12 @@ done
 JSON="./${NV}-github-relase.js"
 
 # create a new release on GitHub
-curl "https://api.github.com/repos/${USER}/${NAME}/releases" \
+curl "https://api.github.com/repos/csutils/${NAME}/releases" \
     -o "$JSON" --fail --verbose \
     --header "Authorization: token $TOKEN" \
     --data '{
     "tag_name": "'"$TAG"'",
-    "target_commitish": "master",
+    "target_commitish": "main",
     "name": "'"$NV"'",
     "draft": false,
     "prerelease": false
