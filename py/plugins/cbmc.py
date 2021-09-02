@@ -123,7 +123,7 @@ class Plugin:
             dst = "%s/cbmc-capture.js" % results.dbgdir_uni
             cmd = """
                   for file in %s/pid-*.out; do
-                      cat \"$file\" | cbmc-convert-output > \"$file.conv\";
+                      cat \"$file\" | cbmc-convert-output -a > \"$file.conv\";
                   done;
                   csgrep --mode=json --quiet --remove-duplicates '%s'/pid-*.out.conv > '%s'""" \
                     % (src_dir, src_dir, dst)
