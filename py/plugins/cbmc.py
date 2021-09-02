@@ -26,7 +26,7 @@ DEFAULT_CBMC_TIMEOUT = 42
 
 class PluginProps:
     def __init__(self):
-        self.description = "Bounded model checking for software."
+        self.description = "Bounded Model Checker for C and C++ programs"
         self.experimental = True
 
         # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
@@ -66,7 +66,7 @@ class Plugin:
 
         # enable cswrap
         props.enable_cswrap()
-        props.cswrap_filters += ["csgrep --mode=json --invert-match --checker CLANG_WARNING --event error"]
+        props.cswrap_filters += ["csgrep --mode=json --invert-match --checker GCC_WARNING --event error"]
 
         # set dioscc as the default compiler
         # FIXME: this is not 100% reliable
@@ -87,14 +87,13 @@ class Plugin:
             return mock.exec_mockbuild_cmd(cmd)
         props.post_depinst_hooks += [create_cap_dir_hook]
 
-        # FIXME timeout option
         # default cbmc cmd-line
         wrap_cmd_list = [
                 "--skip-ld-linux",
                 "csexec-cbmc",
                 "-t", "%d" % args.cbmc_timeout,
                 "-l", CBMC_CAPTURE_DIR,
-                "-c","--unwind 1 --pointer-overflow-check --memory-leak-check"]
+                "-c","--unwind 1 --json-ui --verbosity 4 --pointer-overflow-check --memory-leak-check"]
 
         # append custom args if specified
         # FIXME: what about single arguments with whitespaces?
