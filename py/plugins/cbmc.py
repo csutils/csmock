@@ -58,10 +58,11 @@ class Plugin:
         if not self.enabled:
             return
 
-        # TODO, HACK; update cbmc-utils in fedora
-        # please download and replace /bin/csexec-cbmc with:
-        # https://github.com/aufover/cbmc-utils/blob/master/cbmc_utils/csexec-cbmc.sh
-        props.copy_in_files += ["/bin/csexec-cbmc"]
+        # FIXME, HACK; update cbmc-utils in fedora
+        # please download and replace the following files on the host system with:
+        # * https://raw.githubusercontent.com/aufover/cbmc-utils/master/cbmc_utils/csexec-cbmc.sh
+        # * https://raw.githubusercontent.com/aufover/cbmc-utils/master/cbmc_utils/formatCBMCOutput.py
+        props.copy_in_files += ["/bin/csexec-cbmc", "/bin/cbmc-convert-output"]
 
         # make sure valgrind is installed in chroot
         props.install_pkgs += ["cbmc"]
@@ -126,7 +127,7 @@ class Plugin:
             dst = "%s/cbmc-capture.js" % results.dbgdir_uni
             cmd = """
                   for file in %s/pid-*.out; do
-                      cat \"$file\" | cbmc-convert-output > \"$file.conv\";
+                      cat \"$file\" | cbmc-convert-output -a > \"$file.conv\";
                   done;
                   csgrep --mode=json --quiet --remove-duplicates '%s'/pid-*.out.conv > '%s'""" \
                     % (src_dir, src_dir, dst)
