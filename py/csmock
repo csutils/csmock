@@ -885,7 +885,7 @@ key event (defaults to 3).")
 
     if args.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
-        props.install_opt_pkgs += ["csdiff >= 1.2.1"]
+        props.install_opt_pkgs += ["csdiff"]
 
     if args.run_check:
         # run the %check section of specfile

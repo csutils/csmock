@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2012-2018 Red Hat, Inc.
+# Copyright (C) 2012-2021 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -84,28 +84,12 @@ Source0:    https://github.com/csutils/%{name}/releases/download/%{name}-%{versi
 BuildRequires: cmake
 BuildRequires: help2man
 
-%if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
-BuildRequires: python-argparse
-BuildRequires: python-importlib
+%if 0%{?rhel} == 7
+%global python3_pkgversion 36
 %endif
 
-# force using Python 3 Fedora 23+
-%global force_py3 ((7 < 0%{?rhel}) || (22 < 0%{?fedora}))
-%if %{force_py3}
-BuildRequires: python3-GitPython
-BuildRequires: python3-devel
-%global csmock_python_executable %{__python3}
-%global csmock_python_sitelib %{python3_sitelib}
-%else
-BuildRequires: GitPython
-BuildRequires: python2-devel
-%if 0%{?rhel} && 0%{?rhel} <= 6
-%{!?__python2: %global __python2 /usr/bin/python2}
-%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%endif
-%global csmock_python_executable %{__python2}
-%global csmock_python_sitelib %{python2_sitelib}
-%endif
+BuildRequires: python%{python3_pkgversion}-GitPython
+BuildRequires: python%{python3_pkgversion}-devel
 
 Requires: csmock-common                 >= %{version}-%{release}
 Requires: csmock-plugin-clang           >= %{version}-%{release}
@@ -119,34 +103,23 @@ This is a metapackage pulling in csmock-common and basic csmock plug-ins.
 
 %package -n csbuild
 Summary: Tool for plugging static analyzers into the build process
-%if %{force_py3}
-Requires: csmock-common(python3)
-Requires: python3-GitPython
-%else
-Requires: GitPython
-%endif
 Requires: cscppc
 Requires: csclng
-Requires: csdiff >= 1.5.0
+Requires: csdiff
+Requires: csmock-common(python3)
 Requires: cswrap
-Requires: csmock-common > 2.1.1
+Requires: python%{python3_pkgversion}-GitPython
 
 %description -n csbuild
 Tool for plugging static analyzers into the build process, free of mock.
 
 %package -n csmock-common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
-Requires: csdiff > 2.1.0
+Requires: csdiff
 Requires: csgcca
-Requires: cswrap >= 1.3.1
+Requires: cswrap
 Requires: mock
-%if !(0%{?fedora} >= 19 || 0%{?rhel} >= 7)
-Requires: python-argparse
-Requires: python-importlib
-%endif
-%if %{force_py3}
 Provides: csmock-common(python3) = %{version}-%{release}
-%endif
 
 %description -n csmock-common
 This package contains the csmock tool that allows to scan SRPMs by Static
@@ -154,10 +127,7 @@ Analysis tools in a fully automated way.
 
 %package -n csmock-plugin-bandit
 Summary: csmock plug-in providing the support for Bandit.
-Requires: csmock-common >= 1.8.0
-%if %{force_py3}
 Requires: csmock-common(python3)
-%endif
 
 %description -n csmock-plugin-bandit
 This package contains the bandit plug-in for csmock.
@@ -165,54 +135,39 @@ This package contains the bandit plug-in for csmock.
 %package -n csmock-plugin-clang
 Summary: csmock plug-in providing the support for Clang
 Requires: csclng
-Requires: csmock-common >= 1.7.1
-%if %{force_py3}
 Requires: csmock-common(python3)
-%endif
 
 %description -n csmock-plugin-clang
 This package contains the clang plug-in for csmock.
 
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
-Requires: cscppc >= 1.0.4
-Requires: csmock-common
-%if %{force_py3}
+Requires: cscppc
 Requires: csmock-common(python3)
-%endif
 
 %description -n csmock-plugin-cppcheck
 This package contains the cppcheck plug-in for csmock.
 
 %package -n csmock-plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
-Requires: csmock-common >= 1.8.0
-%if %{force_py3}
 Requires: csmock-common(python3)
-%endif
 
 %description -n csmock-plugin-pylint
 This package contains the pylint plug-in for csmock.
 
 %package -n csmock-plugin-shellcheck
 Summary: csmock plug-in providing the support for ShellCheck.
-Requires: csmock-common >= 1.8.0
-%if %{force_py3}
 Requires: csmock-common(python3)
-%endif
 
 %description -n csmock-plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.
 
 %package -n csmock-plugin-smatch
 Summary: csmock plug-in providing the support for smatch
-Requires: csdiff > 1.4.0
+Requires: csdiff
 Requires: csmatch
-Requires: csmock-common
-Requires: cswrap > 1.4.0
-%if %{force_py3}
 Requires: csmock-common(python3)
-%endif
+Requires: cswrap
 
 %description -n csmock-plugin-smatch
 This package contains the smatch plug-in for csmock.
@@ -220,10 +175,7 @@ This package contains the smatch plug-in for csmock.
 %package -n csmock-plugin-strace
 Summary: csmock plug-in providing the support for strace
 Requires: csexec
-Requires: csmock-common > 2.6.0
-%if %{force_py3}
 Requires: csmock-common(python3)
-%endif
 
 %description -n csmock-plugin-strace
 This package contains the strace plug-in for csmock.
@@ -231,10 +183,7 @@ This package contains the strace plug-in for csmock.
 %package -n csmock-plugin-valgrind
 Summary: csmock plug-in providing the support for valgrind
 Requires: csexec
-Requires: csmock-common > 2.6.0
-%if %{force_py3}
 Requires: csmock-common(python3)
-%endif
 
 %description -n csmock-plugin-valgrind
 This package contains the valgrind plug-in for csmock.
@@ -242,17 +191,15 @@ This package contains the valgrind plug-in for csmock.
 %prep
 %setup -q
 
-# force using Python 3 Fedora 23+
-%if %{force_py3}
+# force using Python 3
 sed -e '1s/python$/python3/' -i py/cs{build,mock}
-%endif
 
 %build
 mkdir csmock_build
 cd csmock_build
 %cmake \\
     -DVERSION='%{name}-%{version}-%{release}' \\
-    -DPYTHON_EXECUTABLE='%{csmock_python_executable}' \\
+    -DPYTHON_EXECUTABLE='%{__python3}' \\
     -B. ..
 make %{?_smp_mflags} VERBOSE=yes
 
@@ -272,75 +219,57 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %files -n csmock-common
 %dir %{_datadir}/csmock
 %dir %{_datadir}/csmock/scripts
-%dir %{csmock_python_sitelib}/csmock
-%dir %{csmock_python_sitelib}/csmock/plugins
+%dir %{python3_sitelib}/csmock
+%dir %{python3_sitelib}/csmock/plugins
 %{_bindir}/csmock
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/enable-keep-going.sh
 %{_datadir}/csmock/scripts/chroot-fixups
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
-%{csmock_python_sitelib}/csmock/__init__.py*
-%{csmock_python_sitelib}/csmock/common
-%{csmock_python_sitelib}/csmock/plugins/__init__.py*
-%{csmock_python_sitelib}/csmock/plugins/gcc.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/__pycache__/__init__.*
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/__init__.*
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/gcc.*
-%endif
+%{python3_sitelib}/csmock/__init__.py*
+%{python3_sitelib}/csmock/common
+%{python3_sitelib}/csmock/plugins/__init__.py*
+%{python3_sitelib}/csmock/plugins/gcc.py*
+%{python3_sitelib}/csmock/__pycache__/__init__.*
+%{python3_sitelib}/csmock/plugins/__pycache__/__init__.*
+%{python3_sitelib}/csmock/plugins/__pycache__/gcc.*
 %doc COPYING README
 
 %files -n csmock-plugin-bandit
 %{_datadir}/csmock/scripts/run-bandit.sh
-%{csmock_python_sitelib}/csmock/plugins/bandit.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/bandit.*
-%endif
+%{python3_sitelib}/csmock/plugins/bandit.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/bandit.*
 
 %files -n csmock-plugin-clang
-%{csmock_python_sitelib}/csmock/plugins/clang.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/clang.*
-%endif
+%{python3_sitelib}/csmock/plugins/clang.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/clang.*
 
 %files -n csmock-plugin-cppcheck
-%{csmock_python_sitelib}/csmock/plugins/cppcheck.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/cppcheck.*
-%endif
+%{python3_sitelib}/csmock/plugins/cppcheck.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/cppcheck.*
 
 %files -n csmock-plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
-%{csmock_python_sitelib}/csmock/plugins/pylint.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/pylint.*
-%endif
+%{python3_sitelib}/csmock/plugins/pylint.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/pylint.*
 
 %files -n csmock-plugin-shellcheck
 %{_datadir}/csmock/scripts/run-shellcheck.sh
-%{csmock_python_sitelib}/csmock/plugins/shellcheck.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/shellcheck.*
-%endif
+%{python3_sitelib}/csmock/plugins/shellcheck.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/shellcheck.*
 
 %files -n csmock-plugin-smatch
-%{csmock_python_sitelib}/csmock/plugins/smatch.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/smatch.*
-%endif
+%{python3_sitelib}/csmock/plugins/smatch.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/smatch.*
 
 %files -n csmock-plugin-strace
-%{csmock_python_sitelib}/csmock/plugins/strace.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/strace.*
-%endif
+%{python3_sitelib}/csmock/plugins/strace.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/strace.*
 
 %files -n csmock-plugin-valgrind
-%{csmock_python_sitelib}/csmock/plugins/valgrind.py*
-%if %{force_py3}
-%{csmock_python_sitelib}/csmock/plugins/__pycache__/valgrind.*
-%endif
+%{python3_sitelib}/csmock/plugins/valgrind.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/valgrind.*
 EOF
 
 rpmbuild -bs "$SPEC"                            \
