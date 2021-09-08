@@ -21,8 +21,8 @@
 import argparse
 import copy
 import importlib
-import pkgutil
 import os
+import pkgutil
 import re
 import shlex
 import shutil
@@ -506,8 +506,8 @@ class PluginManager:
                 getattr(self, attr)[mod_name] = getattr(props, attr)
         self.plug_by_name[mod_name] = plugin
 
-    # TODO: use graphlib.TopologicalSorter once we drop python2 support
     def sort_topologically(self):
+        # build dependency graph
         graph = {}
         for plug in self.plug_by_name.keys():
             graph[plug] = set()
@@ -519,15 +519,23 @@ class PluginManager:
             for after in self.pass_after[plug]:
                 if after in self.plug_by_name.keys():
                     graph[plug].add(after)
-        # FIXME: lame placeholder for the topological sort implementation
-        order = []
-        for plug in sorted(self.plug_by_name.keys()):
-            for after in sorted(graph[plug]):
-                if after not in order:
-                    order += [after]
-        for plug in sorted(self.plug_by_name.keys()):
-            if plug not in order:
-                order += [plug]
+
+        try:
+            import graphlib
+            # use graphlib.TopologicalSorter to implement real topological sort (python 3.9+)
+            ts = graphlib.TopologicalSorter(graph)
+            order = list(ts.static_order())
+        except:
+            # fallback to a lame implementation of the ordering algorithm
+            order = []
+            for plug in sorted(self.plug_by_name.keys()):
+                for after in sorted(graph[plug]):
+                    if after not in order:
+                        order += [after]
+            for plug in sorted(self.plug_by_name.keys()):
+                if plug not in order:
+                    order += [plug]
+
         self.plugins_sorted = []
         for plug in order:
             self.plugins_sorted += [self.plug_by_name[plug]]
