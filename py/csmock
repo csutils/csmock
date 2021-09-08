@@ -276,6 +276,23 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         full_cmd = "/bin/su mockbuild%s -c %s" % (args, shell_quote(cmd))
         return self.exec_chroot_cmd(full_cmd, quiet=quiet)
 
+    def exec_rpmbuild_bi(self, props, extra_rpm_opts=[], extra_env={}):
+        if props.spec_in is None:
+            self.results.fatal_error("SRPM is required by a plug-in")
+
+        # construct basic `rpmbuild -bi ...` command
+        rpm_opts = props.rpm_opts + extra_rpm_opts
+        cmd = "rpmbuild -bi --nodeps --short-circuit %s %s" \
+            % (props.spec_in, strlist_to_shell_cmd(rpm_opts))
+
+        # wrap %install cmd by all %build cmd wrappers (workaround for buggy pkgs)
+        cmd = props.wrap_build_cmd(cmd)
+
+        # initialize environment variables according to ScanProps
+        cmd = props.wrap_shell_cmd_by_env(cmd, extra_env)
+
+        return self.exec_mockbuild_cmd(cmd, quiet=False)
+
     def copy_out(self, args, quiet=True):
         cmd = ["--disable-plugin=selinux", "--copyout"] + args
         return self.exec_mock_cmd(cmd, quiet=quiet)
@@ -370,6 +387,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 class ScanProps:
     def __init__(self):
         self.plugins = None
+        self.spec_in = None
         self.install_pkgs = []
         self.install_pkgs_blacklist = []
         self.install_opt_pkgs = []
@@ -467,17 +485,21 @@ class ScanProps:
             cmd_out = w % cmd_out
         return cmd_out
 
-    def wrap_shell_cmd_by_env(self, cmd_in):
+    def wrap_shell_cmd_by_env(self, cmd_in, extra_env={}):
+        # merge self.env with extra_env
+        env = self.env.copy()
+        env.update(extra_env)
+
         # serialize self.path
         path_str = ""
         for p in self.path:
             path_str += p + ":"
         cmd_out = "PATH=%s$PATH " % path_str
 
-        # serialize self.env
-        assert "PATH" not in self.env
-        for var in self.env:
-            cmd_out += "%s=$'%s' " % (var, self.env[var])
+        # serialize env
+        assert "PATH" not in env
+        for var in env:
+            cmd_out += "%s=$'%s' " % (var, env[var])
 
         # run a new instance of shell for the specified command
         cmd_out += "sh -c %s" % shell_quote(cmd_in)
@@ -1010,7 +1032,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     if ec != 0:
                         results.fatal_error("no specfile found in SRPM: %s" % props.srpm)
                     spec = spec.rstrip()
-                    spec_in = "/builddir/build/SPECS/%s" % spec
+                    props.spec_in = "/builddir/build/SPECS/%s" % spec
 
                 # copy the given SRPM into our tmp dir
                 srpm_base = os.path.basename(props.srpm)
@@ -1046,12 +1068,12 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                     if props.keep_going:
                         # ignore ExclusiveArch tags with --keep-going
-                        mock.exec_mockbuild_cmd("sed -e 's|^ExclusiveArch:.*$||' -i " + spec_in)
+                        mock.exec_mockbuild_cmd("sed -e 's|^ExclusiveArch:.*$||' -i " + props.spec_in)
 
                     # rebuild the given SRPM (and rename to match the original one)
                     cmd_tpl = "rpmbuild -bs --nodeps %s %s && sh -c 'cd \
 /builddir/build/SRPMS && eval mv -v *.src.rpm %s || :'"
-                    cmd = cmd_tpl % (spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_in)
+                    cmd = cmd_tpl % (props.spec_in, strlist_to_shell_cmd(props.rpm_opts), srpm_in)
                     mock.exec_mockbuild_cmd(cmd)
 
                     # use the rebuilt SRPM to get the dependency list
@@ -1120,7 +1142,7 @@ cd %%s*/ || cd *\n\
 
                     if props.shell_cmd_to_build is None:
                         # run %prep phase without pluggin-in any static analyzers
-                        cmd = "rpmbuild -bp --nodeps %s %s" % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
+                        cmd = "rpmbuild -bp --nodeps %s %s" % (props.spec_in, strlist_to_shell_cmd(props.rpm_opts))
                         ec = mock.exec_mockbuild_cmd(cmd, quiet=False)
                     else:
                         # extract the given archive (we got instead of SRPM)
@@ -1142,7 +1164,7 @@ cd %%s*/ || cd *\n\
                     if props.shell_cmd_to_build is None:
                         # run %build phase with static analyzers plugged-in
                         build_cmd = "rpmbuild -bc --nodeps --short-circuit %s %s" \
-                                % (spec_in, strlist_to_shell_cmd(props.rpm_opts))
+                                % (props.spec_in, strlist_to_shell_cmd(props.rpm_opts))
                     else:
                         # run the above prepared build script
                         build_cmd = "sh -x '%s'" % build_script
@@ -1158,28 +1180,17 @@ cd %%s*/ || cd *\n\
                         results.error("%build failed", ec=ec)
 
                     if props.need_rpm_bi:
-                        rpm_opts = props.rpm_opts
+                        extra_rpm_opts = []
                         if not props.run_check:
                             # disable %check while running 'rpmbuild -bi'
                             if mock.exec_chroot_cmd("rpmbuild --nocheck") == 0:
-                                rpm_opts += ["--nocheck"]
+                                extra_rpm_opts += ["--nocheck"]
                             else:
                                 # fragile compatiblity workaround for older versions of rpm-build,
                                 # known to break if unescaped %check appears in a change log entry
-                                rpm_opts += ["--define", "check\\\n%%check\\\nexit 0"]
+                                extra_rpm_opts += ["--define", "check\\\n%%check\\\nexit 0"]
 
-                        if props.shell_cmd_to_build is not None:
-                            results.fatal_error("SRPM is required by a plug-in")
-                        cmd = "rpmbuild -bi --nodeps --short-circuit %s %s" \
-                            % (spec_in, strlist_to_shell_cmd(rpm_opts))
-
-                        # wrap %install cmd by all %build cmd wrappers (workaround for buggy pkgs)
-                        cmd = props.wrap_build_cmd(cmd)
-
-                        # initialize environment variables according to ScanProps
-                        cmd = props.wrap_shell_cmd_by_env(cmd)
-
-                        ec = mock.exec_mockbuild_cmd(cmd, quiet=False)
+                        ec = mock.exec_rpmbuild_bi(props, extra_rpm_opts=extra_rpm_opts)
                         if ec != 0:
                             results.error("%install failed", ec=ec)
                         props.result_filters = [RPM_BI_FILTER] + props.result_filters
