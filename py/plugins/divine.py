@@ -59,7 +59,7 @@ class Plugin:
             return
 
         # make sure divine and gllvm are installed in chroot
-        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/lzaoral/Divine/fedora-$releasever-$basearch/"]
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/@aufover/divine/fedora-$releasever-$basearch/"]
         props.install_pkgs += ["divine"]
 
         # enable cswrap
