@@ -27,7 +27,7 @@ DEFAULT_SYMBIOTIC_TIMEOUT = 30 # TODO
 
 class PluginProps:
     def __init__(self):
-        self.description = "TODO:" # TODO
+        self.description = "A formal verification tool based on instrumentation, program slicing and KLEE."
         self.experimental = True
 
         # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
