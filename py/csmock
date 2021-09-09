@@ -395,6 +395,7 @@ class ScanProps:
         self.copy_in_files = [CSMOCK_SCRIPTS]
         self.pre_mock_hooks = []
         self.post_depinst_hooks = []
+        self.post_install_hooks = []
         self.rpm_opts = DEFAULT_RPM_OPTS
         self.path = []
         self.env = {}
@@ -1194,6 +1195,12 @@ cd %%s*/ || cd *\n\
                         if ec != 0:
                             results.error("%install failed", ec=ec)
                         props.result_filters = [RPM_BI_FILTER] + props.result_filters
+
+                    # run post-install hooks
+                    for hook in props.post_install_hooks:
+                        rv = hook(results, mock, props)
+                        if rv != 0:
+                            results.error("post-install hook failed", ec=rv)
 
                     # execute post-build commands in the chroot
                     for cmd in props.post_build_chroot_cmds:

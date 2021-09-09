@@ -73,15 +73,18 @@ class Plugin:
         # append custom args if specified
         wrap_cmd_list += args.strace_add_flag
 
-        # FIXME: multiple runs of %check for multiple dynamic analyzers not yet supported
-        assert "CSEXEC_WRAP_CMD" not in props.env
-
         # configure csexec to use strace as the execution wrapper
         wrap_cmd = csmock.common.cflags.serialize_flags(wrap_cmd_list, separator="\\a")
-        props.env["CSEXEC_WRAP_CMD"] = wrap_cmd
+        extra_env = {}
+        extra_env["CSEXEC_WRAP_CMD"] = wrap_cmd
 
-        # run %check (disabled by default for static analyzers)
-        props.run_check = True
+        # install a hook to run %check through strace
+        def run_strace_hook(results, mock, props):
+            ec = mock.exec_rpmbuild_bi(props, extra_env=extra_env)
+            if ec != 0:
+                results.error("strace plug-in: %%install or %%check failed with exit code %d" % ec)
+            return ec
+        props.post_install_hooks += [run_strace_hook]
 
         # pick the captured files when %check is complete
         props.copy_out_files += [STRACE_CAPTURE_DIR]
