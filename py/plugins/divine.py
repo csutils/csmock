@@ -27,7 +27,7 @@ DEFAULT_DIVINE_TIMEOUT = 150
 
 class PluginProps:
     def __init__(self):
-        self.description = "TODO:" # TODO
+        self.description = "A formal verification tool based on explicit-state model checking."
         self.experimental = True
 
         # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
