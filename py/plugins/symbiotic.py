@@ -60,8 +60,8 @@ class Plugin:
             return
 
         # make sure symbiotic and gllvm are installed in chroot
-        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/jamartis/symbiotic/fedora-$releasever-$basearch/"]
-        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/lzaoral/gllvm/fedora-$releasever-$basearch/"]
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/@aufover/symbiotic/fedora-$releasever-$basearch/"]
+        props.add_repos += ["https://download.copr.fedorainfracloud.org/results/@aufover/gllvm/fedora-$releasever-$basearch/"]
         props.install_pkgs += ["symbiotic", "gllvm"]
 
         # enable cswrap
