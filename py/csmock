@@ -440,7 +440,7 @@ class ScanProps:
                 "/usr/lib64/libcsexec-preload.so"]
 
         # use the "gcc" plug-in to inject linker flags
-        gcc = self.plugins["gcc"]
+        gcc = self.plugins.plug_by_name["gcc"]
         gcc.enable()
         # FIXME: This only works if Plugin::handle_args() of gcc.py has not yet been called
         gcc.flags.append_flags([CSEXEC_ENABLE_FLAG])
@@ -495,6 +495,10 @@ class PluginManager:
         full_name = "csmock.plugins." + mod_name
         mod = importlib.import_module(full_name)
         plugin = mod.Plugin()
+
+        # record real (module) name of the plugin
+        assert not hasattr(plugin, "mod_name")
+        plugin.mod_name = mod_name
 
         props = plugin.get_props()
         # TODO: check API version
@@ -579,12 +583,15 @@ class PluginManager:
         for plugin in self.plugins_sorted:
             plugin.handle_args(parser, args, props)
 
-    def num_enabled(self):
-        cnt = 0
+    def enabled_plugins(self):
+        lst = []
         for plugin in self.plugins_sorted:
             if getattr(plugin, "enabled", False):
-                cnt = cnt + 1
-        return cnt
+                lst += [plugin.mod_name]
+        return lst
+
+    def num_enabled(self):
+        return len(self.enabled_plugins())
 
 
 def re_from_checker_set(checker_set):
@@ -879,7 +886,7 @@ key event (defaults to 3).")
             parser.error("options --diff-patches and --base-scan are mutually exclusive")
 
     props = ScanProps()
-    props.plugins               = plugins.plug_by_name
+    props.plugins               = plugins
     props.cswrap_timeout        = args.cswrap_timeout
     props.keep_going            = args.keep_going
     props.no_scan               = args.no_scan
@@ -974,6 +981,8 @@ def do_scan(props, output, args, skip_patches):
 
     try:
         with ScanResults(output, "csmock", "@VERSION@", props.keep_going) as results:
+            enabled_plugins = props.plugins.enabled_plugins()
+            results.ini_writer.append("enabled-plugins", ", ".join(enabled_plugins))
             results.ini_writer.append("mock-config", props.mock_profile)
             results.ini_writer.append("project-name", props.nvr)
             if props.known_false_positives:
