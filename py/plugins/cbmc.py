@@ -58,10 +58,10 @@ class Plugin:
         if not self.enabled:
             return
 
-        # make sure valgrind is installed in chroot
-        props.install_pkgs += ["cbmc"]
+        # make sure cbmc and its helper scripts are installed in chroot
+        props.install_pkgs += ["cbmc", "cbmc-utils"]
 
-        # record version of the installed "valgrind" tool
+        # record version of the installed "cbmc" tool
         csmock.common.util.install_default_toolver_hook(props, "cbmc")
 
         # enable cswrap
@@ -115,7 +115,7 @@ class Plugin:
         # delete empty log files
         # TODO
 
-        # transform XML files produced by valgrind into csdiff format
+        # transform XML files produced by cbmc into csdiff format
         def filter_hook(results):
             src_dir = results.dbgdir_raw + CBMC_CAPTURE_DIR
             dst = "%s/cbmc-capture.js" % results.dbgdir_uni
