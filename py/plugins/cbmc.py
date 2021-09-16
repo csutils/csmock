@@ -68,11 +68,15 @@ class Plugin:
         props.enable_cswrap()
         props.cswrap_filters += ["csgrep --mode=json --invert-match --checker GCC_WARNING --event error"]
 
+        # set dioscc as the default compiler
+        # FIXME: this is not 100% reliable
+        # FIXME: goto-gcc does not seem to be able to compile C++
         props.env["CC"]  = "goto-gcc"
-        #props.env["CXX"] = "goto-gcc"
+        props.env["CXX"] = "goto-gcc"
+        props.rpm_opts = ["--define", "__cc goto-gcc", "--define", "__cxx goto-gcc", "--define", "__cpp goto-gcc -E"]
 
-        # Nuke default options
-        props.rpm_opts = ["--define", "optflags -O0", "--define", "build_ldflags -O0"]
+        # nuke default options
+        props.rpm_opts += ["--define", "optflags -O0", "--define", "build_ldflags -O0"]
 
         # hook csexec into the binaries produced in %build
         props.enable_csexec()
@@ -92,7 +96,8 @@ class Plugin:
                 "-c","--unwind 1 --json-ui --verbosity 4 --pointer-overflow-check --memory-leak-check"]
 
         # append custom args if specified
-        wrap_cmd_list += args.cbmc_add_flag
+        # FIXME: what about single arguments with whitespaces?
+        wrap_cmd_list[-1] += " " + " ".join(args.cbmc_add_flag)
 
         # FIXME: multiple runs of %check for multiple dynamic analyzers not yet supported
         assert "CSEXEC_WRAP_CMD" not in props.env
@@ -111,9 +116,6 @@ class Plugin:
 
         # pick the captured files when %check is complete
         props.copy_out_files += [CBMC_CAPTURE_DIR]
-
-        # delete empty log files
-        # TODO
 
         # transform XML files produced by cbmc into csdiff format
         def filter_hook(results):
