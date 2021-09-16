@@ -58,12 +58,6 @@ class Plugin:
         if not self.enabled:
             return
 
-        # FIXME, HACK; update cbmc-utils in fedora
-        # please download and replace the following files on the host system with:
-        # * https://raw.githubusercontent.com/aufover/cbmc-utils/master/cbmc_utils/csexec-cbmc.sh
-        # * https://raw.githubusercontent.com/aufover/cbmc-utils/master/cbmc_utils/formatCBMCOutput.py
-        props.copy_in_files += ["/bin/csexec-cbmc", "/bin/cbmc-convert-output"]
-
         # make sure valgrind is installed in chroot
         props.install_pkgs += ["cbmc"]
 
