@@ -68,14 +68,19 @@ class Plugin:
         props.enable_cswrap()
         props.cswrap_filters += ["csgrep --mode=json --invert-match --checker CLANG_WARNING --event error"]
 
-        # FIXME: use gclang -> `ln gclang gcc` ???
+        # set dioscc as the default compiler
+        # FIXME: this is not 100% reliable
         props.env["CC"]  = "gclang"
         props.env["CXX"] = "gclang++"
+        props.rpm_opts = ["--define", "__cc gclang", "--define", "__cxx gclang++", "--define", "__cpp gclang -E"]
 
-        # TODO: assert that gllvm is installed properly
+        # assert that gllvm is installed properly
+        def gllvm_is_working(results, mock):
+            return mock.exec_mockbuild_cmd("gsanity-check")
+        props.post_depinst_hooks += [gllvm_is_working]
 
-        # Nuke default options
-        props.rpm_opts = ["--define", "toolchain clang", "--define", "optflags -O0", "--define", "build_ldflags -O0"]
+        # nuke default options
+        props.rpm_opts += ["--define", "toolchain clang", "--define", "optflags -O0", "--define", "build_ldflags -O0"]
 
         # record version of the installed "symbiotic" tool
         csmock.common.util.install_default_toolver_hook(props, "symbiotic")
@@ -97,7 +102,8 @@ class Plugin:
                 "-s", "--prp=memsafety --timeout=%d" % args.symbiotic_timeout]
 
         # append custom args if specified
-        wrap_cmd_list += args.symbiotic_add_flag
+        # FIXME: what about single arguments with whitespaces?
+        wrap_cmd_list[-1] += " " + " ".join(args.symbiotic_add_flag)
 
         # FIXME: multiple runs of %check for multiple dynamic analyzers not yet supported
         assert "CSEXEC_WRAP_CMD" not in props.env
@@ -123,12 +129,6 @@ class Plugin:
 
         # pick the captured files when %check is complete
         props.copy_out_files += [SYMBIOTIC_CAPTURE_DIR]
-
-        # TODO delete empty log files
-        # def cleanup_hook(results):
-        #    return results.exec_cmd(["find", results.dbgdir_raw + SYMBIOTIC_CAPTURE_DIR,
-        #        "-name", "pid-*.log", "-empty", "-delete"])
-        # props.post_process_hooks += [cleanup_hook]
 
         # transform log files produced by symbiotic into csdiff format
         def filter_hook(results):
