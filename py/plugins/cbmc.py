@@ -73,7 +73,7 @@ class Plugin:
         # FIXME: goto-gcc does not seem to be able to compile C++
         props.env["CC"]  = "goto-gcc"
         props.env["CXX"] = "goto-gcc"
-        props.rpm_opts = ["--define", "__cc goto-gcc", "--define", "__cxx goto-gcc", "--define", "__cpp goto-gcc -E"]
+        props.rpm_opts += ["--define", "__cc goto-gcc", "--define", "__cxx goto-gcc", "--define", "__cpp goto-gcc -E"]
 
         # nuke default options
         props.rpm_opts += ["--define", "optflags -O0", "--define", "build_ldflags -O0"]
