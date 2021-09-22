@@ -72,7 +72,7 @@ class Plugin:
         # FIXME: this is not 100% reliable
         props.env["CC"]  = "gclang"
         props.env["CXX"] = "gclang++"
-        props.rpm_opts = ["--define", "__cc gclang", "--define", "__cxx gclang++", "--define", "__cpp gclang -E"]
+        props.rpm_opts += ["--define", "__cc gclang", "--define", "__cxx gclang++", "--define", "__cpp gclang -E"]
 
         # assert that gllvm is installed properly
         def gllvm_is_working(results, mock):

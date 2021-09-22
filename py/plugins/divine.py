@@ -70,7 +70,7 @@ class Plugin:
         # FIXME: this is not 100% reliable
         props.env["CC"]  = "dioscc"
         props.env["CXX"] = "diosc++"
-        props.rpm_opts = ["--define", "__cc dioscc", "--define", "__cxx diosc++", "--define", "__cpp dioscc -E"]
+        props.rpm_opts += ["--define", "__cc dioscc", "--define", "__cxx diosc++", "--define", "__cpp dioscc -E"]
 
         # nuke default options
         props.rpm_opts += ["--define", "toolchain clang", "--define", "optflags -O0", "--define", "build_ldflags -O0"]
