@@ -63,13 +63,15 @@ DEFAULT_CSWRAP_TIMEOUT = 30
 
 DEFAULT_RPM_OPTS = [
     "--define", "apidocs 0",
-    "--define", "libguestfs_runtests 0",
-    "--define", "runselftest 0",
     "--define", "with_publican 0",
     "--without", "docs",
     "--without", "langpacks"                # to speedup build of libreoffice
-    "--without", "testsuite"
     ]
+
+NOCHECK_RPM_OPTS = [
+    "--define", "libguestfs_runtests 0",
+    "--define", "runselftest 0",
+    "--without", "testsuite"]
 
 RAWBUILD_RPM_OPTS = [
     "--define", "__patch " + PATCH_RAWBUILD,
@@ -1190,6 +1192,9 @@ cd %%s*/ || cd *\n\
                                 # fragile compatiblity workaround for older versions of rpm-build,
                                 # known to break if unescaped %check appears in a change log entry
                                 extra_rpm_opts += ["--define", "check\\\n%%check\\\nexit 0"]
+
+                            # static list of rpmbuild options to use with --nocheck
+                            extra_rpm_opts += NOCHECK_RPM_OPTS
 
                         ec = mock.exec_rpmbuild_bi(props, extra_rpm_opts=extra_rpm_opts)
                         if ec != 0:
