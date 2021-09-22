@@ -760,7 +760,7 @@ def main():
 
     parser.add_argument(
         "-t", "--tools", action="append", default=[],
-        help="comma-spearated list of tools to enable \
+        help="comma-separated list of tools to enable \
 (use --list-available-tools to see the list of available tools)")
 
     parser.add_argument(
