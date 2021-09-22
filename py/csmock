@@ -62,23 +62,19 @@ MOCK_WAITING_TICK = 60
 DEFAULT_CSWRAP_TIMEOUT = 30
 
 DEFAULT_RPM_OPTS = [
-    "--define", "_without_testsuite 1",
     "--define", "apidocs 0",
     "--define", "libguestfs_runtests 0",
     "--define", "runselftest 0",
     "--define", "with_publican 0",
-    "--without", "binfilter",
     "--without", "docs",
-    "--without", "langpacks"]
+    "--without", "langpacks"                # to speedup build of libreoffice
+    "--without", "testsuite"
+    ]
 
 RAWBUILD_RPM_OPTS = [
     "--define", "__patch " + PATCH_RAWBUILD,
     "--define", "_rawbuild -b _RAWBUILD",
-    "--define", "nofips 1",
-    "--define", "nopam 1",
-    "--define", "norunuser 1",
-    "--define", "noselinux 1",
-    "--define", "_with_vanilla 1"]
+    "--with", "vanilla"]
 
 DEFAULT_CSWRAP_FILTERS = [
     "csgrep --mode=json --quiet --path '^/builddir/build/BUILD/' --remove-duplicates"]
