@@ -122,10 +122,11 @@ class Plugin:
             src_dir = results.dbgdir_raw + CBMC_CAPTURE_DIR
             dst = "%s/cbmc-capture.js" % results.dbgdir_uni
             cmd = """
+                  set -ex
                   for file in %s/pid-*.out; do
-                      cat \"$file\" | cbmc-convert-output -a > \"$file.conv\";
-                  done;
-                  csgrep --mode=json --quiet --remove-duplicates '%s'/pid-*.out.conv > '%s'""" \
-                    % (src_dir, src_dir, dst)
+                      cbmc-convert-output -a < \"$file\" > \"$file.conv\"
+                  done
+                  csgrep --mode=json --remove-duplicates '%s'/pid-*.out.conv > '%s'
+                  """ % (src_dir, src_dir, dst)
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]
