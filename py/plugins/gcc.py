@@ -16,6 +16,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 # standard imports
+import re
 import subprocess
 
 # local imports
@@ -91,6 +92,11 @@ class Plugin:
             "--gcc-sanitize-undefined", action="store_true",
             help="enable %%check and compile with -fsanitize=undefined")
 
+        parser.add_argument(
+            "--gcc-analyzer-bin", action="store",
+            help="use DTS build of gcc to perform scan"
+        )
+
         add_custom_flag_opts(parser)
 
     def handle_args(self, parser, args, props):
@@ -158,15 +164,31 @@ class Plugin:
         # write all compiler flags to the environment
         self.flags.write_to_env(props.env)
 
-        csmock.common.util.install_default_toolver_hook(props, "gcc")
+        analyzer_bin = args.gcc_analyzer_bin if args.gcc_analyzer_bin else "gcc"
+
+        def get_gcc_version_writer(prefix, analyzer_bin):
+            def store_gcc_analyzer_version(results, mock):
+                cmd = mock.get_mock_cmd(["--chroot", "%s --version" % analyzer_bin])
+                (rc, verstr) = results.get_cmd_output(cmd, shell=False)
+                if rc != 0:
+                    return rc
+                ver = re.sub("gcc \(GCC\) ", "", verstr.partition('\n')[0])
+                results.ini_writer.append(prefix, ver)
+                return 0
+
+            return store_gcc_analyzer_version
+
+        props.post_depinst_hooks += \
+            [get_gcc_version_writer("analyzer-version-gcc", analyzer_bin)]
 
         if self.csgcca_path is not None:
             def csgcca_hook(results, mock):
                 cmd = "echo 'int main() {}'"
-                cmd += " | gcc -xc - -c -o /dev/null"
+                cmd += " | %s -xc - -c -o /dev/null" % analyzer_bin
                 cmd += " -fanalyzer -fdiagnostics-path-format=separate-events"
                 if 0 != mock.exec_mockbuild_cmd(cmd):
-                    results.error("`gcc -fanalyzer` does not seem to work, disabling the tool", ec=0)
+                    results.error("`%s -fanalyzer` does not seem to work, "
+                                  "disabling the tool" % analyzer_bin, ec=0)
                     return 0
 
                 # XXX: changing props this way is extremely fragile
@@ -185,7 +207,9 @@ class Plugin:
                     props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
 
                 # record that `gcc -fanalyzer` was used for this scan
-                csmock.common.util.write_toolver_from_rpmlist(results, mock, "gcc", "gcc-analyzer")
+                gcc_version_writer = get_gcc_version_writer("gcc-analyzer", analyzer_bin)
+                gcc_version_writer(results, mock)
+
                 return 0
 
             props.post_depinst_hooks += [csgcca_hook]
