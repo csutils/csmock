@@ -47,6 +47,10 @@ def strlist_to_shell_cmd(cmd_in, escape_special=False):
     return cmd_out.lstrip()
 
 
+def write_toolver(ini_writer, tool_key, ver):
+    ini_writer.append("analyzer-version-%s" % tool_key, ver)
+
+
 def write_toolver_from_rpmlist(results, mock, tool, tool_key):
     cmd = "grep '^%s-[0-9]' %s/rpm-list-mock.txt" % (tool, results.dbgdir)
     (rc, nvr) = results.get_cmd_output(cmd)
@@ -56,7 +60,7 @@ def write_toolver_from_rpmlist(results, mock, tool, tool_key):
         return rc
 
     ver = re.sub("-[0-9].*$", "", re.sub("^%s-" % tool, "", nvr.strip()))
-    results.ini_writer.append("analyzer-version-%s" % tool_key, ver)
+    write_toolver(results.ini_writer, tool_key, ver)
     return 0
 
 

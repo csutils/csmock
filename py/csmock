@@ -424,6 +424,7 @@ class ScanProps:
         self.pkg = None
         self.imp_checker_set = set()
         self.imp_csgrep_filters = []
+        self.cswrap_path = None
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -435,10 +436,10 @@ class ScanProps:
         cmd = ["cswrap", "--print-path-to-wrap"]
         subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, _) = subproc.communicate()
-        cswrap_path = out.decode("utf8").strip()
+        self.cswrap_path = out.decode("utf8").strip()
 
-        self.copy_in_files += ["/usr/bin/cswrap", cswrap_path]
-        self.path = [cswrap_path] + self.path
+        self.copy_in_files += ["/usr/bin/cswrap", self.cswrap_path]
+        self.path = [self.cswrap_path] + self.path
         self.env["CSWRAP_CAP_FILE"] = "/builddir/cswrap-capture.err"
         self.env["CSWRAP_TIMEOUT"] = "%d" % self.cswrap_timeout
         self.env["CSWRAP_TIMEOUT_FOR"] = ":"

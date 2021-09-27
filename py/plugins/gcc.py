@@ -23,7 +23,13 @@ import csmock.common.util
 
 from csmock.common.cflags import add_custom_flag_opts, flags_by_warning_level
 
-CSGCCA_BIN="/usr/bin/csgcca"
+CSGCCA_BIN = "/usr/bin/csgcca"
+
+CSMOCK_GCC_WRAPPER_NAME = 'csmock-gcc-wrapper'
+CSMOCK_GCC_WRAPPER_PATH = '/usr/bin/%s' % CSMOCK_GCC_WRAPPER_NAME
+CSMOCK_GCC_WRAPPER_TEMPLATE = '#!/bin/bash\n' \
+                              'exec %s "$@"'
+
 
 class PluginProps:
     def __init__(self):
@@ -68,6 +74,10 @@ class Plugin:
             help="run `gcc -fanalyzer` in a separate process")
 
         parser.add_argument(
+            "--gcc-analyzer-bin", action="store",
+            help="use custom build of gcc to perform scan")
+
+        parser.add_argument(
             "--gcc-analyze-add-flag", action="append", default=[],
             help="append the given flag when invoking `gcc -fanalyzer` \
 (can be used multiple times)")
@@ -101,7 +111,9 @@ class Plugin:
             self.enable()
             self.flags = flags_by_warning_level(args.gcc_warning_level)
 
-        if args.gcc_analyze or getattr(args, "all_tools", False):
+        if args.gcc_analyze or \
+                args.gcc_analyzer_bin or \
+                getattr(args, "all_tools", False):
             self.enable()
             # resolve csgcca_path by querying csclng binary
             cmd = [CSGCCA_BIN, "--print-path-to-wrap"]
@@ -165,12 +177,37 @@ class Plugin:
 
         if self.csgcca_path is not None:
             def csgcca_hook(results, mock):
+                analyzer_bin = args.gcc_analyzer_bin if args.gcc_analyzer_bin else "gcc"
                 cmd = "echo 'int main() {}'"
-                cmd += " | gcc -xc - -c -o /dev/null"
+                cmd += " | %s -xc - -c -o /dev/null" % analyzer_bin
                 cmd += " -fanalyzer -fdiagnostics-path-format=separate-events"
                 if 0 != mock.exec_mockbuild_cmd(cmd):
-                    results.error("`gcc -fanalyzer` does not seem to work, disabling the tool", ec=0)
+                    results.error("`%s -fanalyzer` does not seem to work, "
+                                  "disabling the tool" % analyzer_bin, ec=0)
                     return 0
+
+                if args.gcc_analyzer_bin:
+                    # create an executable shell script to wrap the custom gcc binary
+                    wrapper_script = CSMOCK_GCC_WRAPPER_TEMPLATE % analyzer_bin
+                    cmd = "echo '%s' > %s && chmod 755 %s" % \
+                          (wrapper_script,
+                           CSMOCK_GCC_WRAPPER_PATH,
+                           CSMOCK_GCC_WRAPPER_PATH)
+                    rv = mock.exec_chroot_cmd(cmd)
+                    if 0 != rv:
+                        results.error("failed to create csmock gcc wrapper script")
+                        return rv
+
+                    # wrap the shell script by cswrap to capture output of `gcc -fanalyzer`
+                    cmd = "ln -sf ../../bin/cswrap %s/%s" % \
+                          (props.cswrap_path, CSMOCK_GCC_WRAPPER_NAME)
+                    rv = mock.exec_chroot_cmd(cmd)
+                    if 0 != rv:
+                        results.error("failed to create csmock gcc wrapper symlink")
+                        return rv
+
+                    # tell csgcca to use the wrapped script rather than system gcc analyzer
+                    props.env["CSGCCA_ANALYZER_BIN"] = CSMOCK_GCC_WRAPPER_NAME
 
                 # XXX: changing props this way is extremely fragile
                 # insert csgcca right before cswrap to avoid chaining
@@ -182,13 +219,20 @@ class Plugin:
                         break
                 props.path.insert(idx_cswrap, self.csgcca_path)
 
-                props.env["CSWRAP_TIMEOUT_FOR"] += ":gcc"
+                props.env["CSWRAP_TIMEOUT_FOR"] += ":%s" % (CSMOCK_GCC_WRAPPER_NAME if args.gcc_analyzer_bin else "gcc")
                 if args.gcc_analyze_add_flag:
                     # propagate custom GCC analyzer flags
                     props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
 
                 # record that `gcc -fanalyzer` was used for this scan
-                csmock.common.util.write_toolver_from_rpmlist(results, mock, "gcc", "gcc-analyzer")
+                cmd = mock.get_mock_cmd(["--chroot", "%s --version" % analyzer_bin])
+                (rc, ver) = results.get_cmd_output(cmd, shell=False)
+                if rc != 0:
+                    return rc
+                ver = ver.partition('\n')[0].strip()
+                ver = ver.split(' ')[2]
+                csmock.common.util.write_toolver(results.ini_writer, "gcc-analyzer", ver)
+
                 return 0
 
             props.post_depinst_hooks += [csgcca_hook]
