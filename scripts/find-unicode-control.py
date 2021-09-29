@@ -55,7 +55,8 @@ def getfiletext(filename):
 # that have these disallowed chars.
 def analyze_text(filename, text, disallowed, msg):
     if not text.isdisjoint(disallowed):
-        print('%s: %s: %s' % (filename, msg, text & disallowed))
+        print('Error: UNICONTROL_WARNING:')
+        print('%s: warning: %s: %s\n' % (filename, msg, text & disallowed))
     else:
         eprint('%s: OK' % filename)
 
