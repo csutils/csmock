@@ -219,6 +219,13 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-valgrind
 This package contains the valgrind plug-in for csmock.
 
+%package -n csmock-plugin-unicontrol
+Summary: experimental csmock plug-in
+Requires: csmock-common(python3)
+
+%description -n csmock-plugin-unicontrol
+This package contains the unicontrol plug-in for csmock.
+
 %prep
 %setup -q
 
@@ -318,6 +325,11 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %files -n csmock-plugin-valgrind
 %{python3_sitelib}/csmock/plugins/valgrind.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/valgrind.*
+
+%files -n csmock-plugin-unicontrol
+%{_datadir}/csmock/scripts/find-unicode-control.py*
+%{python3_sitelib}/csmock/plugins/unicontrol.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/unicontrol.*
 EOF
 
 rpmbuild -bs "$SPEC"                            \

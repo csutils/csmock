@@ -29,6 +29,7 @@ if(ENABLE_CSMOCK)
 
     install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/enable-keep-going.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}/find-unicode-control.py
         ${CMAKE_CURRENT_SOURCE_DIR}/patch-rawbuild.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-bandit.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-pylint.sh
