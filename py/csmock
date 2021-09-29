@@ -817,6 +817,10 @@ key event (defaults to 3).")
 (may lead to unpredictable scan results)")
 
     parser.add_argument(
+        "--skip-build", action="store_true",
+        help="do not run %%build and %%install sections [EXPERIMENTAL]")
+
+    parser.add_argument(
         "--no-clean", action="store_true",
         help="do not clean chroot when it becomes unused")
 
@@ -931,6 +935,7 @@ key event (defaults to 3).")
     props.base_srpm             = args.base_srpm
     props.skip_patches          = args.skip_patches
     props.skip_mock_init        = args.skip_init
+    props.skip_build            = args.skip_build
     props.skip_mock_clean       = args.no_clean
 
     if props.embed_context > 0:
@@ -1011,6 +1016,11 @@ key event (defaults to 3).")
 
 
 def do_scan(props, output):
+    if props.skip_build:
+        # TODO: fail sooner with some user-friendly error message
+        assert not props.cswrap_enabled
+        assert not props.need_rpm_bi
+
     if props.skip_patches:
         props.rpm_opts += RAWBUILD_RPM_OPTS
 
@@ -1174,23 +1184,24 @@ cd %%s*/ || cd *\n\
                     # make the unpacked contents accessible (if the maintainer did not)
                     mock.exec_chroot_cmd("chmod -R +r /builddir/build")
 
-                    if props.shell_cmd_to_build is None:
-                        # run %build phase with static analyzers plugged-in
-                        build_cmd = "rpmbuild -bc --nodeps --short-circuit %s %s" \
-                                % (props.spec_in, strlist_to_shell_cmd(props.rpm_opts))
-                    else:
-                        # run the above prepared build script
-                        build_cmd = "sh -x '%s'" % build_script
+                    if not props.skip_build:
+                        if props.shell_cmd_to_build is None:
+                            # run %build phase with static analyzers plugged-in
+                            build_cmd = "rpmbuild -bc --nodeps --short-circuit %s %s" \
+                                    % (props.spec_in, strlist_to_shell_cmd(props.rpm_opts))
+                        else:
+                            # run the above prepared build script
+                            build_cmd = "sh -x '%s'" % build_script
 
-                    # wrap build_cmd by all the necessary wrappers
-                    build_cmd = props.wrap_build_cmd(build_cmd)
+                        # wrap build_cmd by all the necessary wrappers
+                        build_cmd = props.wrap_build_cmd(build_cmd)
 
-                    # initialize environment variables according to ScanProps
-                    build_cmd = props.wrap_shell_cmd_by_env(build_cmd)
+                        # initialize environment variables according to ScanProps
+                        build_cmd = props.wrap_shell_cmd_by_env(build_cmd)
 
-                    ec = mock.exec_mockbuild_cmd(build_cmd, quiet=False)
-                    if ec != 0:
-                        results.error("%build failed", ec=ec)
+                        ec = mock.exec_mockbuild_cmd(build_cmd, quiet=False)
+                        if ec != 0:
+                            results.error("%build failed", ec=ec)
 
                     if props.need_rpm_bi:
                         extra_rpm_opts = []
