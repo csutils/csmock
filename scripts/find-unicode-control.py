@@ -11,7 +11,7 @@ control characters and when set to 'bidi', prints only the 9 bidirectional
 control characters.
 """
 
-import sys, os, argparse, re, unicodedata, magic
+import sys, os, argparse, re, unicodedata, magic, six
 import importlib
 from stat import *
 
@@ -22,9 +22,9 @@ scan_exclude_mime = [r'text/x-po$', r'text/x-tex$', r'text/x-troff$',
 verbose_mode = False
 
 # Print to stderr in verbose mode.
-def eprint(*args, **kwargs):
+def eprint(arg, **kwargs):
     if verbose_mode:
-        print(*args, file=sys.stderr, **kwargs)
+        six.print_(arg, file=sys.stderr, **kwargs)
 
 # Decode a single latin1 line.
 def decodeline(inf):
