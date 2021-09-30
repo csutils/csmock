@@ -1,0 +1,51 @@
+#!/usr/bin/python3
+
+import json
+import os
+import sys
+
+
+# TODO: handle cmd-line args
+build_dir = sys.argv[1]
+input_files = sys.argv[2:]
+
+
+def emit(str):
+    print(str, end="")
+
+
+def emit_if_present(node, key, tpl):
+    if key in node:
+        val = node[key]
+        emit(tpl % val)
+
+
+def parse_node(node):
+    print("Error: GITLEAKS_WARNING:")
+    abs_path = os.path.join(build_dir, node["file"])
+    emit(abs_path)
+    emit_if_present(node, "lineNumber", ":%s")
+
+    emit(": warning")
+    emit_if_present(node, "rule", "[%s]")
+    emit_if_present(node, "tags", ": %s")
+
+    if "line" in node:
+        line = node["line"].encode("unicode_escape")
+        emit(": %s" % line)
+
+    print("\n")
+
+
+def parse_file(file):
+    lst = json.load(file)
+    if lst is None:
+        return
+
+    for node in lst:
+        parse_node(node)
+
+
+for file_name in input_files:
+    with open(file_name) as file:
+        parse_file(file)

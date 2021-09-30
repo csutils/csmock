@@ -61,6 +61,7 @@ endif()
 
 if(ENABLE_CSMOCK)
     install_executable(csmock)
+    install_executable(gitleaks-convert-output)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/plugins/__init__.py
         DESTINATION ${PLUGIN_DIR})
 
@@ -75,6 +76,7 @@ if(ENABLE_CSMOCK)
     install_plugin(cppcheck)
     install_plugin(divine)
     install_plugin(gcc)
+    install_plugin(gitleaks)
     install_plugin(pylint)
     install_plugin(shellcheck)
     install_plugin(smatch)

@@ -164,6 +164,13 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-divine
 This package contains the divine plug-in for csmock.
 
+%package -n csmock-plugin-gitleaks
+Summary: experimental csmock plug-in
+Requires: csmock-common(python3)
+
+%description -n csmock-plugin-gitleaks
+This package contains the gitleaks plug-in for csmock.
+
 %package -n csmock-plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
 Requires: csmock-common(python3)
@@ -280,6 +287,11 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %files -n csmock-plugin-divine
 %{python3_sitelib}/csmock/plugins/divine.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/divine.*
+
+%files -n csmock-plugin-gitleaks
+%{_bindir}/gitleaks-convert-output
+%{python3_sitelib}/csmock/plugins/gitleaks.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/gitleaks.*
 
 %files -n csmock-plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
