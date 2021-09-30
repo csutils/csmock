@@ -60,7 +60,7 @@ class Plugin:
         # dependency of UNICONTROL_SCRIPT
         props.install_pkgs += ["python3-magic", "python3-six"]
 
-        cmd = "%s -v %s >%s 2>%s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR, UNICONTROL_OUTPUT, UNICONTROL_LOG)
+        cmd = "LANG=en_US.utf8 %s -v %s >%s 2>%s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR, UNICONTROL_OUTPUT, UNICONTROL_LOG)
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [UNICONTROL_OUTPUT, UNICONTROL_LOG]
 
