@@ -576,15 +576,22 @@ class PluginManager:
         max_key_len = max(map(len, self.plug_by_name.keys()))
         min_indent_len = 8
         description_indent = max_key_len + min_indent_len
-        for key, plugin in sorted(self.plug_by_name.items()):
-            props = plugin.get_props()
-            desc = getattr(props, "description", "")
-            if not getattr(props, "stable", False):
-                # highlight the fact that the plug-in is experimental
-                desc = "[EXPERIMENTAL] " + desc
-            sys.stdout.write("{}{}{}\n".format(
-                key, " " * (description_indent - len(key)),
-                desc.replace('\n', '\n%s' % (" " * description_indent))))
+
+        def list_plugins(stable):
+            for key, plugin in sorted(self.plug_by_name.items()):
+                props = plugin.get_props()
+                desc = getattr(props, "description", "")
+                if stable != getattr(props, "stable", False):
+                    continue
+                if not stable:
+                    # highlight the fact that the plug-in is experimental
+                    desc = "[EXPERIMENTAL] " + desc
+                sys.stdout.write("{}{}{}\n".format(
+                    key, " " * (description_indent - len(key)),
+                    desc.replace('\n', '\n%s' % (" " * description_indent))))
+
+        list_plugins(stable=True)
+        list_plugins(stable=False)
 
     def get_name_list(self):
         return sorted(self.plug_by_name.keys())
