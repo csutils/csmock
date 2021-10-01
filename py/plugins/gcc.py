@@ -29,6 +29,9 @@ class PluginProps:
     def __init__(self):
         self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
 
+        # include this plug-in in `csmock --all-tools`
+        self.stable = True
+
 
 class Plugin:
     def __init__(self):

@@ -28,6 +28,9 @@ class PluginProps:
     def __init__(self):
         self.description = "Source code analysis tool that finds bugs in C, C++, and Objective-C programs."
 
+        # include this plug-in in `csmock --all-tools`
+        self.stable = True
+
 
 class Plugin:
     def __init__(self):

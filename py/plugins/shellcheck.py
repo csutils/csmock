@@ -31,6 +31,9 @@ class PluginProps:
     def __init__(self):
         self.description = "A static analysis tool that gives warnings and suggestions for bash/sh shell scripts."
 
+        # include this plug-in in `csmock --all-tools`
+        self.stable = True
+
 
 class Plugin:
     def __init__(self):

@@ -579,7 +579,7 @@ class PluginManager:
         for key, plugin in sorted(self.plug_by_name.items()):
             props = plugin.get_props()
             desc = getattr(props, "description", "")
-            if getattr(props, "experimental", False):
+            if not getattr(props, "stable", False):
                 # highlight the fact that the plug-in is experimental
                 desc = "[EXPERIMENTAL] " + desc
             sys.stdout.write("{}{}{}\n".format(
@@ -595,8 +595,8 @@ class PluginManager:
 
     def enable_all(self):
         for plugin in self.plugins_sorted:
-            experimental= getattr(plugin.get_props(), "experimental", False)
-            if experimental:
+            stable = getattr(plugin.get_props(), "stable", False)
+            if not stable:
                 continue
             plugin.enable()
 
@@ -763,7 +763,7 @@ def main():
 
     parser.add_argument(
         "-a", "--all-tools", action="store_true",
-        help="enable all available tools \
+        help="enable all stable csmock plug-ins \
 (use --list-available-tools to see the list of available tools)")
 
     parser.add_argument(

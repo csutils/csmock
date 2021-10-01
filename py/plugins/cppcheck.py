@@ -27,6 +27,9 @@ class PluginProps:
     def __init__(self):
         self.description = "Static analysis tool for C/C++ code."
 
+        # include this plug-in in `csmock --all-tools`
+        self.stable = True
+
 
 class Plugin:
     def __init__(self):

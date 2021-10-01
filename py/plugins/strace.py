@@ -24,7 +24,6 @@ STRACE_CAPTURE_DIR = "/builddir/strace-capture"
 
 class PluginProps:
     def __init__(self):
-        self.experimental = True
         self.description = "A dynamic analysis tool that records system calls associated with a running process."
 
         # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work

@@ -27,7 +27,6 @@ DEFAULT_VALGRIND_TIMEOUT = 30
 class PluginProps:
     def __init__(self):
         self.description = "A dynamic analysis tool for finding memory management bugs in programs."
-        self.experimental = True
 
         # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
         self.pass_before = ["gcc"]

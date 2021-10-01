@@ -27,7 +27,6 @@ DEFAULT_CBMC_TIMEOUT = 42
 class PluginProps:
     def __init__(self):
         self.description = "Bounded Model Checker for C and C++ programs"
-        self.experimental = True
 
         # hook this plug-in before "gcc" to make ScanProps:enable_csexec() work
         self.pass_before = ["gcc"]
