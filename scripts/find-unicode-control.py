@@ -43,7 +43,7 @@ def getfiletext(filename):
             try:
                 text = ''.join([decodeline(inf) for inf in infile])
             except Exception as e:
-                print('%s: %s' % (filename, e))
+                eprint('%s: %s' % (filename, e))
     if text:
         return set(text)
     else:
