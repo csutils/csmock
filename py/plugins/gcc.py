@@ -172,7 +172,8 @@ class Plugin:
                 (rc, verstr) = results.get_cmd_output(cmd, shell=False)
                 if rc != 0:
                     return rc
-                ver = re.sub("gcc \(GCC\) ", "", verstr.partition('\n')[0])
+                verstr = verstr.partition('\n')[0]
+                ver = re.sub("^gcc \(GCC\) ", "", verstr.strip())
                 results.ini_writer.append(prefix, ver)
                 return 0
 
