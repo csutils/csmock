@@ -15,7 +15,8 @@ import sys, os, argparse, re, unicodedata, magic
 import importlib
 from stat import *
 
-scan_exclude = [r'\.git/']
+scan_exclude = [r'\.git/', r'\.hg/', r'\.desktop$', r'ChangeLog$', r'NEWS$',
+                r'\.ppd$', r'\.txt$', r'\.directory$']
 scan_exclude_mime = [r'text/x-po$', r'text/x-tex$', r'text/x-troff$',
                      r'text/html$']
 verbose_mode = False
@@ -116,6 +117,8 @@ if __name__ == '__main__':
             help='Look for either all non-printable unicode characters or bidirectional control characters.')
     parser.add_argument('-v', '--verbose', required=False, action='store_true',
             help='Verbose mode.')
+    parser.add_argument('-t', '--notests', required=False,
+            action='store_true', help='Exclude tests (basically test.* as a component of path).')
     parser.add_argument('-c', '--config', required=False, type=str,
             help='Configuration file to read settings from.')
 
@@ -150,5 +153,8 @@ if __name__ == '__main__':
             scan_exclude = scan_exclude + settings.scan_exclude
         if hasattr(settings, 'scan_exclude_mime'):
             scan_exclude_mime = scan_exclude_mime + settings.scan_exclude_mime
+
+    if args.notests:
+        scan_exclude = scan_exclude + [r'/test[^/]+/']
 
     analyze_paths(args.path, disallowed, msg)
