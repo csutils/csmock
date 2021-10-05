@@ -45,7 +45,13 @@ class Plugin:
         self.enabled = True
 
     def init_parser(self, parser):
-        pass
+        parser.add_argument(
+            "--unicontrol-bidi-only", action="store_true",
+            help="look for bidirectional control characters only")
+
+        parser.add_argument(
+            "--unicontrol-notests", action="store_true",
+            help="exclude tests (basically test.* as a component of path)")
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
@@ -60,7 +66,15 @@ class Plugin:
         # dependency of UNICONTROL_SCRIPT
         props.install_pkgs += ["python3-magic", "python3-six"]
 
-        cmd = "LANG=en_US.utf8 %s -v %s >%s 2>%s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR, UNICONTROL_OUTPUT, UNICONTROL_LOG)
+        cmd = "LANG=en_US.utf8 %s -v %s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR)
+
+        if args.unicontrol_bidi_only:
+            cmd += " -p bidi"
+
+        if args.unicontrol_notests:
+            cmd += " --notests"
+
+        cmd += " >%s 2>%s" % (UNICONTROL_OUTPUT, UNICONTROL_LOG)
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [UNICONTROL_OUTPUT, UNICONTROL_LOG]
 
