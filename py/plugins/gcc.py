@@ -94,7 +94,7 @@ class Plugin:
 
         parser.add_argument(
             "--gcc-analyzer-bin", action="store",
-            help="use DTS build of gcc to perform scan"
+            help="use custom build of gcc to perform scan"
         )
 
         add_custom_flag_opts(parser)
@@ -164,26 +164,11 @@ class Plugin:
         # write all compiler flags to the environment
         self.flags.write_to_env(props.env)
 
-        analyzer_bin = args.gcc_analyzer_bin if args.gcc_analyzer_bin else "gcc"
-
-        def get_gcc_version_writer(prefix, analyzer_bin):
-            def store_gcc_analyzer_version(results, mock):
-                cmd = mock.get_mock_cmd(["--chroot", "%s --version" % analyzer_bin])
-                (rc, verstr) = results.get_cmd_output(cmd, shell=False)
-                if rc != 0:
-                    return rc
-                verstr = verstr.partition('\n')[0]
-                ver = re.sub("^gcc \(GCC\) ", "", verstr.strip())
-                results.ini_writer.append(prefix, ver)
-                return 0
-
-            return store_gcc_analyzer_version
-
-        props.post_depinst_hooks += \
-            [get_gcc_version_writer("analyzer-version-gcc", analyzer_bin)]
+        csmock.common.util.install_default_toolver_hook(props, "gcc")
 
         if self.csgcca_path is not None:
             def csgcca_hook(results, mock):
+                analyzer_bin = args.gcc_analyzer_bin if args.gcc_analyzer_bin else "gcc"
                 cmd = "echo 'int main() {}'"
                 cmd += " | %s -xc - -c -o /dev/null" % analyzer_bin
                 cmd += " -fanalyzer -fdiagnostics-path-format=separate-events"
@@ -191,6 +176,8 @@ class Plugin:
                     results.error("`%s -fanalyzer` does not seem to work, "
                                   "disabling the tool" % analyzer_bin, ec=0)
                     return 0
+
+                props.env["CSGCCA_ANALYZER_BIN"] = analyzer_bin
 
                 # XXX: changing props this way is extremely fragile
                 # insert csgcca right before cswrap to avoid chaining
@@ -208,8 +195,13 @@ class Plugin:
                     props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
 
                 # record that `gcc -fanalyzer` was used for this scan
-                gcc_version_writer = get_gcc_version_writer("gcc-analyzer", analyzer_bin)
-                gcc_version_writer(results, mock)
+                cmd = mock.get_mock_cmd(["--chroot", "%s --version" % analyzer_bin])
+                (rc, ver) = results.get_cmd_output(cmd, shell=False)
+                if rc != 0:
+                    return rc
+                ver = ver.partition('\n')[0].strip()
+                ver = ver.split(' ')[2]
+                csmock.common.util.write_toolver(results, "gcc-analyzer", ver)
 
                 return 0
 
