@@ -16,7 +16,6 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 # standard imports
-import re
 import subprocess
 
 # local imports
@@ -24,7 +23,13 @@ import csmock.common.util
 
 from csmock.common.cflags import add_custom_flag_opts, flags_by_warning_level
 
-CSGCCA_BIN="/usr/bin/csgcca"
+CSGCCA_BIN = "/usr/bin/csgcca"
+
+CSMOCK_GCC_WRAPPER_NAME = 'csmock-gcc-wrapper'
+CSMOCK_GCC_WRAPPER_PATH = '/usr/bin/%s' % CSMOCK_GCC_WRAPPER_NAME
+CSMOCK_GCC_WRAPPER_TEMPLATE = '#!/bin/bash\n' \
+                              'exec %s "$@"'
+
 
 class PluginProps:
     def __init__(self):
@@ -66,6 +71,10 @@ class Plugin:
             help="run `gcc -fanalyzer` in a separate process")
 
         parser.add_argument(
+            "--gcc-analyzer-bin", action="store",
+            help="use custom build of gcc to perform scan")
+
+        parser.add_argument(
             "--gcc-analyze-add-flag", action="append", default=[],
             help="append the given flag when invoking `gcc -fanalyzer` \
 (can be used multiple times)")
@@ -92,11 +101,6 @@ class Plugin:
             "--gcc-sanitize-undefined", action="store_true",
             help="enable %%check and compile with -fsanitize=undefined")
 
-        parser.add_argument(
-            "--gcc-analyzer-bin", action="store",
-            help="use custom build of gcc to perform scan"
-        )
-
         add_custom_flag_opts(parser)
 
     def handle_args(self, parser, args, props):
@@ -104,7 +108,9 @@ class Plugin:
             self.enable()
             self.flags = flags_by_warning_level(args.gcc_warning_level)
 
-        if args.gcc_analyze or getattr(args, "all_tools", False):
+        if args.gcc_analyze or \
+                args.gcc_analyzer_bin or \
+                getattr(args, "all_tools", False):
             self.enable()
             # resolve csgcca_path by querying csclng binary
             cmd = [CSGCCA_BIN, "--print-path-to-wrap"]
@@ -177,7 +183,23 @@ class Plugin:
                                   "disabling the tool" % analyzer_bin, ec=0)
                     return 0
 
-                props.env["CSGCCA_ANALYZER_BIN"] = analyzer_bin
+                if args.gcc_analyzer_bin:
+                    wrapper_script = CSMOCK_GCC_WRAPPER_TEMPLATE % analyzer_bin
+                    cmd = "echo '%s' > %s && chmod 755 %s" % \
+                          (wrapper_script,
+                           CSMOCK_GCC_WRAPPER_PATH,
+                           CSMOCK_GCC_WRAPPER_PATH)
+                    if 0 != mock.exec_chroot_cmd(cmd):
+                        results.error("failed to create csmock gcc wrapper script", ec=0)
+                        return 0
+
+                    cmd = "ln -s ../../bin/cswrap %s/%s" % \
+                          (props.cswrap_path, CSMOCK_GCC_WRAPPER_NAME)
+                    if 0 != mock.exec_chroot_cmd(cmd):
+                        results.error("failed to create csmock gcc wrapper symlink", ec=0)
+                        return 0
+
+                    props.env["CSGCCA_ANALYZER_BIN"] = CSMOCK_GCC_WRAPPER_NAME
 
                 # XXX: changing props this way is extremely fragile
                 # insert csgcca right before cswrap to avoid chaining
@@ -201,7 +223,7 @@ class Plugin:
                     return rc
                 ver = ver.partition('\n')[0].strip()
                 ver = ver.split(' ')[2]
-                csmock.common.util.write_toolver(results, "gcc-analyzer", ver)
+                csmock.common.util.write_toolver(results.ini_writer, "gcc-analyzer", ver)
 
                 return 0
 
