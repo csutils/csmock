@@ -321,7 +321,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         resconf = "/etc/resolv.conf"
         return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
 
-    def init_and_install(self, srpm, pkgs=[], force_scrub=False, keep_going=False, try_only=False):
+    def init_and_install(self, srpm, pkgs, force_scrub=False, keep_going=False, try_only=False):
         if force_scrub:
             scrub_root_passes = [True]
             # yet another hack for libguestfs/supermin
@@ -1068,7 +1068,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     supermin_in_use = (ec == 0)
 
                     # first rebuild the given SRPM (some deps might be required even for the rebuild)
-                    mock.init_and_install(srpm_dup, force_scrub=supermin_in_use, try_only=True)
+                    mock.init_and_install(srpm_dup, props.install_pkgs, force_scrub=supermin_in_use, try_only=True)
 
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
