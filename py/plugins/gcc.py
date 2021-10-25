@@ -191,14 +191,14 @@ class Plugin:
                            CSMOCK_GCC_WRAPPER_PATH)
                     rv = mock.exec_chroot_cmd(cmd)
                     if 0 != rv:
-                        results.error("failed to create csmock gcc wrapper script", ec=0)
+                        results.error("failed to create csmock gcc wrapper script")
                         return rv
 
                     cmd = "ln -sf ../../bin/cswrap %s/%s" % \
                           (props.cswrap_path, CSMOCK_GCC_WRAPPER_NAME)
                     rv = mock.exec_chroot_cmd(cmd)
                     if 0 != rv:
-                        results.error("failed to create csmock gcc wrapper symlink", ec=0)
+                        results.error("failed to create csmock gcc wrapper symlink")
                         return rv
 
                     props.env["CSGCCA_ANALYZER_BIN"] = CSMOCK_GCC_WRAPPER_NAME
