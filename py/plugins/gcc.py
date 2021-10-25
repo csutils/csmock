@@ -189,15 +189,17 @@ class Plugin:
                           (wrapper_script,
                            CSMOCK_GCC_WRAPPER_PATH,
                            CSMOCK_GCC_WRAPPER_PATH)
-                    if 0 != mock.exec_chroot_cmd(cmd):
+                    rv = mock.exec_chroot_cmd(cmd)
+                    if 0 != rv:
                         results.error("failed to create csmock gcc wrapper script", ec=0)
-                        return 0
+                        return rv
 
-                    cmd = "ln -s ../../bin/cswrap %s/%s" % \
+                    cmd = "ln -sf ../../bin/cswrap %s/%s" % \
                           (props.cswrap_path, CSMOCK_GCC_WRAPPER_NAME)
-                    if 0 != mock.exec_chroot_cmd(cmd):
+                    rv = mock.exec_chroot_cmd(cmd)
+                    if 0 != rv:
                         results.error("failed to create csmock gcc wrapper symlink", ec=0)
-                        return 0
+                        return rv
 
                     props.env["CSGCCA_ANALYZER_BIN"] = CSMOCK_GCC_WRAPPER_NAME
 
@@ -211,7 +213,7 @@ class Plugin:
                         break
                 props.path.insert(idx_cswrap, self.csgcca_path)
 
-                props.env["CSWRAP_TIMEOUT_FOR"] += ":gcc"
+                props.env["CSWRAP_TIMEOUT_FOR"] += ":%s" % analyzer_bin
                 if args.gcc_analyze_add_flag:
                     # propagate custom GCC analyzer flags
                     props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
