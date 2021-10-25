@@ -213,7 +213,7 @@ class Plugin:
                         break
                 props.path.insert(idx_cswrap, self.csgcca_path)
 
-                props.env["CSWRAP_TIMEOUT_FOR"] += ":%s" % CSMOCK_GCC_WRAPPER_NAME
+                props.env["CSWRAP_TIMEOUT_FOR"] += ":%s" % (CSMOCK_GCC_WRAPPER_NAME if args.gcc_analyzer_bin else "gcc")
                 if args.gcc_analyze_add_flag:
                     # propagate custom GCC analyzer flags
                     props.env["CSGCCA_ADD_OPTS"] = csmock.common.cflags.serialize_flags(args.gcc_analyze_add_flag)
