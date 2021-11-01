@@ -929,6 +929,7 @@ key event (defaults to 3).")
     props.shell_cmd_to_build    = args.shell_cmd
     props.srpm                  = args.SRPM
     props.base_srpm             = args.base_srpm
+    props.skip_patches          = args.skip_patches
     props.skip_mock_init        = args.skip_init
     props.skip_mock_clean       = args.no_clean
 
@@ -1000,17 +1001,17 @@ key event (defaults to 3).")
         props.need_rpm_bi = True
 
     if args.diff_patches:
-        ec = do_diff_scan(props, output, args, diff_patches=True)
+        ec = do_diff_scan(props, output, diff_patches=True)
     elif args.base_srpm is not None:
-        ec = do_diff_scan(props, output, args, diff_patches=False)
+        ec = do_diff_scan(props, output, diff_patches=False)
     else:
-        ec = do_scan(props, output, args.skip_patches)
+        ec = do_scan(props, output)
 
     sys.exit(ec)
 
 
-def do_scan(props, output, skip_patches):
-    if skip_patches:
+def do_scan(props, output):
+    if props.skip_patches:
         props.rpm_opts += RAWBUILD_RPM_OPTS
 
     try:
@@ -1287,14 +1288,15 @@ cd %%s*/ || cd *\n\
         return error.ec
 
 
-def do_diff_scan(props, output, args, diff_patches):
+def do_diff_scan(props, output, diff_patches):
     try:
         with ScanResults(output, "csmock", "@VERSION@", props.keep_going, create_dbgdir=False) as results:
             run0_props = copy.deepcopy(props)
             csdiff = "csdiff"
             if diff_patches:
                 # we are looking for defects in patches
-                assert not args.skip_patches
+                assert not props.skip_patches
+                run0_props.skip_patches = True
                 title = "%s - Defects in Patches" % props.nvr
             else:
                 # this is a version-diff-build
@@ -1304,13 +1306,13 @@ def do_diff_scan(props, output, args, diff_patches):
                 title = "%s - Defects not detected in %s" % (props.nvr, props.base_srpm)
 
             run0 = "%s/run0" % results.resdir
-            ec = do_scan(run0_props, run0, skip_patches=(args.skip_patches or diff_patches))
+            ec = do_scan(run0_props, run0)
             if ec != 0:
                 results.error("scan of baseline package failed, cannot continue with scan of %s" %
                         props.nvr, ec=ec)
 
             run1 = "%s/run1" % results.resdir
-            ec = do_scan(props, run1, skip_patches=args.skip_patches)
+            ec = do_scan(props, run1)
             if ec != 0:
                 results.error("scan of %s failed" % props.nvr, ec=ec)
 
