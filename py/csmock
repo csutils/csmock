@@ -921,6 +921,7 @@ key event (defaults to 3).")
     props = ScanProps()
     props.plugins               = plugins
     props.cswrap_timeout        = args.cswrap_timeout
+    props.embed_context         = args.embed_context
     props.keep_going            = args.keep_going
     props.no_scan               = args.no_scan
     props.print_defects         = args.print_defects
@@ -931,7 +932,7 @@ key event (defaults to 3).")
     props.skip_mock_init        = args.skip_init
     props.skip_mock_clean       = args.no_clean
 
-    if args.embed_context > 0:
+    if props.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
         props.install_opt_pkgs += ["csdiff"]
 
@@ -1003,12 +1004,12 @@ key event (defaults to 3).")
     elif args.base_srpm is not None:
         ec = do_diff_scan(props, output, args, diff_patches=False)
     else:
-        ec = do_scan(props, output, args, args.skip_patches)
+        ec = do_scan(props, output, args.skip_patches)
 
     sys.exit(ec)
 
 
-def do_scan(props, output, args, skip_patches):
+def do_scan(props, output, skip_patches):
     if skip_patches:
         props.rpm_opts += RAWBUILD_RPM_OPTS
 
@@ -1251,12 +1252,12 @@ cd %%s*/ || cd *\n\
                         % (CWE_MAP_FILE, ini_file, results.dbgdir_uni, all_file)
                 results.exec_cmd(cmd, shell=True)
 
-                if args.embed_context > 0:
+                if props.embed_context > 0:
                     # embed context lines from source program files
                     tmp_file = "%s.tmp" % all_file
                     cmd = strlist_to_shell_cmd(
                         mock.get_mock_cmd(
-                            ["--shell", "csgrep --mode=json --embed-context %d" % args.embed_context]))
+                            ["--shell", "csgrep --mode=json --embed-context %d" % props.embed_context]))
                     cmd += " < '%s' > '%s'" % (all_file, tmp_file)
                     if results.exec_cmd(cmd, shell=True) == 0:
                         shutil.move(tmp_file, all_file)
@@ -1303,13 +1304,13 @@ def do_diff_scan(props, output, args, diff_patches):
                 title = "%s - Defects not detected in %s" % (props.nvr, props.base_srpm)
 
             run0 = "%s/run0" % results.resdir
-            ec = do_scan(run0_props, run0, args, skip_patches=(args.skip_patches or diff_patches))
+            ec = do_scan(run0_props, run0, skip_patches=(args.skip_patches or diff_patches))
             if ec != 0:
                 results.error("scan of baseline package failed, cannot continue with scan of %s" %
                         props.nvr, ec=ec)
 
             run1 = "%s/run1" % results.resdir
-            ec = do_scan(props, run1, args, skip_patches=args.skip_patches)
+            ec = do_scan(props, run1, skip_patches=args.skip_patches)
             if ec != 0:
                 results.error("scan of %s failed" % props.nvr, ec=ec)
 
