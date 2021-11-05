@@ -54,6 +54,9 @@ class Plugin:
             help="exclude tests (basically test.* as a component of path)")
 
     def handle_args(self, parser, args, props):
+        if args.unicontrol_bidi_only or args.unicontrol_notests:
+            self.enable()
+
         if not self.enabled:
             return
 
