@@ -10,10 +10,30 @@ There is a second mode enabled with -p which when set to 'all', prints all
 control characters and when set to 'bidi', prints only the 9 bidirectional
 control characters.
 """
+from __future__ import print_function
 
-import sys, os, argparse, re, unicodedata, magic, six
+import sys, os, argparse, re, unicodedata, subprocess
 import importlib
+import six
 from stat import *
+
+try:
+    import magic
+except ImportError:
+    magic = None
+
+def _unicode(line, encoding):
+    if isinstance(line, str):
+        return line
+    return line.decode(encoding)
+
+import platform
+if platform.python_version()[0] == '2':
+    _chr = unichr
+    do_unicode = unicode
+else:
+    _chr = chr
+    do_unicode = _unicode
 
 scan_exclude = [r'\.git/', r'\.hg/', r'\.desktop$', r'ChangeLog$', r'NEWS$',
                 r'\.ppd$', r'\.txt$', r'\.directory$']
@@ -28,9 +48,7 @@ def eprint(arg, **kwargs):
 
 # Decode a single latin1 line.
 def decodeline(inf):
-    if isinstance(inf, str):
-        return inf
-    return inf.decode('latin-1')
+    return do_unicode(inf, 'utf-8')
 
 # Make a text string from a file, attempting to decode from latin1 if necessary.
 # Other non-utf-8 locales are not supported at the moment.
@@ -38,7 +56,14 @@ def getfiletext(filename):
     text = None
     with open(filename) as infile:
         try:
-            text = ''.join(infile)
+            if detailed_mode:
+                return [decodeline(inf) for inf in infile]
+        except Exception as e:
+            eprint('%s: %s' % (filename, e))
+            return None
+
+        try:
+            text = decodeline(''.join(infile))
         except UnicodeDecodeError:
             eprint('%s: Retrying with latin1' % filename)
             try:
@@ -50,27 +75,51 @@ def getfiletext(filename):
     else:
         return None
 
+def analyze_text_detailed(filename, text, disallowed, msg):
+    line = 0
+    warned = False
+    for t in text:
+        line = line + 1
+        subset = [c for c in t if _chr(ord(c)) in disallowed]
+        if subset:
+            print('Error: UNICONTROL_WARNING:')
+            print('%s:%d: warning: %s: %s\n' % (filename, line, msg, subset))
+            warned = True
+    if not warned:
+        eprint('%s: OK' % filename)
+
 # Look for disallowed characters in the text.  We reduce all characters into a
 # set to speed up analysis.  FIXME: Add a slow mode to get line numbers in files
 # that have these disallowed chars.
 def analyze_text(filename, text, disallowed, msg):
+    if detailed_mode:
+        analyze_text_detailed(filename, text, disallowed, msg)
+        return
+
     if not text.isdisjoint(disallowed):
         print('Error: UNICONTROL_WARNING:')
         print('%s: warning: %s: %s\n' % (filename, msg, text & disallowed))
     else:
         eprint('%s: OK' % filename)
+		
+def get_mime(f):
+    if magic:
+        return magic.detect_from_filename(f).mime_type
+    args = ['file', '--mime-type', f]
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+    m = [decodeline(x[:-1]) for x in proc.stdout][0].split(':')[1].strip()
+    return m
 
 def should_read(f):
-    m = magic.detect_from_filename(f)
     # Fast check, just the file name.
     if [e for e in scan_exclude if re.search(e, f)]:
         return False
 
     # Slower check, mime type.
-    if not 'text/' in m.mime_type \
-            or [e for e in scan_exclude_mime if re.search(e, m.mime_type)]:
+    m = get_mime(f)
+    if not 'text/' in m \
+            or [e for e in scan_exclude_mime if re.search(e, m)]:
         return False
-
     return True
 
 # Get file text and feed into analyze_text.
@@ -84,23 +133,36 @@ def analyze_file(f, disallowed, msg):
         eprint('%s: SKIPPED' % f)
 
 # Actual implementation of the recursive descent into directories.
-def analyze_any(p, disallowed, msg):
-    mode = os.stat(p).st_mode
+def analyze_any(p, disallowed, msg, dirs_seen):
+    try:
+        stat_res = os.stat(p)
+    except Exception as e:
+        eprint('%s: %s' % (p, e))
+        return
+
+    mode = stat_res.st_mode
     if S_ISDIR(mode):
-        analyze_dir(p, disallowed, msg)
+        # avoid analyzing the same dir twice
+        inode = stat_res.st_ino
+        if inode:
+            if inode in dirs_seen:
+                return
+            dirs_seen.add(inode)
+
+        analyze_dir(p, disallowed, msg, dirs_seen)
     elif S_ISREG(mode):
         analyze_file(p, disallowed, msg)
     else:
         eprint('%s: UNREADABLE' % p)
 
 # Recursively analyze files in the directory.
-def analyze_dir(d, disallowed, msg):
+def analyze_dir(d, disallowed, msg, dirs_seen):
     for f in os.listdir(d):
-        analyze_any(os.path.join(d, f), disallowed, msg)
+        analyze_any(os.path.join(d, f), disallowed, msg, dirs_seen)
 
-def analyze_paths(paths, disallowed, msg):
+def analyze_paths(paths, disallowed, msg, dirs_seen):
     for p in paths:
-        analyze_any(p, disallowed, msg)
+        analyze_any(p, disallowed, msg, dirs_seen)
 
 # All control characters.  We omit the ascii control characters.
 def nonprint_unicode(c):
@@ -118,6 +180,8 @@ if __name__ == '__main__':
             help='Look for either all non-printable unicode characters or bidirectional control characters.')
     parser.add_argument('-v', '--verbose', required=False, action='store_true',
             help='Verbose mode.')
+    parser.add_argument('-d', '--detailed', required=False, action='store_true',
+            help='Print line numbers where characters occur.')
     parser.add_argument('-t', '--notests', required=False,
             action='store_true', help='Exclude tests (basically test.* as a component of path).')
     parser.add_argument('-c', '--config', required=False, type=str,
@@ -125,25 +189,26 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     verbose_mode = args.verbose
+    detailed_mode = args.detailed
 
     if not args.nonprint:
         # Formatting control characters in the unicode space.  This includes the
         # bidi control characters.
-        disallowed = set(chr(c) for c in range(sys.maxunicode) if \
-                                 unicodedata.category(chr(c)) == 'Cf')
+        disallowed = set(_chr(c) for c in range(sys.maxunicode) if \
+                                 unicodedata.category(_chr(c)) == 'Cf')
 
         msg = 'unicode control characters'
     elif args.nonprint == 'all':
         # All control characters.
-        disallowed = set(chr(c) for c in range(sys.maxunicode) if \
-                         nonprint_unicode(chr(c)))
+        disallowed = set(_chr(c) for c in range(sys.maxunicode) if \
+                         nonprint_unicode(_chr(c)))
 
         msg = 'disallowed characters'
     else:
         # Only bidi control characters.
         disallowed = set([
-            chr(0x202a), chr(0x202b), chr(0x202c), chr(0x202d), chr(0x202e),
-            chr(0x2066), chr(0x2067), chr(0x2068), chr(0x2069)])
+            _chr(0x202a), _chr(0x202b), _chr(0x202c), _chr(0x202d), _chr(0x202e),
+            _chr(0x2066), _chr(0x2067), _chr(0x2068), _chr(0x2069)])
         msg = 'bidirectional control characters'
 
     if args.config:
@@ -158,4 +223,6 @@ if __name__ == '__main__':
     if args.notests:
         scan_exclude = scan_exclude + [r'/test[^/]+/']
 
-    analyze_paths(args.path, disallowed, msg)
+    dirs_seen = set()
+
+    analyze_paths(args.path, disallowed, msg, dirs_seen)
