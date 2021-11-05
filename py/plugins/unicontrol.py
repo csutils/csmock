@@ -31,7 +31,7 @@ FILTER_CMD = "csgrep --mode=json '%s' > '%s'"
 
 class PluginProps:
     def __init__(self):
-        self.description = "[TODO] experimental csmock plug-in"
+        self.description = "A tool that looks for non-printable unicode characters in all text files in a source tree."
 
 
 class Plugin:

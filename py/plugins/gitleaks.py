@@ -32,7 +32,7 @@ FILTER_CMD = "gitleaks-convert-output '%s' '%s' | csgrep --mode=json > '%s'"
 
 class PluginProps:
     def __init__(self):
-        self.description = "[TODO] experimental csmock plug-in"
+        self.description = "Tool for finding secrets in source code."
 
 
 class Plugin:
