@@ -59,14 +59,14 @@ class Plugin:
 
         # update scan metadata
         def write_toolver_hook(results):
-            results.ini_writer.append("analyzer-version-unicontrol", "0.0.1")
+            results.ini_writer.append("analyzer-version-unicontrol", "0.0.2")
             return 0
         props.pre_mock_hooks += [write_toolver_hook]
 
         # dependency of UNICONTROL_SCRIPT
         props.install_pkgs += ["python3-magic", "python3-six"]
 
-        cmd = "LANG=en_US.utf8 %s -v %s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR)
+        cmd = "LANG=en_US.utf8 %s -d -v %s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR)
 
         if args.unicontrol_bidi_only:
             cmd += " -p bidi"
