@@ -67,7 +67,8 @@ class Plugin:
         props.pre_mock_hooks += [write_toolver_hook]
 
         # dependency of UNICONTROL_SCRIPT
-        props.install_pkgs += ["python3-magic", "python3-six"]
+        props.install_pkgs += ["python3-six"]
+        props.install_opt_pkgs += ["python3-magic"]
 
         cmd = "LANG=en_US.utf8 %s -d -v %s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR)
 
