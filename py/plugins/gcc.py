@@ -75,7 +75,8 @@ class Plugin:
 
         parser.add_argument(
             "--gcc-analyzer-bin", action="store",
-            help="use custom build of gcc to perform scan")
+            help="Use custom build of gcc to perform scan. \
+            Absolute path to the binary must be provided.")
 
         parser.add_argument(
             "--gcc-analyze-add-flag", action="append", default=[],
@@ -115,6 +116,11 @@ class Plugin:
                 args.gcc_analyzer_bin or \
                 getattr(args, "all_tools", False):
             self.enable()
+
+            if args.gcc_analyzer_bin and not args.gcc_analyzer_bin.startswith("/"):
+                parser.error("--gcc-analyzer-bin should be an absolute path. "
+                             "Found value: '%s'." % args.gcc_analyzer_bin)
+
             # resolve csgcca_path by querying csclng binary
             cmd = [CSGCCA_BIN, "--print-path-to-wrap"]
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
