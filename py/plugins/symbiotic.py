@@ -116,8 +116,8 @@ class Plugin:
                  '-Wno-unused-parameter', '-Wno-unknown-attributes',
                  '-Wno-unused-label', '-Wno-unknown-pragmas',
                  '-Wno-unused-command-line-argument',
-                 '-Xclang', '-fsanitize-address-use-after-scope',
-                 '-O0', '-disable-llvm-passes', '-D__inline=', '-g',
+                 '-fsanitize-address-use-after-scope', '-O0', '-Xclang',
+                 '-disable-llvm-passes', '-D__inline=', '-g',
                  '-Wl,--dynamic-linker,/usr/bin/csexec-loader']
         self.flags.append_flags(flags)
         self.flags.remove_flags(['-O1', '-O2', '-O3', '-Os', '-Ofast', '-Og'])
