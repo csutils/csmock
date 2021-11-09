@@ -119,8 +119,6 @@ class Plugin:
         def filter_hook(results):
             src_dir = results.dbgdir_raw + DIVINE_CAPTURE_DIR
             dst = "%s/divine-capture.js" % results.dbgdir_uni
-            # TODO: We should do the conversion here as well but that can be
-            # done only after divine produces absolute paths reliably.
             cmd = "csgrep --mode=json --remove-duplicates '%s'/pid-*.conv > '%s'" \
                   % (src_dir, dst)
             return results.exec_cmd(cmd, shell=True)

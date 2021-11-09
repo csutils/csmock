@@ -133,12 +133,7 @@ class Plugin:
         def filter_hook(results):
             src_dir = results.dbgdir_raw + SYMBIOTIC_CAPTURE_DIR
             dst = "%s/symbiotic-capture.js" % results.dbgdir_uni
-            cmd = """
-                  set -ex
-                  for file in %s/pid-*.out; do
-                      symbiotic2cs < \"$file\" > \"$file.conv\"
-                  done
-                  csgrep --mode=json --remove-duplicates '%s'/pid-*.out.conv > '%s'
-                  """ % (src_dir, src_dir, dst)
+            cmd = "csgrep --mode=json --remove-duplicates '%s'/pid-*.conv > '%s'" \
+                  % (src_dir, dst)
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]
