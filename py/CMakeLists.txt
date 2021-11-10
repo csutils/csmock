@@ -70,6 +70,7 @@ if(ENABLE_CSMOCK)
             DESTINATION ${PLUGIN_DIR})
     endmacro()
 
+    install_plugin(infer)
     install_plugin(bandit)
     install_plugin(cbmc)
     install_plugin(clang)
