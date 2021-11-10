@@ -31,6 +31,8 @@ if(ENABLE_CSMOCK)
         ${CMAKE_CURRENT_SOURCE_DIR}/enable-keep-going.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/find-unicode-control.py
         ${CMAKE_CURRENT_SOURCE_DIR}/patch-rawbuild.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}/install-infer.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}/filter-infer.py
         ${CMAKE_CURRENT_SOURCE_DIR}/run-bandit.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-pylint.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-shellcheck.sh
