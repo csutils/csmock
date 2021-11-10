@@ -189,8 +189,11 @@ class MockWrapper:
     def __init__(self, results, props):
         self.results = results
         self.mock_profile = props.mock_profile
-        self.lock_file = "/tmp/.csmock-%s.lock" % self.mock_profile
-        self.meta_lock_file = "/tmp/.csmock-%s.metalock" % self.mock_profile
+        self.mock_root_override = props.mock_root_override
+        lock = f"/tmp/.csmock-" + (self.mock_profile if not self.mock_root_override else
+                                   self.mock_root_override)
+        self.lock_file = f"{lock}.lock"
+        self.meta_lock_file = f"{lock}.metalock"
         self.pid = os.getpid()
         self.scrub_done = props.skip_mock_init
         self.init_done = props.skip_mock_init
@@ -212,7 +215,12 @@ if test -e \"$lock_file\"; then \n\
 fi \n\
 echo \"$self_pid\" > \"$lock_file\"'" \
             % (MOCK_WAITING_TICK, self.meta_lock_file, self.lock_file, self.pid)
+        advice = False
         while os.system(cmd) != 0:
+            if not advice:
+                self.results.print_with_ts("tip: you can use --root-override=<directory> "
+                      "to run this csmock instance in parallel")
+                advice = True
             f = open(self.lock_file)
             other_pid = ""
             if f is not None:
@@ -240,6 +248,10 @@ echo \"$self_pid\" > \"$lock_file\"'" \
 
         # re-enable verbose output per https://bugzilla.redhat.com/1166609
         self.def_cmd += ["--config-opts=print_main_output=True"]
+        if self.mock_root_override:
+            self.def_cmd += ["--disable-plugin=root_cache",
+                             "--disable-plugin=yum_cache"]
+            self.def_cmd += [f"--config-opts=root={self.mock_root_override}"]
 
         return self
 
@@ -419,6 +431,7 @@ class ScanProps:
         self.base_srpm = None
         self.mock_profile = None
         self.base_mock_profile = None
+        self.mock_root_override = None
         self.any_tool = False
         self.nvr = None
         self.pkg = None
@@ -833,11 +846,16 @@ key event (defaults to 3).")
 
     parser.add_argument(
         "--base-srpm",
-        help="perform a differential scan against the specified base pacakge")
+        help="perform a differential scan against the specified base package")
 
     parser.add_argument(
         "--base-root", dest="base_mock_profile",
         help="mock profile to use for the base scan (use only with --base-srpm)")
+
+    parser.add_argument(
+        "--root-override", dest="mock_root_override",
+        help='override the build root directory for mock (disables yum and root cache)'
+    )
 
     # --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
     group = parser.add_mutually_exclusive_group()
@@ -954,6 +972,8 @@ key event (defaults to 3).")
     else:
         props.base_mock_profile = args.base_mock_profile
         require_file(parser, "/etc/mock/%s.cfg" % props.base_mock_profile)
+
+    props.mock_root_override = args.mock_root_override
 
     # append the list of packages to install specified on command-line
     for pkg in args.install:
