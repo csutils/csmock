@@ -91,7 +91,10 @@ class Plugin:
                 "--skip-ld-linux",
                 "csexec-divine",
                 "-l", DIVINE_CAPTURE_DIR,
-                "-d", "check --max-time %d" % args.divine_timeout]
+                # --lart stubs replaces undefined functions with stubs
+                # -o ignore:exit ignores non-zero exit codes
+                "-d", "check --lart stubs -o ignore:exit --max-time %d" \
+                      % args.divine_timeout]
 
         # append custom args if specified
         # FIXME: what about single arguments with whitespaces?
