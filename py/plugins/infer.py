@@ -6,7 +6,7 @@ INFER_RESULTS_FILTER_SCRIPT = "/usr/share/csmock/scripts/filter-infer.py"
 INFER_INSTALL_SCRIPT = "/usr/share/csmock/scripts/install-infer.sh"
 INFER_RESULTS = "/builddir/infer-results.txt"
 INFER_OUT_DIR = "/builddir/infer-out"
-
+DEFAULT_INFER_TIMEOUT = 300
 
 class PluginProps:
     def __init__(self):
@@ -53,15 +53,18 @@ class Plugin:
             parser, "infer-dead-store-severity",
             help="lower dead store severity (enabled by default)")
 
+        parser.add_argument(
+            "--infer-timeout", type=int, default=DEFAULT_INFER_TIMEOUT,
+            help="maximal amount of time taken by Infer's analysis phase [s] (default 300)")
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
             return
 
-        # python -- for the Infer's reporting module
+        # python3 -- for the Infer's reporting module
         # ncurses-compat-libs -- libtinfo.so.5
         # ncurses-libs -- libtinfo.so.6
-        props.install_pkgs += ["python", "ncurses-compat-libs", "ncurses-libs"]
+        props.install_pkgs += ["python3", "ncurses-compat-libs", "ncurses-libs"]
 
         infer_archive_path = ""
 
@@ -95,8 +98,7 @@ class Plugin:
         infer_analyze_flags = "--pulse --bufferoverrun"
         if args.infer_analyze_add_flag:
             infer_analyze_flags = csmock.common.cflags.serialize_flags(args.infer_analyze_add_flag, separator=" ")
-        run_cmd = f"infer analyze --keep-going {infer_analyze_flags} -o {INFER_OUT_DIR}"
-        props.post_build_chroot_cmds += [run_cmd]
+        run_cmd = f"/usr/bin/timeout {args.infer_timeout} infer analyze --keep-going {infer_analyze_flags} -o {INFER_OUT_DIR}"
 
         filter_args = []
 
@@ -119,11 +121,21 @@ class Plugin:
         filter_args_serialized = csmock.common.cflags.serialize_flags(filter_args, separator=" ")
 
         # the filter script tries to filter out false positives and transforms results into csdiff compatible format
-        filter_cmd = f"python {INFER_RESULTS_FILTER_SCRIPT} {filter_args_serialized} < {INFER_OUT_DIR}/report.json > {INFER_RESULTS}"
-
-        props.post_build_chroot_cmds += [filter_cmd]
+        filter_cmd = f"python3 {INFER_RESULTS_FILTER_SCRIPT} {filter_args_serialized} < {INFER_OUT_DIR}/report.json > {INFER_RESULTS}"
 
         props.copy_out_files += [INFER_RESULTS]
+
+        def run_analysis_hook(results, mock, props):
+            rc = mock.exec_chroot_cmd(run_cmd, quiet=False)
+            if rc == 124:
+                results.error("The timeout for the Infer's analysis phase has expired. "
+                'Try increasing the timeout with "--infer-timeout INFER_TIMEOUT". '
+                "Alternatively, try disabling the Infer's InferBO plugin.")
+                return rc
+
+            return mock.exec_chroot_cmd(filter_cmd, quiet=False)
+
+        props.post_install_hooks += [run_analysis_hook]
 
         def filter_hook(results):
             src = results.dbgdir_raw + INFER_RESULTS
