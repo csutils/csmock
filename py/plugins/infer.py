@@ -10,7 +10,6 @@ INFER_OUT_DIR = "/builddir/infer-out"
 
 class PluginProps:
     def __init__(self):
-        self.pass_priority = 0x60
         self.description = "Static analysis tool for Java/C/C++ code."
 
 
@@ -34,25 +33,25 @@ class Plugin:
             "--infer-archive-path", default="",
             help="use the given archive to install Infer (default is /opt/infer-linux*.tar.xz)")
 
-        parser.add_argument(
-            "--no-infer-filter", action="store_true",
-            help="disables Infer false positive filter (enabled by default)")
+        csmock.common.util.add_paired_flag(
+            parser, "infer-filter",
+            help="apply false positive filter (enabled by default)")
 
-        parser.add_argument(
-            "--no-infer-biabduction-filter", action="store_true",
-            help="disables Infer bi-abduction filter (enabled by default)")
+        csmock.common.util.add_paired_flag(
+            parser, "infer-biabduction-filter",
+            help="apply false positive bi-abduction filter (enabled by default)")
 
-        parser.add_argument(
-            "--no-infer-inferbo-filter", action="store_true",
-            help="disables Infer inferbo filter (enabled by default)")
+        csmock.common.util.add_paired_flag(
+            parser, "infer-inferbo-filter",
+            help="apply false positive inferbo filter (enabled by default)")
 
-        parser.add_argument(
-            "--no-infer-uninit-filter", action="store_true",
-            help="disables Infer uninit filter (enabled by default)")
+        csmock.common.util.add_paired_flag(
+            parser, "infer-uninit-filter",
+            help="apply false positive uninit filter (enabled by default)")
 
-        parser.add_argument(
-            "--no-infer-dead-store-filter", action="store_true",
-            help="disables Infer dead store filter (enabled by default)")
+        csmock.common.util.add_paired_flag(
+            parser, "infer-dead-store-severity",
+            help="lower dead store severity (enabled by default)")
 
 
     def handle_args(self, parser, args, props):
@@ -71,18 +70,20 @@ class Plugin:
             if os.path.isfile(args.infer_archive_path):
                 infer_archive_path = os.path.abspath(args.infer_archive_path)
             else:
-                parser.error(f"--infer-archive-path given path \"{args.infer_archive_path}\" doesn't exist")
+                parser.error(f"--infer-archive-path: given path \"{args.infer_archive_path}\" doesn't exist")
         else:
             # search for the archive in /opt
             for file in os.listdir("/opt"):
                 if re.search(r"infer-linux.*\.tar\.xz", file):
                     infer_archive_path = "/opt/" + file
             if not infer_archive_path:
-                parser.error("Default Infer archive path \"/opt/infer-linux*.tar.xz\" doesn't exist")
+                parser.error('The Infer plugin requires an archive with the binary release of Infer. '
+                'The archive can be downloaded from https://github.com/facebook/infer/releases. '
+                'By default, the plugin looks for the archive in /opt/infer-linux*.tar.xz. '
+                'Alternatively, the "--infer-archive-path INFER_ARCHIVE_PATH" option can be '
+                'used to specify the path to the archive.')
 
         props.copy_in_files += [infer_archive_path]
-        props.copy_in_files += [INFER_INSTALL_SCRIPT]
-        props.copy_in_files += [INFER_RESULTS_FILTER_SCRIPT]
 
         # install Infer and wrappers for a Infer's capture phase
         install_cmd = f"{INFER_INSTALL_SCRIPT} {infer_archive_path} {INFER_OUT_DIR}"
@@ -99,19 +100,19 @@ class Plugin:
 
         filter_args = []
 
-        if args.no_infer_filter:
+        if getattr(args, "infer_filter") == False:
             filter_args += ["--only-transform"]
 
-        if args.no_infer_biabduction_filter:
-            filter_args += ["--no-biadbuction"]
+        if getattr(args, "infer_biabduction_filter") == False:
+            filter_args += ["--no-biabduction"]
 
-        if args.no_infer_inferbo_filter:
+        if getattr(args, "infer_inferbo_filter") == False:
             filter_args += ["--no-inferbo"]
 
-        if args.no_infer_uninit_filter:
+        if getattr(args, "infer_uninit_filter") == False:
             filter_args += ["--no-uninit"]
 
-        if args.no_infer_dead_store_filter:
+        if getattr(args, "infer_dead_store_severity") == False:
             filter_args += ["--no-dead-store"]
 
 

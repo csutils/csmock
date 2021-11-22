@@ -172,6 +172,13 @@ Requires: csmock-common(python3)
 %description -n csmock-plugin-gitleaks
 This package contains the gitleaks plug-in for csmock.
 
+%package -n csmock-plugin-infer
+Summary: csmock plug-in providing the support for Infer
+Requires: csmock-common(python3)
+
+%description -n csmock-plugin-infer
+This package contains the Infer plug-in for csmock.
+
 %package -n csmock-plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
 Requires: csmock-common(python3)
@@ -300,6 +307,12 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{_bindir}/gitleaks-convert-output
 %{python3_sitelib}/csmock/plugins/gitleaks.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/gitleaks.*
+
+%files -n csmock-plugin-infer
+%{_datadir}/csmock/scripts/filter-infer.py
+%{_datadir}/csmock/scripts/install-infer.sh
+%{python3_sitelib}/csmock/plugins/infer.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/infer.*
 
 %files -n csmock-plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
