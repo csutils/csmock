@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import json
 import sys
@@ -79,7 +79,7 @@ def main():
     if "--only-transform" not in sys.argv:
         filterList = []
 
-        if "--no-biadbuction" not in sys.argv:
+        if "--no-biabduction" not in sys.argv:
             filterList += [biabductionFilter]
 
         if "--no-inferbo" not in sys.argv:
