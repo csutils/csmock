@@ -763,7 +763,6 @@ def main():
                 help=help)
 
         def __call__(self, parser, namespace, values, option_string=None):
-            sys.stdout.write('Tools list: \n')
             plugins.print_plugin_descriptions()
             sys.exit(0)
 
