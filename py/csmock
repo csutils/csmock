@@ -411,6 +411,7 @@ class ScanProps:
         self.path = []
         self.env = {}
         self.copy_out_files = []
+        self.use_ldpwrap = False
         self.csexec_enabled = False
         self.cswrap_enabled = False
         self.cswrap_filters = DEFAULT_CSWRAP_FILTERS
@@ -459,7 +460,18 @@ class ScanProps:
         self.env["CSWRAP_TIMEOUT_FOR"] = ":"
         self.copy_out_files += ["/builddir/cswrap-capture.err"]
 
+    def enable_ldpwrap(self):
+        assert "ldpwrap" not in self.install_pkgs
+        self.install_pkgs += ["ldpwrap"]
+        self.add_repos += ["https://download.copr.fedorainfracloud.org/results/@aufover/ldpwrap/fedora-$releasever-$basearch/"]
+        self.rpm_opts += ["--define", "__spec_check_pre export LD_PRELOAD=/usr/lib64/ldpwrap.so %{___build_pre}"]
+
     def enable_csexec(self):
+        if self.use_ldpwrap:
+            # we are asked to use ldpwrap rather than csexec-loader
+            self.enable_ldpwrap()
+            return
+
         if self.csexec_enabled:
             # already enabled
             return
@@ -834,6 +846,10 @@ key event (defaults to 3).")
         help="do not run %%build and %%install sections [EXPERIMENTAL]")
 
     parser.add_argument(
+        "--use-ldpwrap", action="store_true",
+        help="use ldpwrap instead of csexec-loader [EXPERIMENTAL]")
+
+    parser.add_argument(
         "--no-clean", action="store_true",
         help="do not clean chroot when it becomes unused")
 
@@ -954,6 +970,7 @@ key event (defaults to 3).")
     props.skip_patches          = args.skip_patches
     props.skip_mock_init        = args.skip_init
     props.skip_build            = args.skip_build
+    props.use_ldpwrap           = args.use_ldpwrap
     props.skip_mock_clean       = args.no_clean
 
     if props.embed_context > 0:
