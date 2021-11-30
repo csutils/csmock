@@ -61,6 +61,9 @@ class Plugin:
         props.add_repos += ["https://download.copr.fedorainfracloud.org/results/@aufover/divine/fedora-$releasever-$basearch/"]
         props.install_pkgs += ["divine"]
 
+        # dioscc seems to require /usr/include/gnu/stubs-32.h
+        props.install_opt_pkgs += ["glibc-devel(x86-32)"]
+
         # enable cswrap
         props.enable_cswrap()
         props.cswrap_filters += ["csgrep --mode=json --invert-match --checker CLANG_WARNING --event error"]
