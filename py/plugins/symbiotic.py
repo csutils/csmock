@@ -94,11 +94,12 @@ class Plugin:
         props.post_depinst_hooks += [create_cap_dir_hook]
 
         # default symbiotic cmd-line
+        timeout = args.symbiotic_timeout
         wrap_cmd_list = [
                 "--skip-ld-linux",
                 "csexec-symbiotic",
                 "-l", SYMBIOTIC_CAPTURE_DIR,
-                "-s", "--prp=memsafety --timeout=%d" % args.symbiotic_timeout]
+                "-s", f"--prp=memsafety --timeout={timeout} --instrumentation-timeout={timeout} --slicer-timeout={timeout}"]
 
         # append custom args if specified
         # FIXME: what about single arguments with whitespaces?
