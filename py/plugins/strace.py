@@ -65,7 +65,7 @@ class Plugin:
         props.post_depinst_hooks += [create_cap_dir_hook]
 
         # default strace cmd-line
-        wrap_cmd_list = ["strace",
+        wrap_cmd_list = ["/usr/bin/strace",
                 "--output=%s/trace" % STRACE_CAPTURE_DIR,
                 "--output-separately"]
 

@@ -92,7 +92,7 @@ class Plugin:
         # default divine cmd-line
         wrap_cmd_list = [
                 "--skip-ld-linux",
-                "csexec-divine",
+                "/usr/bin/csexec-divine",
                 "-l", DIVINE_CAPTURE_DIR,
                 # --lart stubs replaces undefined functions with stubs
                 # -o ignore:exit ignores non-zero exit codes

@@ -89,7 +89,7 @@ class Plugin:
         # default cbmc cmd-line
         wrap_cmd_list = [
                 "--skip-ld-linux",
-                "csexec-cbmc",
+                "/usr/bin/csexec-cbmc",
                 "-t", "%d" % args.cbmc_timeout,
                 "-l", CBMC_CAPTURE_DIR,
                 "-c","--unwind 1 --json-ui --verbosity 4 --pointer-overflow-check --memory-leak-check"]

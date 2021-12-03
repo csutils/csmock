@@ -97,7 +97,7 @@ class Plugin:
         timeout = args.symbiotic_timeout
         wrap_cmd_list = [
                 "--skip-ld-linux",
-                "csexec-symbiotic",
+                "/usr/bin/csexec-symbiotic",
                 "-l", SYMBIOTIC_CAPTURE_DIR,
                 "-s", f"--prp=memsafety --timeout={timeout} --instrumentation-timeout={timeout} --slicer-timeout={timeout}"]
 
