@@ -119,13 +119,19 @@ class Plugin:
         # transform XML files produced by cbmc into csdiff format
         def filter_hook(results):
             src_dir = results.dbgdir_raw + CBMC_CAPTURE_DIR
-            dst = "%s/cbmc-capture.js" % results.dbgdir_uni
-            cmd = """
+
+            # ensure we have permission to read all capture files
+            results.exec_cmd(['chmod', '-R', '+r', src_dir])
+
+            # `cd` first to avoid `csgrep: Argument list too long` error on glob expansion
+            dst = f"{results.dbgdir_uni}/cbmc-capture.js"
+            cmd = f"""
                   set -ex
-                  for file in %s/pid-*.out; do
+                  cd '{src_dir}'
+                  for file in pid-*.out; do
                       cbmc-convert-output -a < \"$file\" > \"$file.conv\"
                   done
-                  csgrep --mode=json --remove-duplicates '%s'/pid-*.out.conv > '%s'
-                  """ % (src_dir, src_dir, dst)
+                  csgrep --mode=json --remove-duplicates pid-*.out.conv > '{dst}'
+                  """
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]

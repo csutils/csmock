@@ -112,8 +112,12 @@ class Plugin:
         # transform XML files produced by valgrind into csdiff format
         def filter_hook(results):
             src_dir = results.dbgdir_raw + VALGRIND_CAPTURE_DIR
-            dst = "%s/valgrind-capture.js" % results.dbgdir_uni
-            cmd = "csgrep --mode=json --quiet --remove-duplicates '%s'/*.xml > '%s'" \
-                    % (src_dir, dst)
+
+            # ensure we have permission to read all capture files
+            results.exec_cmd(['chmod', '-R', '+r', src_dir])
+
+            # `cd` first to avoid `csgrep: Argument list too long` error on glob expansion
+            dst = f"{results.dbgdir_uni}/valgrind-capture.js"
+            cmd = f"cd '{src_dir}' && csgrep --mode=json --quiet --remove-duplicates *.xml > '{dst}'"
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]

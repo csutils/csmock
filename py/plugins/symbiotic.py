@@ -133,8 +133,12 @@ class Plugin:
         # transform log files produced by symbiotic into csdiff format
         def filter_hook(results):
             src_dir = results.dbgdir_raw + SYMBIOTIC_CAPTURE_DIR
-            dst = "%s/symbiotic-capture.js" % results.dbgdir_uni
-            cmd = "csgrep --mode=json --remove-duplicates '%s'/pid-*.conv > '%s'" \
-                  % (src_dir, dst)
+
+            # ensure we have permission to read all capture files
+            results.exec_cmd(['chmod', '-R', '+r', src_dir])
+
+            # `cd` first to avoid `csgrep: Argument list too long` error on glob expansion
+            dst = f"{results.dbgdir_uni}/symbiotic-capture.js"
+            cmd = f"cd '{src_dir}' && csgrep --mode=json --remove-duplicates pid-*.conv > {dst}"
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]
