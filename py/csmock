@@ -477,11 +477,8 @@ class ScanProps:
             return
         self.csexec_enabled = True
 
-        # copy statically linked csexec binaries into chroot
-        self.copy_in_files += [
-                "/usr/bin/csexec",
-                "/usr/bin/csexec-loader",
-                "/usr/lib64/libcsexec-preload.so"]
+        # install csexec into chroot
+        self.install_pkgs += ["csexec"]
 
         # use the "gcc" plug-in to inject linker flags
         gcc = self.plugins.plug_by_name["gcc"]
