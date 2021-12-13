@@ -22,7 +22,7 @@ from csmock.common.cflags import flags_by_warning_level
 
 DIVINE_CAPTURE_DIR = "/builddir/divine-capture"
 
-DEFAULT_DIVINE_TIMEOUT = 150
+DEFAULT_DIVINE_TIMEOUT = 30
 
 
 class PluginProps:

@@ -22,7 +22,7 @@ from csmock.common.cflags import flags_by_warning_level
 
 SYMBIOTIC_CAPTURE_DIR = "/builddir/symbiotic-capture"
 
-DEFAULT_SYMBIOTIC_TIMEOUT = 30 # TODO
+DEFAULT_SYMBIOTIC_TIMEOUT = 30
 
 
 class PluginProps:

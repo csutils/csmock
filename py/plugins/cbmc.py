@@ -21,7 +21,7 @@ from csmock.common.cflags import flags_by_warning_level
 
 CBMC_CAPTURE_DIR = "/builddir/cbmc-capture"
 
-DEFAULT_CBMC_TIMEOUT = 42
+DEFAULT_CBMC_TIMEOUT = 30
 
 
 class PluginProps:
