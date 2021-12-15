@@ -17,8 +17,7 @@ trap unlock_on_exit EXIT INT TERM
 
 compiler="'"$1"'"
 compiler_original="${compiler}-original"
-all_options="$@"
-call_original_compiler="${compiler_original} $@"
+all_options=("$@")
 infer_dir="'"$3"'"
 skip_capture=false
 lock_dir="/tmp/infer.lockdir"
@@ -61,8 +60,11 @@ function unlock_on_exit {
     fi
   fi
 
+  # restore all passed options
+  set -- "${all_options[@]}"
+
   # return code is carried back to a caller
-  ${call_original_compiler}
+  ${compiler_original} "$@"
   exit $?
 }
 
@@ -108,7 +110,7 @@ then
       # logging
       >&2 echo ""
       >&2 echo "NOTE: INFER: ${compiler}-wrapper: running capture phase"
-      if infer capture --reactive -o ${infer_dir} --force-integration' "$2" '-- ${compiler} $@ 1>&2
+      if infer capture --reactive -o ${infer_dir} --force-integration' "$2" '-- ${compiler} "$@" 1>&2
       then
         >&2 echo "NOTE: INFER: ${compiler}-wrapper: successfully captured: \"${compiler} $@\""
       else
