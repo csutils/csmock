@@ -98,6 +98,9 @@ then
     [ "$arg" = "-fvirtual-function-elimination" ] && continue
     [ "$arg" = "-flto=full" ] && continue
     [ "$arg" = "-fwhole-program-vtables" ] && continue
+    [ "$arg" = "-fno-leading-underscore" ] && continue
+    [ "$arg" = "-mno-avx256-split-unaligned-load" ] && continue
+    [ "$arg" = "-mno-avx256-split-unaligned-store" ] && continue
     set -- "$@" "$arg"
   done
 
