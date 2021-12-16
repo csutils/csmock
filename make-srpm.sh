@@ -309,7 +309,7 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{python3_sitelib}/csmock/plugins/__pycache__/gitleaks.*
 
 %files -n csmock-plugin-infer
-%{_datadir}/csmock/scripts/filter-infer.py
+%{_datadir}/csmock/scripts/filter-infer.py*
 %{_datadir}/csmock/scripts/install-infer.sh
 %{python3_sitelib}/csmock/plugins/infer.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/infer.*
