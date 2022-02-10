@@ -125,15 +125,8 @@ class Plugin:
 
             # `cd` first to avoid `csgrep: Argument list too long` error on glob expansion
             dst = f"{results.dbgdir_uni}/cbmc-capture.js"
-            cmd = f"""
-                  set -ex
-                  cd '{src_dir}'
-                  shopt -s nullglob
-                  for file in pid-*.out; do
-                      cbmc-convert-output -a < \"$file\" > \"$file.conv\"
-                  done
-                  touch empty.err
-                  csgrep --mode=json --remove-duplicates empty.err pid-*.out.conv > '{dst}'
-                  """
+            
+            cmd = f"csgrep --mode=json --remove-duplicates {src_dir}/pid-*.conv > {dst}"
+            
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]
