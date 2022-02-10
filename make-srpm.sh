@@ -134,7 +134,6 @@ This package contains the bandit plug-in for csmock.
 
 %package -n csmock-plugin-cbmc
 Summary: csmock plug-in providing the support for cbmc
-Requires: cbmc-utils
 Requires: csexec
 Requires: csmock-common(python3)
 
