@@ -70,6 +70,10 @@ class Plugin:
         props.install_pkgs += ["python3-six"]
         props.install_opt_pkgs += ["python3-magic"]
 
+        if props.mock_profile.startswith("rhel-7"):
+            # do not break el7 builds by unexpectedly making python3 available
+            props.env["PYTHON"] = "/usr/bin/python2"
+
         cmd = "LANG=en_US.utf8 %s -d -v %s" % (UNICONTROL_SCRIPT, UNICONTROL_SCAN_DIR)
 
         if args.unicontrol_bidi_only:
