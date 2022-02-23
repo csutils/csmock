@@ -62,6 +62,7 @@ MOCK_WAITING_TICK = 60
 DEFAULT_CSWRAP_TIMEOUT = 30
 
 DEFAULT_RPM_OPTS = [
+    "--define", "_unpackaged_files_terminate_build 0",
     "--define", "apidocs 0",
     "--define", "with_publican 0",
     "--without", "docs",
