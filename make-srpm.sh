@@ -246,7 +246,7 @@ cd csmock_build
 %cmake \\
     -DVERSION='%{name}-%{version}-%{release}' \\
     -DPYTHON_EXECUTABLE='%{__python3}' \\
-    -B. ..
+    -B. -S.. ..
 make %{?_smp_mflags} VERBOSE=yes
 
 %install
