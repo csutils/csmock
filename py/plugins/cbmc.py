@@ -126,7 +126,7 @@ class Plugin:
             # `cd` first to avoid `csgrep: Argument list too long` error on glob expansion
             dst = f"{results.dbgdir_uni}/cbmc-capture.js"
             
-            cmd = f"csgrep --mode=json --remove-duplicates {src_dir}/pid-*.conv > {dst}"
+            cmd = f"cd '{src_dir}' && touch empty.conv && csgrep --mode=json --remove-duplicates *.conv > '{dst}'"
             
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]
