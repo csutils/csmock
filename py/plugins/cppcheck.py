@@ -65,7 +65,7 @@ class Plugin:
         props.env["CSWRAP_TIMEOUT_FOR"] += ":cppcheck"
         props.cswrap_filters += ["csgrep --mode=json --invert-match \
 --checker CPPCHECK_WARNING \
---event 'cppcheckError|internalAstError|preprocessorErrorDirective|syntaxError'"]
+--event 'cppcheckError|internalAstError|preprocessorErrorDirective|syntaxError|unknownMacro'"]
 
         if args.cppcheck_add_flag:
             # propagate custom cppcheck flags
