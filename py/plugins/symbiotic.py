@@ -99,7 +99,9 @@ class Plugin:
                 "--skip-ld-linux",
                 "/usr/bin/csexec-symbiotic",
                 "-l", SYMBIOTIC_CAPTURE_DIR,
-                "-s", f"--prp=memsafety --timeout={timeout} --instrumentation-timeout={timeout} --slicer-timeout={timeout}"]
+                "-s", f"--timeout={timeout} --slicer-timeout={timeout} "\
+                      f"--instrumentation-timeout={timeout} --debug=all "\
+                      f"--prp=memsafety"]
 
         # append custom args if specified
         # FIXME: what about single arguments with whitespaces?
