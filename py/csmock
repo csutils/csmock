@@ -99,7 +99,8 @@ CSEXEC_ENABLE_FLAG = "-Wl,--dynamic-linker,/usr/bin/csexec-loader"
 # static arguments passed to bld2repo
 BLD2REPO_ARGS = [
         "--koji-host", "https://brewhub.engineering.redhat.com/brewhub",
-        "--koji-storage-host", "http://download.devel.redhat.com/brewroot"]
+        "--koji-storage-host", "http://download.devel.redhat.com/brewroot",
+        "--mbs-host", "https://mbs.engineering.redhat.com"]
 
 
 def find_missing_pkgs(pkgs, results, mock):
