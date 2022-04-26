@@ -318,9 +318,16 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return (self.exec_mock_cmd(cmd, quiet=quiet) == 0)
 
     def install_deps(self, srpm, quiet=True):
-        cmd = ["--installdeps", srpm]
+        cmd_add = []
         for url in extra_build_repos(self.results, srpm):
-            cmd += ["--addrepo", url]
+            cmd_add += ["--addrepo", url]
+
+        if re.match("^.*\\.module\\+el.*\\.src\\.rpm$", srpm):
+            # we need to install "module-build-macros" first for a modular build
+            cmd = ["--install", "module-build-macros"] + cmd_add
+            self.exec_mock_cmd(cmd, quiet=quiet)
+
+        cmd = ["--installdeps", srpm] + cmd_add
         return (self.exec_mock_cmd(cmd, quiet=quiet) == 0)
 
     def emergency_install_deps(self, srpm):
