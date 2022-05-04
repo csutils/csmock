@@ -481,6 +481,7 @@
 "UNCAUGHT_EXCEPT","exception_thrown","CWE-248"
 "UNCAUGHT_EXCEPT","rethrow","CWE-248"
 "UNEXPECTED_CONTROL_FLOW","do_while_false_condition","CWE-398"
+"UNICONTROL_WARNING","warning","CWE-94"
 "UNINIT_CTOR","member_not_init_in_gen_ctor","CWE-456"
 "UNINIT_CTOR","uninit_member","CWE-456"
 "UNINIT","uninit_use","CWE-457"
