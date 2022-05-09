@@ -323,7 +323,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             cmd_add += ["--addrepo", url]
 
         if re.match("^.*\\.module\\+el.*\\.src\\.rpm$", srpm):
-            # we need to install "module-build-macros" first for a modular build
+            # we need to reinstall "module-build-macros" first for a modular build
+            self.exec_mock_cmd(["--remove", "module-build-macros"], quiet=quiet)
             cmd = ["--install", "module-build-macros"] + cmd_add
             self.exec_mock_cmd(cmd, quiet=quiet)
 
