@@ -68,7 +68,7 @@
 "COMPILER_WARNING","warning[-Wformat-overflow]","CWE-676"
 "COMPILER_WARNING","warning[-Wformat-security]","CWE-134"
 "COMPILER_WARNING","warning[-Wfree-nonheap-object]","CWE-590"
-"COMPILER_WARNING","warning[-Wignored-qualifiers]","CWE-704"
+"COMPILER_WARNING","warning[-Wignored-qualifiers]","CWE-1164"
 "COMPILER_WARNING","warning[-Wimplicit-fallthrough]","CWE-484"
 "COMPILER_WARNING","warning[-Wimplicit-function-declaration]","CWE-686"
 "COMPILER_WARNING","warning[-Wimplicit-int]","CWE-573"
