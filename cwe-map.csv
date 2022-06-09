@@ -338,7 +338,7 @@
 "MISSING_BREAK","fallthrough","CWE-484"
 "MISSING_LOCK","missing_lock","CWE-667"
 "MISSING_MOVE_ASSIGNMENT","missing_move_assignment","CWE-710"
-"MISSING_RETURN","missing_return","CWE-710"
+"MISSING_RETURN","missing_return","CWE-393"
 "NEGATIVE_RETURNS","negative_returns","CWE-394"
 "NEGATIVE_RETURNS","var_tested_neg","CWE-394"
 "NESTING_INDENT_MISMATCH","dangling_else","CWE-483"
