@@ -383,7 +383,7 @@ key event" + DEFAULT_HELP_SUFFIX)
 
     # check whether we are in a git repository
     try:
-        git_repo_args = inspect.getargspec(git.Repo.__init__).args
+        git_repo_args = inspect.getfullargspec(git.Repo.__init__).args
         if 'search_parent_directories' in git_repo_args:
             # search_parent_directories=True was the default behavior until
             # the arg was actually introduced (and we would like to keep it)
