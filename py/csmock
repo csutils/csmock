@@ -1151,7 +1151,8 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                 # install optional packages (if any)
                 if props.install_opt_pkgs:
-                    mock.try_install(props.install_opt_pkgs)
+                    for pkg in props.install_opt_pkgs:
+                        mock.try_install([pkg])
                     # just to update rpm-list-mock.txt
                     find_missing_pkgs([], results, mock)
 
