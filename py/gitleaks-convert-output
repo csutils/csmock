@@ -14,9 +14,11 @@ def emit(str):
     print(str, end="")
 
 
-def emit_if_present(node, key, tpl):
+def emit_if_present(node, key, tpl, nospace=False):
     if key in node:
         val = node[key]
+        if nospace:
+            val = val.replace(" ", "_")
         emit(tpl % val)
 
 
@@ -27,7 +29,7 @@ def parse_node(node):
     emit_if_present(node, "lineNumber", ":%s")
 
     emit(": warning")
-    emit_if_present(node, "rule", "[%s]")
+    emit_if_present(node, "rule", "[%s]", nospace=True)
     emit_if_present(node, "tags", ": %s")
 
     if "line" in node:
