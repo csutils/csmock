@@ -17,17 +17,18 @@
 
 import csmock.common.util
 
+import os
 import re
 import shutil
 
 
 GITLEAKS_SCAN_DIR = "/builddir/build/BUILD"
 
-GITLEAKS_OUTPUT = "/builddir/gitleaks-capture.js"
+GITLEAKS_OUTPUT = "/builddir/gitleaks-capture.sarif"
 
 GITLEAKS_LOG = "/builddir/gitleaks-capture.log"
 
-FILTER_CMD = "gitleaks-convert-output '%s' '%s' | csgrep --mode=json > '%s'"
+FILTER_CMD = "csgrep '%s' --mode=json > '%s'"
 
 
 class PluginProps:
@@ -47,8 +48,8 @@ class Plugin:
 
     def init_parser(self, parser):
         parser.add_argument(
-            "--gitleaks-bin-url", default="https://nexus.corp.redhat.com/repository/infosec-raw/gitleaks/releases/linux/gitleaks-v7.5.0",
-            help="URL to download gitleaks binary executable from")
+            "--gitleaks-bin-url", default="https://github.com/zricethezav/gitleaks/releases/download/v8.14.0/gitleaks_8.14.0_linux_x64.tar.gz",
+            help="URL to download gitleaks binary executable (in a .tar.gz) from")
 
         parser.add_argument(
             "--gitleaks-config",
@@ -63,18 +64,28 @@ class Plugin:
 
         # fetch gitleaks using the given URL
         def fetch_gitleaks_hook(results):
-            gitleaks_bin = "%s/gitleaks" % results.tmpdir
+            # fetch .tar.gz
+            gitleaks_tgz = os.path.join(results.tmpdir, "gitleaks.tgz")
             url = args.gitleaks_bin_url
-            ec = results.exec_cmd(['curl', '-o', gitleaks_bin, url])
+            ec = results.exec_cmd(['curl', '-Lfsvo', gitleaks_tgz, url])
             if 0 != ec:
-                results.error("failed to download gitleask binary executable: %s" % url)
+                results.error("failed to download gitleaks binary executable: %s" % url)
                 return ec
 
-            ec = results.exec_cmd(['chmod', '0755', gitleaks_bin])
+            # extract the binary executable
+            ec = results.exec_cmd(['tar', '-C', results.tmpdir, '-xvzf', gitleaks_tgz, 'gitleaks'])
             if 0 != ec:
+                results.error("failed to extract gitleaks binary executable from .tar.gz: %s" % url)
                 return ec
 
-            (ec, out) = results.get_cmd_output([gitleaks_bin, '--version'], shell=False)
+            # check whether we have eXecute access
+            gitleaks_bin = os.path.join(results.tmpdir, "gitleaks")
+            if not os.access(gitleaks_bin, os.X_OK):
+                results.error("gitleaks binary is not executable: %s" % gitleaks_bin)
+                return 2
+
+            # query version of gitleaks
+            (ec, out) = results.get_cmd_output([gitleaks_bin, 'version'], shell=False)
             if 0 != ec:
                 return ec
 
@@ -82,7 +93,7 @@ class Plugin:
             results.ini_writer.append("analyzer-version-gitleaks", ver)
 
             props.copy_in_files += [gitleaks_bin]
-            cmd = "%s --no-git --path=%s --report=%s" % (gitleaks_bin, GITLEAKS_SCAN_DIR, GITLEAKS_OUTPUT)
+            cmd = "%s detect --no-git --source=%s --report-path=%s --report-format=sarif" % (gitleaks_bin, GITLEAKS_SCAN_DIR, GITLEAKS_OUTPUT)
             props.copy_out_files += [GITLEAKS_OUTPUT, GITLEAKS_LOG]
 
             if args.gitleaks_config is not None:
@@ -100,7 +111,7 @@ class Plugin:
         def filter_hook(results):
             src = results.dbgdir_raw + GITLEAKS_OUTPUT
             dst = "%s/gitleaks-capture.js" % results.dbgdir_uni
-            cmd = FILTER_CMD % (GITLEAKS_SCAN_DIR, src, dst)
+            cmd = FILTER_CMD % (src, dst)
             return results.exec_cmd(cmd, shell=True)
 
         props.post_process_hooks += [filter_hook]

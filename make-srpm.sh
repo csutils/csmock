@@ -303,7 +303,6 @@ make install DESTDIR="\$RPM_BUILD_ROOT"
 %{python3_sitelib}/csmock/plugins/__pycache__/divine.*
 
 %files -n csmock-plugin-gitleaks
-%{_bindir}/gitleaks-convert-output
 %{python3_sitelib}/csmock/plugins/gitleaks.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/gitleaks.*
 
