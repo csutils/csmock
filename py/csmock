@@ -193,7 +193,7 @@ class MockWrapper:
         self.mock_profile = props.mock_profile
         self.mock_root_override = props.mock_root_override
         lock = f"/tmp/.csmock-" + (self.mock_profile if not self.mock_root_override else
-                                   self.mock_root_override)
+                                   self.mock_root_override).replace('/','_')
         self.lock_file = f"{lock}.lock"
         self.meta_lock_file = f"{lock}.metalock"
         self.pid = os.getpid()
@@ -998,7 +998,10 @@ key event (defaults to 3).")
 
     # make sure that we have a configuration for the selected mock profile
     props.mock_profile = args.mock_profile
-    require_file(parser, "/etc/mock/%s.cfg" % props.mock_profile)
+    if props.mock_profile.endswith(".cfg"):
+        require_file(parser, props.mock_profile)
+    else:
+        require_file(parser, "/etc/mock/%s.cfg" % props.mock_profile)
     if args.base_mock_profile is None:
         props.base_mock_profile = props.mock_profile
     else:
