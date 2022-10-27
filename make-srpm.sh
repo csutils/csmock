@@ -85,7 +85,7 @@ License:    GPLv3+
 URL:        https://github.com/csutils/%{name}
 Source0:    https://github.com/csutils/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.xz
 
-BuildRequires: cmake
+BuildRequires: cmake3
 BuildRequires: help2man
 
 %if 0%{?rhel} == 7
@@ -242,7 +242,7 @@ This package contains the unicontrol plug-in for csmock.
 %build
 mkdir csmock_build
 cd csmock_build
-%cmake \\
+%cmake3 \\
     -DVERSION='%{name}-%{version}-%{release}' \\
     -DPYTHON_EXECUTABLE='%{__python3}' \\
     -B. -S.. ..
