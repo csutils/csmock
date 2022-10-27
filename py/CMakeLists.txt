@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Red Hat, Inc.
+# Copyright (C) 2014-2022 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -15,29 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
-include(FindPythonInterp)
-if(NOT ${PYTHONINTERP_FOUND})
-    message(FATAL_ERROR "
-unable to find python interpreter")
-endif()
+find_package(Python3 REQUIRED)
 
-execute_process(COMMAND ${PYTHON_EXECUTABLE}
-    -c "from distutils.sysconfig import get_python_lib
-print(get_python_lib())"
-    RESULT_VARIABLE PYTHON_SITELIB_STATUS
-    OUTPUT_VARIABLE PYTHON_SITELIB
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-if(NOT "${PYTHON_SITELIB_STATUS}" EQUAL 0)
-    message(FATAL_ERROR "
-failed to query PYTHON_SITELIB")
-endif()
-
-set(PLUGIN_DIR ${PYTHON_SITELIB}/csmock/plugins)
+set(PLUGIN_DIR "${Python3_SITELIB}/csmock/plugins")
 message(STATUS "PLUGIN_DIR: ${PLUGIN_DIR}")
 
 # install common python modules to the csmock/common subdirectory
 set(src_dir "${CMAKE_CURRENT_SOURCE_DIR}")
-set(dst_dir "${PYTHON_SITELIB}/csmock")
+set(dst_dir "${Python3_SITELIB}/csmock")
 install(FILES ${src_dir}/__init__.py        DESTINATION ${dst_dir})
 install(FILES ${src_dir}/common/__init__.py DESTINATION ${dst_dir}/common)
 install(FILES ${src_dir}/common/cflags.py   DESTINATION ${dst_dir}/common)
