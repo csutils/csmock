@@ -76,6 +76,10 @@ if [[ "$1" != "--generate-spec" ]]; then
 fi
 
 cat > "$SPEC" << EOF
+# disable in source builds on EPEL <9
+%undefine __cmake_in_source_build
+%undefine __cmake3_in_source_build
+
 Name:       $PKG
 Version:    $VER
 Release:    1%{?dist}
@@ -240,17 +244,13 @@ This package contains the unicontrol plug-in for csmock.
 %setup -q
 
 %build
-mkdir csmock_build
-cd csmock_build
-%cmake3 \\
+%cmake3                                       \\
     -DVERSION='%{name}-%{version}-%{release}' \\
-    -DPython3_EXECUTABLE='%{__python3}' \\
-    -B. -S.. ..
-make %{?_smp_mflags} VERBOSE=yes
+    -DPython3_EXECUTABLE='%{__python3}'
+%cmake3_build
 
 %install
-cd csmock_build
-make install DESTDIR="\$RPM_BUILD_ROOT"
+%cmake3_install
 
 # needed to create the csmock RPM
 %files
