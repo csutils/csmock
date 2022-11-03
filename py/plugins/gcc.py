@@ -141,6 +141,9 @@ class Plugin:
             # leak checker is currently too picky even for standard libs
             props.env["ASAN_OPTIONS"] = "detect_leaks=0"
 
+            # detect usage of already destroyed stack variables
+            props.env["ASAN_OPTIONS"] += ",detect_stack_use_after_return=1"
+
             # -fsanitize=address does not seem to be supported with -static
             self.flags.remove_flags(["-static"])
 
