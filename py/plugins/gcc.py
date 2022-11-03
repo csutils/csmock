@@ -30,6 +30,7 @@ CSMOCK_GCC_WRAPPER_PATH = '/usr/bin/%s' % CSMOCK_GCC_WRAPPER_NAME
 CSMOCK_GCC_WRAPPER_TEMPLATE = '#!/bin/bash\n' \
                               'exec %s "$@"'
 
+SANITIZER_CAPTURE_DIR = "/builddir/gcc-sanitizer-capture"
 
 class PluginProps:
     def __init__(self):
@@ -58,6 +59,13 @@ class Plugin:
         props.run_check = True
         props.install_pkgs += pkgs
         self.flags.append_flags(flags)
+
+        # FIXME: too hacky, strip lib prefix from the name
+        name = pkgs[0][3:]
+
+        # save logs to specified files
+        props.env[f"{name.upper()}_OPTIONS"] = \
+                  f"log_path={SANITIZER_CAPTURE_DIR}/{name}"
 
         # GCC sanitizers usually do not work well with valgrind
         props.install_pkgs_blacklist += ["valgrind"]
@@ -139,7 +147,7 @@ class Plugin:
             self.enable_sanitize(props, ["libasan"], ["-fsanitize=address"])
 
             # leak checker is currently too picky even for standard libs
-            props.env["ASAN_OPTIONS"] = "detect_leaks=0"
+            props.env["ASAN_OPTIONS"] += ",detect_leaks=0"
 
             # detect usage of already destroyed stack variables
             props.env["ASAN_OPTIONS"] += ",detect_stack_use_after_return=1"
@@ -163,7 +171,7 @@ class Plugin:
             self.enable_sanitize(props, ["libubsan", "libubsan-static"], ["-fsanitize=undefined"])
 
             # print full stack traces
-            props.env["UBSAN_OPTIONS"] = "print_stacktrace=1"
+            props.env["UBSAN_OPTIONS"] += ",print_stacktrace=1"
 
         # serialize custom compiler flags
         if self.flags.append_custom_flags(args):
@@ -180,6 +188,15 @@ class Plugin:
                 parser.error("GCC sanitizers are not compatible with valgrind")
 
             self.flags.append_flags(['-g', '-fno-omit-frame-pointer'])
+
+            # create directory for sanitizer's results
+            def create_cap_dir_hook(results, mock):
+                cmd = f"mkdir -pv '{SANITIZER_CAPTURE_DIR}'"
+                return mock.exec_mockbuild_cmd(cmd)
+            props.post_depinst_hooks += [create_cap_dir_hook]
+
+            # pick the captured files when %check is complete
+            props.copy_out_files += [SANITIZER_CAPTURE_DIR]
 
         # make sure gcc is installed in the chroot
         props.install_pkgs += ["gcc"]
