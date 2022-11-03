@@ -6,8 +6,8 @@ SEC_LEVEL=$1
 shift
 
 # Debug
-echo "[DEBUG]	SEC_LEVEL = $SEC_LEVEL"
-echo "[DEBUG]	TARGET_PATH = $*"
+echo "[DEBUG]	SEC_LEVEL = $SEC_LEVEL" >&2
+echo "[DEBUG]	TARGET_PATH = $*" >&2
 
 if [[ -z "${SEC_LEVEL// }" ]]; then
 	echo "[ERROR]	SEC_LEVEL parameter is empty" >&2
