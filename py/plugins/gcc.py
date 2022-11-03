@@ -172,6 +172,9 @@ class Plugin:
         if self.sanitize and "valgrind" in props.install_pkgs:
             parser.error("GCC sanitizers are not compatible with valgrind")
 
+        # make sure gcc is installed in the chroot
+        props.install_pkgs += ["gcc"]
+
         props.enable_cswrap()
         props.cswrap_filters += \
             ["csgrep --mode=json --invert-match --checker COMPILER_WARNING --event error"]
