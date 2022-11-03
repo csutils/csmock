@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Red Hat, Inc.
+# Copyright (C) 2014-2022 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -158,6 +158,9 @@ class Plugin:
 
         if args.gcc_sanitize_undefined:
             self.enable_sanitize(props, ["libubsan", "libubsan-static"], ["-fsanitize=undefined"])
+
+            # print full stack traces
+            props.env["UBSAN_OPTIONS"] = "print_stacktrace=1"
 
         # serialize custom compiler flags
         if self.flags.append_custom_flags(args):
