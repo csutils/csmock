@@ -65,6 +65,10 @@ class Plugin:
             "--gitleaks-config",
             help="local configuration file to be used for gitleaks")
 
+        parser.add_argument(
+            "--gitleaks-refresh", action="store_true",
+            help="force download of gitleaks binary executable (in a .tar.gz) from")
+
     def handle_args(self, parser, args, props):
         if args.gitleaks_config is not None:
             self.enable()
@@ -86,11 +90,14 @@ class Plugin:
             gitleaks_tgz_name = url.split("/")[-1]
             gitleaks_tgz = os.path.join(cache_dir, gitleaks_tgz_name)
 
-            # fetch .tar.gz
-            ec = results.exec_cmd(['curl', '-Lfsvo', gitleaks_tgz, url])
-            if 0 != ec:
-                results.error("failed to download gitleaks binary executable: %s" % url)
-                return ec
+            if not args.gitleaks_refresh and os.path.exists(gitleaks_tgz):
+                results.print_with_ts("reusing previously downloaded gitleaks tarball: %s" % gitleaks_tgz)
+            else:
+                # fetch .tar.gz
+                ec = results.exec_cmd(['curl', '-Lfsvo', gitleaks_tgz, url])
+                if 0 != ec:
+                    results.error("failed to download gitleaks binary executable: %s" % url)
+                    return ec
 
             # extract the binary executable
             ec = results.exec_cmd(['tar', '-C', results.tmpdir, '-xvzf', gitleaks_tgz, 'gitleaks'])
