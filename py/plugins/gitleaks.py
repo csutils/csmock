@@ -25,6 +25,9 @@ import shutil
 # default URL to download gitleaks binary executable (in a .tar.gz) from
 GITLEAKS_BIN_URL = "https://github.com/zricethezav/gitleaks/releases/download/v8.15.1/gitleaks_8.15.1_linux_x64.tar.gz"
 
+# default directory where downloaded Gitleaks tarballs are cached across runs
+GITLEAKS_CACHE_DIR = "/var/tmp/csmock/gitleaks"
+
 GITLEAKS_SCAN_DIR = "/builddir/build/BUILD"
 
 GITLEAKS_OUTPUT = "/builddir/gitleaks-capture.sarif"
@@ -55,6 +58,10 @@ class Plugin:
             help="URL to download gitleaks binary executable (in a .tar.gz) from")
 
         parser.add_argument(
+            "--gitleaks-cache-dir", default=GITLEAKS_CACHE_DIR,
+            help="directory where downloaded Gitleaks tarballs are cached across runs")
+
+        parser.add_argument(
             "--gitleaks-config",
             help="local configuration file to be used for gitleaks")
 
@@ -67,9 +74,19 @@ class Plugin:
 
         # fetch gitleaks using the given URL
         def fetch_gitleaks_hook(results):
-            # fetch .tar.gz
-            gitleaks_tgz = os.path.join(results.tmpdir, "gitleaks.tgz")
+            cache_dir = args.gitleaks_cache_dir
+            try:
+                # make sure the cache directory exists
+                os.makedirs(cache_dir, mode=0o755, exist_ok=True)
+            except OSError:
+                results.error("failed to create gitleaks cache directory: %s" % cache_dir)
+                return 1
+
             url = args.gitleaks_bin_url
+            gitleaks_tgz_name = url.split("/")[-1]
+            gitleaks_tgz = os.path.join(cache_dir, gitleaks_tgz_name)
+
+            # fetch .tar.gz
             ec = results.exec_cmd(['curl', '-Lfsvo', gitleaks_tgz, url])
             if 0 != ec:
                 results.error("failed to download gitleaks binary executable: %s" % url)
