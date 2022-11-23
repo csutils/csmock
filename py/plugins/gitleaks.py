@@ -22,6 +22,9 @@ import re
 import shutil
 
 
+# default URL to download gitleaks binary executable (in a .tar.gz) from
+GITLEAKS_BIN_URL = "https://github.com/zricethezav/gitleaks/releases/download/v8.15.1/gitleaks_8.15.1_linux_x64.tar.gz"
+
 GITLEAKS_SCAN_DIR = "/builddir/build/BUILD"
 
 GITLEAKS_OUTPUT = "/builddir/gitleaks-capture.sarif"
@@ -48,7 +51,7 @@ class Plugin:
 
     def init_parser(self, parser):
         parser.add_argument(
-            "--gitleaks-bin-url", default="https://github.com/zricethezav/gitleaks/releases/download/v8.14.0/gitleaks_8.14.0_linux_x64.tar.gz",
+            "--gitleaks-bin-url", default=GITLEAKS_BIN_URL,
             help="URL to download gitleaks binary executable (in a .tar.gz) from")
 
         parser.add_argument(
