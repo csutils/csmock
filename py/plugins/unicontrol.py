@@ -67,8 +67,7 @@ class Plugin:
         props.pre_mock_hooks += [write_toolver_hook]
 
         # dependency of UNICONTROL_SCRIPT
-        props.install_pkgs += ["python3-six"]
-        props.install_opt_pkgs += ["python3-magic"]
+        props.install_opt_pkgs += ["python3-magic", "python3-six"]
 
         if props.mock_profile.startswith("rhel-7"):
             # do not break el7 builds by unexpectedly making python3 available
