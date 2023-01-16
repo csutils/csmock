@@ -209,6 +209,14 @@ Requires: cswrap
 %description -n csmock-plugin-smatch
 This package contains the smatch plug-in for csmock.
 
+%package -n csmock-plugin-snyk
+Summary: csmock plug-in providing the support for snyk
+Requires: csdiff > 2.8.0
+Requires: csmock-common
+
+%description -n csmock-plugin-snyk
+This package contains the snyk plug-in for csmock.
+
 %package -n csmock-plugin-strace
 Summary: csmock plug-in providing the support for strace
 Requires: csexec
@@ -325,6 +333,10 @@ This package contains the unicontrol plug-in for csmock.
 %files -n csmock-plugin-smatch
 %{python3_sitelib}/csmock/plugins/smatch.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/smatch.*
+
+%files -n csmock-plugin-snyk
+%{python3_sitelib}/csmock/plugins/snyk.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/snyk.*
 
 %files -n csmock-plugin-strace
 %{python3_sitelib}/csmock/plugins/strace.py*
