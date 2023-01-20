@@ -4,12 +4,14 @@ export LC_ALL="C"
 # implementation of the script that filters shell scripts
 filter_shell_scripts() {
     for i in "$@"; do
+        # match by file name suffix
         if [[ "$i" =~ ^.*\.(ash|bash|bats|dash|ksh|sh)$ ]]; then
             readlink -f "$i"
             continue
         fi
 
-        RE_SHEBANG="^\\s*((\\#|\\!)|(\\#\\s*\\!)|(\\!\\s*\\#))\\s*(\\/usr(\\/local)?)?\\/bin\\/(env\\s+)?(ash|bash|bats|dash|ksh|sh)\\b"
+        # match by shebang
+        RE_SHEBANG='^\s*((\#|\!)|(\#\s*\!)|(\!\s*\#))\s*(\/usr(\/local)?)?\/bin\/(env\s+)?(ash|bash|bats|dash|ksh|sh)\b'
         if head -n1 "$i" | grep --text -E "$RE_SHEBANG" >/dev/null; then
             readlink -f "$i"
         fi
