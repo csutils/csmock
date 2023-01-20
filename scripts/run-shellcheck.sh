@@ -11,7 +11,7 @@ filter_shell_scripts() {
         fi
 
         # match by shebang
-        RE_SHEBANG='^\s*((\#|\!)|(\#\s*\!)|(\!\s*\#))\s*(\/usr(\/local)?)?\/bin\/(env\s+)?(ash|bash|bats|dash|ksh|sh)\b'
+        RE_SHEBANG='^\s*((\#|\!)|(\#\s*\!)|(\!\s*\#))\s*(/usr(/local)?)?/bin/(env\s+)?(ash|bash|bats|dash|ksh|sh)\b'
         if head -n1 "$i" | grep --text -E "$RE_SHEBANG" >/dev/null; then
             readlink -f "$i"
         fi
