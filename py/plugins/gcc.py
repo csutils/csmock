@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2022 Red Hat, Inc.
+# Copyright (C) 2014-2023 Red Hat, Inc.
 #
 # This file is part of csmock.
 #
@@ -187,7 +187,8 @@ class Plugin:
             if "valgrind" in props.install_pkgs:
                 parser.error("GCC sanitizers are not compatible with valgrind")
 
-            self.flags.append_flags(['-g', '-fno-omit-frame-pointer'])
+            self.flags.append_flags(['-g', '-fno-omit-frame-pointer',
+                                     '-fsanitize-recover=all'])
 
             # create directory for sanitizer's results
             def create_cap_dir_hook(results, mock):
