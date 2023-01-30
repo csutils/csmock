@@ -96,6 +96,9 @@ class Plugin:
             help="set $CC and $CXX to gcc and g++, respectively, for build")
 
         # -fsanitize={address,leak} cannot be combined with -fsanitize=thread
+        # generally, more sanitizer libraries cannot be combined because
+        # the collection results would be unreliable:
+        # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94328
         group = parser.add_mutually_exclusive_group()
         group.add_argument(
             "--gcc-sanitize-address", action="store_true",
@@ -109,7 +112,7 @@ class Plugin:
             "--gcc-sanitize-thread", action="store_true",
             help="enable %%check and compile with -fsanitize=thread")
 
-        parser.add_argument(
+        group.add_argument(
             "--gcc-sanitize-undefined", action="store_true",
             help="enable %%check and compile with -fsanitize=undefined")
 
