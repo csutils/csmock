@@ -30,32 +30,32 @@ match() {
     grep "$@" > /dev/null
 }
 
-DST="`readlink -f "$PWD"`"
+DST="$(readlink -f "$PWD")"
 
-REPO="`git rev-parse --show-toplevel`"
+REPO="$(git rev-parse --show-toplevel)"
 test -d "$REPO" || die "not in a git repo"
 
-NV="`git describe --tags`"
+NV="$(git describe --tags)"
 echo "$NV" | match "^$PKG-" || die "release tag not found"
 
-VER="`echo "$NV" | sed "s/^$PKG-//"`"
+VER="$(echo "$NV" | sed "s/^$PKG-//")"
 
-TIMESTAMP="`git log --pretty="%cd" --date=iso -1 \
-    | tr -d ':-' | tr ' ' . | cut -d. -f 1,2`"
+TIMESTAMP="$(git log --pretty="%cd" --date=iso -1 \
+    | tr -d ':-' | tr ' ' . | cut -d. -f 1,2)"
 
-VER="`echo "$VER" | sed "s/-.*-/.$TIMESTAMP./"`"
+VER="$(echo "$VER" | sed "s/-.*-/.$TIMESTAMP./")"
 
-BRANCH="`git rev-parse --abbrev-ref HEAD`"
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 test -n "$BRANCH" || die "failed to get current branch name"
 test "main" = "${BRANCH}" || VER="${VER}.${BRANCH//[\/-]/_}"
-test -z "`git diff HEAD`" || VER="${VER}.dirty"
+test -z "$(git diff HEAD)" || VER="${VER}.dirty"
 
 NV="${PKG}-${VER}"
 printf "%s: preparing a release of \033[1;32m%s\033[0m\n" "$SELF" "$NV"
 
 SPEC="$PKG.spec"
 if [[ "$1" != "--generate-spec" ]]; then
-    TMP="`mktemp -d`"
+    TMP="$(mktemp -d)"
     trap "rm -rf '$TMP'" EXIT
     cd "$TMP" >/dev/null || die "mktemp failed"
 
