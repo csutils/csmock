@@ -264,12 +264,14 @@ This package contains the unicontrol plug-in for csmock.
 %files
 
 %files -n csbuild
+%license COPYING
 %{_bindir}/csbuild
 %{_mandir}/man1/csbuild.1*
 %{_datadir}/csbuild/scripts/run-scan.sh
-%doc COPYING
 
 %files -n csmock-common
+%license COPYING
+%doc README
 %dir %{_datadir}/csmock
 %dir %{_datadir}/csmock/scripts
 %dir %{python3_sitelib}/csmock
@@ -287,7 +289,6 @@ This package contains the unicontrol plug-in for csmock.
 %{python3_sitelib}/csmock/__pycache__/__init__.*
 %{python3_sitelib}/csmock/plugins/__pycache__/__init__.*
 %{python3_sitelib}/csmock/plugins/__pycache__/gcc.*
-%doc COPYING README
 
 %files -n csmock-plugin-bandit
 %{_datadir}/csmock/scripts/run-bandit.sh
