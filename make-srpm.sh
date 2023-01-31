@@ -249,7 +249,7 @@ Requires: csmock-common
 This package contains the unicontrol plug-in for csmock.
 
 %prep
-%setup -q
+%autosetup
 
 %build
 %cmake3                                       \\
