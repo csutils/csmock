@@ -2,9 +2,9 @@
 
 need_for_build() {
     while test -n "$1"; do
-        if test "x--suffix" = "x$1"; then
+        if test "--suffix" = "$1"; then
             shift
-            if test "x_RAWBUILD" = "x$1"; then
+            if test "_RAWBUILD" = "$1"; then
                 return 0
             fi
         fi
