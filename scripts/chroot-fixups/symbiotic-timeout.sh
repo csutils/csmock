@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 for file in /opt/symbiotic/lib/symbioticpy/symbiotic/{transform,verifier}.py; do
     [ -w ${file} ] || continue
