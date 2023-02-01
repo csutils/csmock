@@ -128,9 +128,9 @@ then
       # lock_failed
     fi
   done
-fi' > /usr/bin/$1
+fi' > "/usr/bin/$1"
 
-  if ! chmod +x /usr/bin/$1
+  if ! chmod +x "/usr/bin/$1"
   then
     echo "ERROR: INFER: install-infer.sh: Failed to add +x permission to /usr/bin/$1"
     exit 1
@@ -145,7 +145,7 @@ then
   exit 1
 fi
 
-if ! tar -xf $1 -C /opt
+if ! tar -xf "$1" -C /opt
 then
   echo "ERROR: INFER: install-infer.sh: Failed to extract an Infer archive $1"
   exit 1
@@ -155,13 +155,13 @@ fi
 
 INFER_DIR=$(ls /opt | grep infer-linux | head -n 1)
 
-if ! rm $1
+if ! rm "$1"
 then
   echo "ERROR: INFER: install-infer.sh: Failed to delete an Infer archive $1"
   exit 1
 fi
 
-if [ -f /usr/bin/infer ] || ln -sf /opt/${INFER_DIR}/bin/infer /usr/bin/infer
+if [ -f /usr/bin/infer ] || ln -sf "/opt/${INFER_DIR}/bin/infer" /usr/bin/infer
 then
   echo "NOTE: INFER: install-infer.sh: Infer symlink created successfully"
 else
@@ -179,7 +179,7 @@ else
 fi
 
 # remove possible leftovers from previous run
-rm -rf /tmp/infer.lockdir $2 > /dev/null 2>&1
+rm -rf /tmp/infer.lockdir "$2" > /dev/null 2>&1
 
 # create wrappers for compilers, this script is executed after all the dependencies are installed,
 # so all the necessary compilers should be already installed
@@ -211,9 +211,9 @@ declare -a ccompilers=( "8cc"
 
 for c in "${ccompilers[@]}"
 do
-  if [ -f /usr/bin/${c}-original ] || mv /usr/bin/${c} /usr/bin/${c}-original > /dev/null 2>&1
+  if [ -f "/usr/bin/${c}-original" ] || mv "/usr/bin/${c}" "/usr/bin/${c}-original" > /dev/null 2>&1
   then
-    create_wrapper ${c} cc $2
+    create_wrapper "${c}" cc "$2"
     echo "NOTE: INFER: install-infer.sh: /usr/bin/${c} wrapper created successfully"
   fi
 done
