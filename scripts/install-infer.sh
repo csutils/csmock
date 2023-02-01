@@ -7,7 +7,7 @@ create_wrapper()
 {
   # $1 -- name of a compiler
   # $2 -- type of a compiler for Infer's --force-integration option
-  #	      -- 'cc' for C-like languages
+  #       -- 'cc' for C-like languages
   #       -- 'javac' for Java
   # $3 -- infer-out path
 
@@ -212,8 +212,8 @@ declare -a ccompilers=( "8cc"
 for c in "${ccompilers[@]}"
 do
   if [ -f /usr/bin/${c}-original ] || mv /usr/bin/${c} /usr/bin/${c}-original > /dev/null 2>&1
-	then
-		create_wrapper ${c} cc $2
+  then
+    create_wrapper ${c} cc $2
     echo "NOTE: INFER: install-infer.sh: /usr/bin/${c} wrapper created successfully"
-	fi
+  fi
 done
