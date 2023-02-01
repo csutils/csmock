@@ -153,7 +153,8 @@ else
   echo "NOTE: INFER: install-infer.sh: Infer archive extracted successfully"
 fi
 
-INFER_DIR=$(ls /opt | grep infer-linux | head -n 1)
+INFER_DIRS=(/opt/infer-linux*)
+INFER_DIR=${INFER_DIRS[0]}
 
 if ! rm "$1"
 then
@@ -161,18 +162,18 @@ then
   exit 1
 fi
 
-if [ -f /usr/bin/infer ] || ln -sf "/opt/${INFER_DIR}/bin/infer" /usr/bin/infer
+if [ -f /usr/bin/infer ] || ln -sf "${INFER_DIR}/bin/infer" /usr/bin/infer
 then
   echo "NOTE: INFER: install-infer.sh: Infer symlink created successfully"
 else
-  echo "ERROR: INFER: install-infer.sh: Failed to create a symlink to /opt/${INFER_DIR}/bin/infer"
+  echo "ERROR: INFER: install-infer.sh: Failed to create a symlink to ${INFER_DIR}/bin/infer"
   exit 1
 fi
 
 # test if the symlink works
 if ! infer --version > /dev/null 2>&1
 then
-  echo "ERROR: INFER: install-infer.sh: Failed to run 'infer --version' to test a symlink to /opt/${INFER_DIR}/bin/infer"
+  echo "ERROR: INFER: install-infer.sh: Failed to run 'infer --version' to test a symlink to ${INFER_DIR}/bin/infer"
   exit 1
 else
   echo "NOTE: INFER: install-infer.sh: Infer installed successfully"
