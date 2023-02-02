@@ -1,0 +1,11 @@
+summary: Test analysis using Clang analyzer
+test: ./test.sh
+framework: beakerlib
+environment:
+      TEST_PACKAGE: units
+      TEST_TOOL: clang
+component:
+  - csmock-plugin-clang
+recommend:
+  - csmock-plugin-clang
+duration: 1h
