@@ -1,0 +1,25 @@
+---
+name: Coverity
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  coverity:
+    if: github.repository == 'csutils/csmock'
+    name: Coverity Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Coverity scan
+        uses: vapier/coverity-scan-action@v1
+        with:
+          build_language: other  # other is for Python, etc...
+          email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+          token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          project: csutils/csmock
+          command: --no-command --fs-capture-search ./py ./scripts
