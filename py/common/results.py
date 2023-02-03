@@ -260,7 +260,8 @@ class IniWriter:
         self.results.log_fd.write("scan.ini: " + text)
 
     def append(self, key, value):
-        self.write("%s = %s\n" % (key, value))
+        val_str = str(value).strip()
+        self.write("%s = %s\n" % (key, val_str))
 
 
 def transform_results(js_file, results):
