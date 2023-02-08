@@ -114,7 +114,7 @@ class Plugin:
 
             # parse and record the version of snyk
             ver = out.split(" ")[0]
-            results.ini_writer.append("analyzer-version-snyk", ver)
+            results.ini_writer.append("analyzer-version-snyk-code", ver)
 
             # copy snyk binary into the chroot
             props.copy_in_files += [self.snyk_bin]
