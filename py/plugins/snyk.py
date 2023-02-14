@@ -74,7 +74,7 @@ class Plugin:
         # check whether we have access to snyk authentication token
         self.auth_token_src = os.path.expanduser(args.snyk_auth)
         if not os.access(self.auth_token_src, os.R_OK):
-            results.error("unable to read snyk authentication token: %s" % self.auth_token_src)
+            parser.error("unable to read snyk authentication token: %s" % self.auth_token_src)
 
         # fetch snyk using the given URL
         def fetch_snyk_hook(results):
