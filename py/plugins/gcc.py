@@ -56,7 +56,6 @@ class Plugin:
     def enable_sanitize(self, props, pkgs, flags):
         self.enabled = True
         self.sanitize = True
-        props.run_check = True
         props.install_pkgs += pkgs
         self.flags.append_flags(flags)
 
@@ -158,8 +157,28 @@ class Plugin:
             # -fsanitize=address does not seem to be supported with -static
             self.flags.remove_flags(["-static"])
 
+            # preload ASAN for %check
+            def run_asan_hook(results, mock, props):
+                cmd = "echo /usr/lib64/libasan.so.*.* > /etc/ld.so.preload"
+                rv = mock.exec_chroot_cmd(cmd)
+                if 0 != rv:
+                    results.error(f"ASAN plug-in: ASAN preloading failed with exit code {rv}")
+                    return rv
+
+                # FIXME: hack
+                extra_env = {"ASAN_OPTIONS": props.env["ASAN_OPTIONS"] + ",verify_asan_link_order=0"}
+                ec = mock.exec_rpmbuild_bi(props, extra_env=extra_env)
+                if 0 != ec:
+                    results.error(f"ASAN plug-in: %install or %check failed with exit code {rv}")
+                return ec
+
+            props.post_install_hooks += [run_asan_hook]
+
         if args.gcc_sanitize_leak:
             self.enable_sanitize(props, ["liblsan"], ["-fsanitize=leak"])
+
+            # execute %check section
+            props.run_check = True
 
             # -fsanitize=leak does not seem to work well with -static
             self.flags.remove_flags(["-static"])
@@ -167,11 +186,17 @@ class Plugin:
         if args.gcc_sanitize_thread:
             self.enable_sanitize(props, ["libtsan"], ["-fsanitize=thread"])
 
+            # execute %check section
+            props.run_check = True
+
             # -fsanitize=thread does not seem to be supported with -static
             self.flags.remove_flags(["-static"])
 
         if args.gcc_sanitize_undefined:
             self.enable_sanitize(props, ["libubsan", "libubsan-static"], ["-fsanitize=undefined"])
+
+            # execute %check section
+            props.run_check = True
 
             # print full stack traces
             props.env["UBSAN_OPTIONS"] += ",print_stacktrace=1"
@@ -189,6 +214,10 @@ class Plugin:
         if self.sanitize:
             if "valgrind" in props.install_pkgs:
                 parser.error("GCC sanitizers are not compatible with valgrind")
+
+            # %check should not be enabled for ASAN
+            if args.gcc_sanitize_address:
+                assert not props.run_check
 
             self.flags.append_flags(['-g', '-fno-omit-frame-pointer',
                                      '-fsanitize-recover=all'])
