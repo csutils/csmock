@@ -1,0 +1,12 @@
+summary: Test analysis using GCC analyzer
+test: ./test.sh
+framework: beakerlib
+environment:
+      TEST_PACKAGE: units
+      TEST_TOOL: gcc
+      CSMOCK_EXTRA_OPTS: --gcc-analyze
+component:
+  - csmock
+recommend:
+  - csmock
+duration: 1h
