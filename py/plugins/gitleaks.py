@@ -34,7 +34,7 @@ GITLEAKS_OUTPUT = "/builddir/gitleaks-capture.sarif"
 
 GITLEAKS_LOG = "/builddir/gitleaks-capture.log"
 
-FILTER_CMD = "csgrep '%s' --mode=json > '%s'"
+FILTER_CMD = "csgrep '%s' --mode=json --warning-rate-limit=%i > '%s'"
 
 
 class PluginProps:
@@ -64,6 +64,10 @@ class Plugin:
         parser.add_argument(
             "--gitleaks-config",
             help="local configuration file to be used for gitleaks")
+
+        parser.add_argument(
+            "--gitleaks-rate-limit", type=int, default=1024,
+            help="drop warnings if their count exceeds the specified limit")
 
         parser.add_argument(
             "--gitleaks-refresh", action="store_true",
@@ -138,7 +142,7 @@ class Plugin:
         def filter_hook(results):
             src = results.dbgdir_raw + GITLEAKS_OUTPUT
             dst = "%s/gitleaks-capture.js" % results.dbgdir_uni
-            cmd = FILTER_CMD % (src, dst)
+            cmd = FILTER_CMD % (src, args.gitleaks_rate_limit, dst)
             return results.exec_cmd(cmd, shell=True)
 
         props.post_process_hooks += [filter_hook]

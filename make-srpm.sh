@@ -173,6 +173,7 @@ This package contains the divine plug-in for csmock.
 
 %package -n csmock-plugin-gitleaks
 Summary: experimental csmock plug-in
+Requires: csdiff > 3.0.0
 Requires: csmock-common
 
 %description -n csmock-plugin-gitleaks
