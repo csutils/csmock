@@ -61,7 +61,7 @@ class Plugin:
             return
 
         # update scan metadata
-        def write_toolver_hook(results):
+        def write_toolver_hook(results, _props):
             results.ini_writer.append("analyzer-version-unicontrol", "0.0.2")
             return 0
         props.pre_mock_hooks += [write_toolver_hook]

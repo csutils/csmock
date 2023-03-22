@@ -81,7 +81,7 @@ class Plugin:
             return
 
         # fetch gitleaks using the given URL
-        def fetch_gitleaks_hook(results):
+        def fetch_gitleaks_hook(results, props):
             cache_dir = args.gitleaks_cache_dir
             try:
                 # make sure the cache directory exists

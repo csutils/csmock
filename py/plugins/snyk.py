@@ -77,7 +77,7 @@ class Plugin:
             parser.error("unable to read snyk authentication token: %s" % self.auth_token_src)
 
         # fetch snyk using the given URL
-        def fetch_snyk_hook(results):
+        def fetch_snyk_hook(results, props):
             cache_dir = args.snyk_cache_dir
             try:
                 # make sure the cache directory exists

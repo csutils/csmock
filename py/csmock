@@ -1117,7 +1117,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
             # run pre-mock hooks
             for hook in props.pre_mock_hooks:
-                rv = hook(results)
+                rv = hook(results, props)
                 if rv != 0:
                     results.error("pre-mock hook failed", ec=rv)
 
