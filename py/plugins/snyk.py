@@ -94,7 +94,7 @@ class Plugin:
                 results.print_with_ts("reusing previously downloaded snyk executable: %s" % self.snyk_bin)
             else:
                 # fetch the binary executable
-                ec = results.exec_cmd(['curl', '-Lfsvo', self.snyk_bin, url])
+                ec = results.exec_cmd(['curl', '-Lfso', self.snyk_bin, url])
                 if 0 != ec:
                     results.error("failed to download snyk binary executable: %s" % url)
                     return ec

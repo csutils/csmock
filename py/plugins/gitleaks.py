@@ -98,7 +98,7 @@ class Plugin:
                 results.print_with_ts("reusing previously downloaded gitleaks tarball: %s" % gitleaks_tgz)
             else:
                 # fetch .tar.gz
-                ec = results.exec_cmd(['curl', '-Lfsvo', gitleaks_tgz, url])
+                ec = results.exec_cmd(['curl', '-Lfso', gitleaks_tgz, url])
                 if 0 != ec:
                     results.error("failed to download gitleaks binary executable: %s" % url)
                     return ec
