@@ -102,6 +102,7 @@ BuildRequires: python%{python3_pkgversion}-devel
 Requires: csmock-common                 >= %{version}-%{release}
 Requires: csmock-plugin-clang           >= %{version}-%{release}
 Requires: csmock-plugin-cppcheck        >= %{version}-%{release}
+Requires: csmock-plugin-gitleaks        >= %{version}-%{release}
 Requires: csmock-plugin-shellcheck      >= %{version}-%{release}
 
 BuildArch: noarch

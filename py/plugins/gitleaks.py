@@ -41,6 +41,9 @@ class PluginProps:
     def __init__(self):
         self.description = "Tool for finding secrets in source code."
 
+        # include this plug-in in `csmock --all-tools`
+        self.stable = True
+
 
 class Plugin:
     def __init__(self):
