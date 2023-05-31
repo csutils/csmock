@@ -124,7 +124,7 @@ Tool for plugging static analyzers into the build process, free of mock.
 
 %package -n csmock-common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
-Requires: csdiff
+Requires: csdiff > 3.0.2
 Requires: csgcca
 Requires: cswrap
 Requires: mock
@@ -174,7 +174,6 @@ This package contains the divine plug-in for csmock.
 
 %package -n csmock-plugin-gitleaks
 Summary: experimental csmock plug-in
-Requires: csdiff > 3.0.0
 Requires: csmock-common
 
 %description -n csmock-plugin-gitleaks
@@ -203,7 +202,6 @@ This package contains the shellcheck plug-in for csmock.
 
 %package -n csmock-plugin-smatch
 Summary: csmock plug-in providing the support for smatch
-Requires: csdiff
 Requires: csmatch
 Requires: csmock-common
 Requires: cswrap
@@ -213,7 +211,6 @@ This package contains the smatch plug-in for csmock.
 
 %package -n csmock-plugin-snyk
 Summary: csmock plug-in providing the support for snyk
-Requires: csdiff > 2.8.0
 Requires: csmock-common
 
 %description -n csmock-plugin-snyk

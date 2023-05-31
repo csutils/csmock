@@ -313,3 +313,18 @@ class Plugin:
                 return 0
 
             props.post_depinst_hooks += [csgcca_hook]
+
+        # transform log files produced by UBSAN into csdiff format
+        if args.gcc_sanitize_undefined:
+            def ubsan_filter_hook(results):
+                src_dir = results.dbgdir_raw + SANITIZER_CAPTURE_DIR
+
+                # ensure we have permission to read all capture files
+                results.exec_cmd(['chmod', '-R', '+r', src_dir])
+
+                # `cd` first to avoid `csgrep: Argument list too long` error on glob expansion
+                dst = f"{results.dbgdir_uni}/ubsan-capture.js"
+                cmd = f"cd '{src_dir}' && touch ubsan.empty && csgrep --mode=json --remove-duplicates ubsan.* > '{dst}'"
+                return results.exec_cmd(cmd, shell=True)
+
+            props.post_process_hooks += [ubsan_filter_hook]
