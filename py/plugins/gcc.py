@@ -222,14 +222,14 @@ class Plugin:
             self.flags.append_flags(['-g', '-fno-omit-frame-pointer',
                                      '-fsanitize-recover=all'])
 
-            # sanitizers are not compatible with FORTIFY_SOURCE
+            # sanitizers are not compatible with _FORTIFY_SOURCE
             # https://github.com/google/sanitizers/issues/247#issuecomment-1283500316
             #
             # annobin should always be present in the buildroot since it is
             # required by redhat-rpm-config
-            self.flags.append_flags(["-Wp,-U_FORTIFY_SOURCE",
-                                     "-fplugin=annobin",
+            self.flags.append_flags(["-fplugin=annobin",
                                      "-fplugin-arg-annobin-no-active-checks"])
+            self.flags.remove_flags(["-D_FORTIFY_SOURCE=*"])
 
             # create directory for sanitizer's results
             def create_cap_dir_hook(results, mock):
