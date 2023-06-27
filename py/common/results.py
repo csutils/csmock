@@ -48,12 +48,14 @@ class FatalError(Exception):
 
 
 class ScanResults:
-    def __init__(self, output, tool, tool_version, keep_going=False, create_dbgdir=True):
+    def __init__(self, output, tool, tool_version, keep_going=False, create_dbgdir=True,
+                 no_clean=False):
         self.output = output
         self.tool = tool
         self.tool_version = tool_version
         self.keep_going = keep_going
         self.create_dbgdir = create_dbgdir
+        self.no_clean = no_clean
         self.use_xz = False
         self.use_tar = False
         self.dirname = os.path.basename(output)
@@ -138,6 +140,9 @@ class ScanResults:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.ini_writer.close()
+        if self.no_clean:
+            self.print_with_ts(f"temporary directory preserved: {self.tmpdir}")
+
         self.print_with_ts("%s exit code: %d\n" % (self.tool, self.ec), prefix="<<< ")
         self.log_fd.close()
         self.log_fd = sys.stderr
@@ -155,6 +160,9 @@ class ScanResults:
                         self.output, self.tmpdir))
 
         sys.stderr.write("Wrote: %s\n\n" % self.output)
+        if self.no_clean:
+            return
+
         try:
             shutil.rmtree(self.tmpdir)
         except Exception:
