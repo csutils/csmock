@@ -1222,7 +1222,7 @@ cd %%s*/ || cd *\n\
                             prep_cmd_tpl = "unzip -d '%s' '%s'"
                         else:
                             # assume TAR
-                            prep_cmd_tpl = "tar -C '%s' -xvf '%s'"
+                            prep_cmd_tpl = "tar -C '%s' -xf '%s'"
                         prep_cmd = prep_cmd_tpl % ("/builddir/build/BUILD", src_tar_dup)
                         ec = mock.exec_mockbuild_cmd(prep_cmd)
 
