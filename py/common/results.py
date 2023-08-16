@@ -283,3 +283,33 @@ def transform_results(js_file, results):
     results.exec_cmd("csgrep --mode=evtstat %s '%s' | tee '%s'" % \
                      (CSGREP_FINAL_FILTER_ARGS, js_file, stat_file), shell=True)
     return err_file, html_file
+
+
+def handle_known_fp_list(props):
+    """Update props.result_filters based on props.known_false_positives"""
+
+    # install global filter of known false positives
+    filter_cmd = f'csdiff --json-output --show-internal "{props.known_false_positives}" -'
+    props.result_filters += [filter_cmd]
+
+    if props.pkg is None:
+        # no package name available
+        return
+
+    kfp_dir = re.sub("\\.js", ".d", props.known_false_positives)
+    if not os.path.isdir(kfp_dir):
+        # no per-pkg known false positives available
+        return
+
+    ep_file = os.path.join(kfp_dir, props.pkg, "exclude-paths.txt")
+    if not os.path.exists(ep_file):
+        # no list of path regexes to exclude for this pkg
+        return
+
+    # install path exclusion filters for this pkg
+    with open(ep_file) as file_handle:
+        lines = file_handle.readlines()
+        for line in lines:
+            path_re = line.strip()
+            filter_cmd = f'csgrep --mode=json --invert-match --path="{shell_quote(path_re)}"'
+            props.result_filters += [filter_cmd]

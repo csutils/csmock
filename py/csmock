@@ -32,10 +32,12 @@ import time
 
 # local imports
 import csmock.common.util
+from csmock.common.util         import require_file
 from csmock.common.util         import shell_quote
 from csmock.common.util         import strlist_to_shell_cmd
 from csmock.common.results      import FatalError
 from csmock.common.results      import ScanResults
+from csmock.common.results      import handle_known_fp_list
 from csmock.common.results      import transform_results
 
 
@@ -671,34 +673,6 @@ def re_from_checker_set(checker_set):
     return chk_re
 
 
-def handle_known_fp_list(props):
-    # install global filter of known false positives
-    filter_cmd = 'csdiff --json-output --show-internal "%s" -' % props.known_false_positives
-    props.result_filters += [ filter_cmd ]
-
-    if props.pkg is None:
-        # no package name available
-        return
-
-    kfp_dir = re.sub("\\.js", ".d", props.known_false_positives)
-    if not os.path.isdir(kfp_dir):
-        # no per-pkg known false positives available
-        return
-
-    ep_file = os.path.join(kfp_dir, props.pkg, "exclude-paths.txt")
-    if not os.path.exists(ep_file):
-        # no list of path regexes to exclude for this pkg
-        return
-
-    # install path exclusion filters for this pkg
-    with open(ep_file) as f:
-        lines = f.readlines()
-        for l in lines:
-            path_re = l.strip()
-            filter_cmd = 'csgrep --mode=json --invert-match --path=%s' % shell_quote(path_re)
-            props.result_filters += [ filter_cmd ]
-
-
 # transform scan-results.js to scan-results.{err,html} and write stats
 def finalize_results(js_file, results, props):
     if props.imp_checker_set:
@@ -756,12 +730,6 @@ option.  Are you sure, you have necessary plug-ins installed?  If it really \
 is a file name, please use the './' prefix." % val)
         else:
             setattr(namespace, self.dest, val)
-
-
-def require_file(parser, name):
-    """Print an error and exit unsuccessfully if 'name' is not a file"""
-    if not os.path.isfile(name):
-        parser.error("'%s' is not a file" % name)
 
 
 def main():

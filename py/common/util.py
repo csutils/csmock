@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import re
 
 
@@ -121,3 +122,9 @@ def dirs_to_scan_by_args(parser, args, props, tool):
         props.need_rpm_bi = True
 
     return dirs_to_scan
+
+
+def require_file(parser, name):
+    """Print an error and exit unsuccessfully if 'name' is not a file"""
+    if not os.path.isfile(name):
+        parser.error(f"'{name}' is not a file")
