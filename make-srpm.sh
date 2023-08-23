@@ -128,6 +128,9 @@ Requires: csdiff > 3.0.3
 Requires: csgcca
 Requires: cswrap
 Requires: mock
+%if 0%{?rhel} != 7
+Recommends: modulemd-tools
+%endif
 
 %description -n csmock-common
 This package contains the csmock tool that allows to scan SRPMs by Static
