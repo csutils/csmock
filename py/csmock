@@ -895,15 +895,14 @@ key event (defaults to 3).")
         help="use shell command to build the given tarball (instead of SRPM)")
 
     # --known-false-positives
-    if os.path.exists(DEFAULT_KNOWN_FALSE_POSITIVES):
-        default_kfp = DEFAULT_KNOWN_FALSE_POSITIVES
-        default_kfp_text = " (defaults to \"%s\")" % default_kfp
-    else:
+    default_kfp = DEFAULT_KNOWN_FALSE_POSITIVES
+    default_kfp_text = f'defaults to "{default_kfp}"'
+    if not os.path.exists(default_kfp):
         default_kfp = ""
-        default_kfp_text = " (defaults to \"%s\" if available)" % DEFAULT_KNOWN_FALSE_POSITIVES
+        default_kfp_text += " if available"
     parser.add_argument(
         "--known-false-positives", default=default_kfp,
-        help=("suppress known false positives loaded from the given file" + default_kfp_text))
+        help=f"suppress known false positives loaded from the given file ({default_kfp_text})")
 
     csmock.common.util.add_paired_flag(
         parser, "use-login-shell",
