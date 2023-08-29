@@ -53,9 +53,6 @@ PATCH_RAWBUILD = CSMOCK_SCRIPTS + "/patch-rawbuild.sh"
 
 DEFAULT_KNOWN_FALSE_POSITIVES = CSMOCK_DATADIR + "/known-false-positives.js"
 
-# original name of the file, which could have sounded offensive to people
-DEFAULT_KNOWN_FALSE_POSITIVES_FALLBACK = CSMOCK_DATADIR + "/defect-blacklist.err"
-
 # how long should we wait before checking mock profile availability again
 MOCK_WAITING_TICK = 60
 
@@ -900,9 +897,6 @@ key event (defaults to 3).")
     # --known-false-positives
     if os.path.exists(DEFAULT_KNOWN_FALSE_POSITIVES):
         default_kfp = DEFAULT_KNOWN_FALSE_POSITIVES
-        default_kfp_text = " (defaults to \"%s\")" % default_kfp
-    elif os.path.exists(DEFAULT_KNOWN_FALSE_POSITIVES_FALLBACK):
-        default_kfp = DEFAULT_KNOWN_FALSE_POSITIVES_FALLBACK
         default_kfp_text = " (defaults to \"%s\")" % default_kfp
     else:
         default_kfp = ""
