@@ -272,6 +272,20 @@ class IniWriter:
         self.write("%s = %s\n" % (key, val_str))
 
 
+def re_from_checker_set(checker_set):
+    """return operand for the --checker option of csgrep based on checker_set"""
+    chk_re = "^("
+    first = True
+    for chk in sorted(checker_set):
+        if first:
+            first = False
+        else:
+            chk_re += "|"
+        chk_re += chk
+    chk_re += ")$"
+    return chk_re
+
+
 def transform_results(js_file, results):
     err_file  = re.sub("\\.js", ".err",  js_file)
     html_file = re.sub("\\.js", ".html", js_file)
@@ -283,6 +297,42 @@ def transform_results(js_file, results):
     results.exec_cmd("csgrep --mode=evtstat %s '%s' | tee '%s'" % \
                      (CSGREP_FINAL_FILTER_ARGS, js_file, stat_file), shell=True)
     return err_file, html_file
+
+
+def finalize_results(js_file, results, props):
+    """transform scan-results.js to scan-results.{err,html} and write stats"""
+    if props.imp_checker_set:
+        # filter out "important" defects, first based on checkers only
+        cmd = "csgrep '%s' --mode=json --checker '%s'" % \
+                (js_file, re_from_checker_set(props.imp_checker_set))
+
+        # then apply custom per-checker filters
+        for (chk, csgrep_args) in props.imp_csgrep_filters:
+            chk_re = re_from_checker_set(props.imp_checker_set - set([chk]))
+            cmd += " | csdiff <(csgrep '%s' --mode=json --drop-scan-props --invert-regex --checker '%s' %s) -" \
+                    % (js_file, chk_re, csgrep_args)
+
+        # write the result into *-imp.js
+        imp_js_file = re.sub("\\.js", "-imp.js", js_file)
+        cmd += " > '%s'" % imp_js_file
+
+        # bash is needed to process <(...)
+        cmd = strlist_to_shell_cmd(["bash", "-c", cmd], escape_special=True)
+        results.exec_cmd(cmd, shell=True)
+
+        # generate *-imp.{err,html}
+        transform_results(imp_js_file, results)
+
+        # initialize the "imp" flag in the resulting full .js output file
+        tmp_js_file = re.sub("\\.js", "-tmp.js", js_file)
+        cmd = "cslinker --implist '%s' '%s' > '%s' && mv -v '%s' '%s'" \
+                % (imp_js_file, js_file, tmp_js_file, tmp_js_file, js_file)
+        results.exec_cmd(cmd, shell=True)
+
+    (err_file, _) = transform_results(js_file, results)
+
+    if props.print_defects:
+        os.system("csgrep '%s'" % err_file)
 
 
 def handle_known_fp_list(props, results):
