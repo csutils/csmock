@@ -37,6 +37,7 @@ from csmock.common.util         import shell_quote
 from csmock.common.util         import strlist_to_shell_cmd
 from csmock.common.results      import FatalError
 from csmock.common.results      import ScanResults
+from csmock.common.results      import apply_result_filters
 from csmock.common.results      import finalize_results
 from csmock.common.results      import handle_known_fp_list
 from csmock.common.results      import transform_results
@@ -1236,23 +1237,10 @@ cd %%s*/ || cd *\n\
 
             # we are done with mock
 
-            # apply filters, sort the list and store the result as scan-results.js
-            cmd = "cat '%s'" % all_file
-            for filt in props.result_filters:
-                cmd += " | %s" % filt
-            cmd += " | cssort --key=path > '%s'" % js_file
-            results.exec_cmd(cmd, shell=True)
+            # apply filters, sort the list and record suppressed results
+            supp_filters = [RPM_BI_FILTER, "csgrep --mode=json --strip-path-prefix /builddir/build/BUILD/"]
+            apply_result_filters(props, results, supp_filters=supp_filters)
 
-            # record suppressed results
-            js_supp = "%s/suppressed-results.js" % results.dbgdir
-            cmd = "%s '%s' " % (RPM_BI_FILTER, all_file)
-            cmd += "| csgrep --mode=json --strip-path-prefix /builddir/build/BUILD/ "
-            cmd += "| csdiff --show-internal '%s' - " % js_file
-            cmd += "| cssort > '%s'" % js_supp
-            results.exec_cmd(cmd, shell=True)
-            finalize_results(js_supp, results, props)
-
-            finalize_results(js_file, results, props)
             return results.ec
 
     except FatalError as error:

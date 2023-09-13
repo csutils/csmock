@@ -335,6 +335,30 @@ def finalize_results(js_file, results, props):
         os.system("csgrep '%s'" % err_file)
 
 
+def apply_result_filters(props, results, supp_filters=[]):
+    """apply filters, sort the list and record suppressed results"""
+    js_file = os.path.join(results.resdir, "scan-results.js")
+    all_file = os.path.join(results.dbgdir, "scan-results-all.js")
+
+    # apply filters, sort the list and store the result as scan-results.js
+    cmd = f"cat '{all_file}'"
+    for filt in props.result_filters:
+        cmd += f" | {filt}"
+    cmd += f" | cssort --key=path > '{js_file}'"
+    results.exec_cmd(cmd, shell=True)
+
+    # record suppressed results
+    js_supp = os.path.join(results.dbgdir, "suppressed-results.js")
+    cmd = f"cat '{all_file}'"
+    for filt in supp_filters:
+        cmd += f" | {filt}"
+    cmd += f" | csdiff --show-internal '{js_file}' -"
+    cmd += f" | cssort > '{js_supp}'"
+    results.exec_cmd(cmd, shell=True)
+    finalize_results(js_supp, results, props)
+    finalize_results(js_file, results, props)
+
+
 def handle_known_fp_list(props, results):
     """Update props.result_filters based on props.known_false_positives"""
     if not props.known_false_positives:
