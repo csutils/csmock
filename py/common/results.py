@@ -285,8 +285,13 @@ def transform_results(js_file, results):
     return err_file, html_file
 
 
-def handle_known_fp_list(props):
+def handle_known_fp_list(props, results):
     """Update props.result_filters based on props.known_false_positives"""
+    if not props.known_false_positives:
+        return
+
+    # update scan metadata
+    results.ini_writer.append("known-false-positives", props.known_false_positives)
 
     # install global filter of known false positives
     filter_cmd = f'csdiff --json-output --show-internal "{props.known_false_positives}" -'

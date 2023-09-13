@@ -999,11 +999,10 @@ key event (defaults to 3).")
     if os.path.exists(output) and not args.force:
         parser.error("'%s' already exists, use --force to proceed" % output)
 
-    # handle --known-false-positives
+    # check the path given to --known-false-positives
     props.known_false_positives = args.known_false_positives
     if props.known_false_positives:
         require_file(parser, props.known_false_positives)
-        handle_known_fp_list(props)
 
     # poll plug-ins to reflect themselves in ScanProps
     plugins.handle_args(parser, args, props)
@@ -1038,8 +1037,7 @@ def do_scan(props, output):
             results.ini_writer.append("enabled-plugins", ", ".join(enabled_plugins))
             results.ini_writer.append("mock-config", props.mock_profile)
             results.ini_writer.append("project-name", props.nvr)
-            if props.known_false_positives:
-                results.ini_writer.append("known-false-positives", props.known_false_positives)
+            handle_known_fp_list(props, results)
 
             if not props.any_tool:
                 # no tool enabled
