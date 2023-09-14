@@ -110,6 +110,7 @@ class Plugin:
             # query version of snyk
             (ec, out) = results.get_cmd_output([self.snyk_bin, 'version'], shell=False)
             if 0 != ec:
+                results.error("failed to query snyk version", ec=ec)
                 return ec
 
             # parse and record the version of snyk

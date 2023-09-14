@@ -125,6 +125,7 @@ class Plugin:
             # query version of gitleaks
             (ec, out) = results.get_cmd_output([gitleaks_bin, 'version'], shell=False)
             if 0 != ec:
+                results.error("failed to query gitleaks version", ec=ec)
                 return ec
 
             ver = re.sub("^v", "", out)

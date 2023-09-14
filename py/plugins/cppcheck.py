@@ -101,9 +101,10 @@ class Plugin:
 
         def store_cppcheck_version_hook(results, mock):
             cmd = mock.get_mock_cmd(["--chroot", "cppcheck --version"])
-            (rc, verstr) = results.get_cmd_output(cmd, shell=False)
-            if rc != 0:
-                return rc
+            (ec, verstr) = results.get_cmd_output(cmd, shell=False)
+            if ec != 0:
+                results.error("failed to query cppcheck version", ec=ec)
+                return ec
 
             ver = re.sub("^Cppcheck ", "", verstr.strip())
             results.ini_writer.append("analyzer-version-cppcheck", ver)
