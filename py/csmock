@@ -32,6 +32,7 @@ import time
 
 # local imports
 import csmock.common.util
+from csmock.common.util         import get_coverity_version
 from csmock.common.util         import shell_quote
 from csmock.common.util         import strlist_to_shell_cmd
 from csmock.common.results      import FatalError
@@ -516,6 +517,9 @@ class ScanProps:
         return cmd_out
 
     def wrap_shell_cmd_by_env(self, cmd_in, extra_env={}):
+        # cov-build needs extra env vars below when running under 2023.6.1.
+        if get_coverity_version() == "2023.6.1":
+            extra_env.update({"COVERITY_POSIX_SPAWN_FALLBACK": 1})
         # merge self.env with extra_env
         env = self.env.copy()
         env.update(extra_env)
