@@ -16,6 +16,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import subprocess
 
 
 def shell_quote(str_in):
@@ -121,3 +122,19 @@ def dirs_to_scan_by_args(parser, args, props, tool):
         props.need_rpm_bi = True
 
     return dirs_to_scan
+
+
+def get_coverity_version(install_dir="/opt/coverity/"):
+    """
+    Retrieve the version information from the coverity executable.
+
+    Returns:
+        string of the version information or None otherwise.
+    """
+    executable_path = f"{install_dir}bin/coverity"
+    try:
+        version_info = subprocess.check_output([executable_path, "--version"])
+        version_text = version_info.decode("utf-8")
+        return version_text.strip().split()[0]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
