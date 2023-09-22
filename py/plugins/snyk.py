@@ -76,6 +76,10 @@ class Plugin:
         if not os.access(self.auth_token_src, os.R_OK):
             parser.error("unable to read snyk authentication token: %s" % self.auth_token_src)
 
+        # define all Snyk's findings with level `error` as important
+        props.imp_checker_set.add("SNYK_CODE_WARNING")
+        props.imp_csgrep_filters.append(("SNYK_CODE_WARNING", "--event=^error"))
+
         # fetch snyk using the given URL
         def fetch_snyk_hook(results, props):
             cache_dir = args.snyk_cache_dir
