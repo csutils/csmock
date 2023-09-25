@@ -509,8 +509,8 @@ class ScanProps:
         for filt in self.cswrap_filters:
             cmd += " | %s" % filt
         cmd += " > '%s'" % out
-        (rv, _) = results.get_cmd_output(cmd)
-        return rv
+        return results.exec_cmd(cmd, shell=True)
+
 
     def wrap_build_cmd(self, cmd_in):
         cmd_out = cmd_in
