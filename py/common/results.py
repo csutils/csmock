@@ -320,15 +320,22 @@ def finalize_results(js_file, results, props):
         cmd = strlist_to_shell_cmd(["bash", "-c", cmd], escape_special=True)
         results.exec_cmd(cmd, shell=True)
 
-        # generate *-imp.{err,html}
-        transform_results(imp_js_file, results)
-
-        # initialize the "imp" flag in the resulting full .js output file
-        tmp_js_file = re.sub("\\.js", "-tmp.js", js_file)
+        # initialize the "imp" flag in the resulting `-all.js` output file
+        # and replace the original .js file by `-imp.js`
+        all_js_file = re.sub("\\.js", "-all.js", js_file)
         cmd = "cslinker --implist '%s' '%s' > '%s' && mv -v '%s' '%s'" \
-                % (imp_js_file, js_file, tmp_js_file, tmp_js_file, js_file)
+                % (imp_js_file, js_file, all_js_file, imp_js_file, js_file)
         if 0 != results.exec_cmd(cmd, shell=True):
             results.error("failed to tag important findings in the full results", ec=0)
+
+        # generate *-all{.err,.html,-summary.txt}
+        transform_results(all_js_file, results)
+
+        # create `-imp` symlinks for compatibility
+        for suffix in [".err", ".html", "-summary.txt"]:
+            src = f"scan-results{suffix}"
+            dst = os.path.join(results.resdir, f"scan-results-imp{suffix}")
+            results.exec_cmd(["ln", "-s", src, dst])
 
     (err_file, _) = transform_results(js_file, results)
 
