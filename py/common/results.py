@@ -331,12 +331,6 @@ def finalize_results(js_file, results, props):
         # generate *-all{.err,.html,-summary.txt}
         transform_results(all_js_file, results)
 
-        # create `-imp` symlinks for compatibility
-        for suffix in [".err", ".html", "-summary.txt"]:
-            src = f"scan-results{suffix}"
-            dst = os.path.join(results.resdir, f"scan-results-imp{suffix}")
-            results.exec_cmd(["ln", "-s", src, dst])
-
     (err_file, _) = transform_results(js_file, results)
 
     if props.print_defects:
@@ -365,6 +359,13 @@ def apply_result_filters(props, results, supp_filters=[]):
     results.exec_cmd(cmd, shell=True)
     finalize_results(js_supp, results, props)
     finalize_results(js_file, results, props)
+
+    # create `-imp` symlinks for compatibility (if important defects were filtered)
+    if props.imp_checker_set:
+        for suffix in [".err", ".html", "-summary.txt"]:
+            src = f"scan-results{suffix}"
+            dst = os.path.join(results.resdir, f"scan-results-imp{suffix}")
+            results.exec_cmd(["ln", "-s", src, dst])
 
 
 def handle_known_fp_list(props, results):
