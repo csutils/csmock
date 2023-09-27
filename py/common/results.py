@@ -327,7 +327,8 @@ def finalize_results(js_file, results, props):
         tmp_js_file = re.sub("\\.js", "-tmp.js", js_file)
         cmd = "cslinker --implist '%s' '%s' > '%s' && mv -v '%s' '%s'" \
                 % (imp_js_file, js_file, tmp_js_file, tmp_js_file, js_file)
-        results.exec_cmd(cmd, shell=True)
+        if 0 != results.exec_cmd(cmd, shell=True):
+            results.error("failed to tag important findings in the full results", ec=0)
 
     (err_file, _) = transform_results(js_file, results)
 
