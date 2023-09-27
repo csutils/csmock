@@ -124,7 +124,7 @@ Tool for plugging static analyzers into the build process, free of mock.
 
 %package -n csmock-common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
-Requires: csdiff > 3.0.3
+Requires: csdiff > 3.0.4
 Requires: csgcca
 Requires: cswrap
 Requires: mock
