@@ -362,7 +362,7 @@ def apply_result_filters(props, results, supp_filters=[]):
 
     # create `-imp` symlinks for compatibility (if important defects were filtered)
     if props.imp_checker_set:
-        for suffix in [".err", ".html", "-summary.txt"]:
+        for suffix in [".err", ".html", ".js", "-summary.txt"]:
             src = f"scan-results{suffix}"
             dst = os.path.join(results.resdir, f"scan-results-imp{suffix}")
             results.exec_cmd(["ln", "-s", src, dst])
