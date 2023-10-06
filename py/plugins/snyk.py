@@ -32,6 +32,9 @@ SNYK_LOG = "/builddir/snyk-capture.log"
 
 FILTER_CMD = f"csgrep '%s' --mode=json --prepend-path-prefix={SNYK_SCAN_DIR}/ > '%s'"
 
+# default value for the maximum amount of time taken by invocation of Snyk (5 hours)
+DEFAULT_SNYK_TIMEOUT=18000
+
 
 class PluginProps:
     def __init__(self):
@@ -66,6 +69,11 @@ class Plugin:
         parser.add_argument(
             "--snyk-refresh", action="store_true",
             help="force download of snyk binary executable")
+
+        parser.add_argument(
+            "--snyk-timeout", type=int, default=DEFAULT_SNYK_TIMEOUT,
+            help="maximum amount of time taken by invocation of Snyk [s]")
+
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
@@ -147,9 +155,15 @@ class Plugin:
                 results.error("failed to copy snyk authentication token", ec=ec)
                 return ec
 
-            # run snyk code
+            # command to run snyk code
             cmd = "%s code test -d %s --sarif-file-output=%s >/dev/null 2>%s" \
                     % (self.snyk_bin, SNYK_SCAN_DIR, SNYK_OUTPUT, SNYK_LOG)
+
+            if args.snyk_timeout:
+                # wrap snyk invocation by timeout(1)
+                cmd = f"/usr/bin/timeout {args.snyk_timeout} {cmd}"
+
+            # run snyk code
             ec = mock.exec_chroot_cmd(cmd)
 
             # remove authentication token from the chroot
