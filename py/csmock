@@ -434,6 +434,7 @@ class ScanProps:
         self.cswrap_timeout = DEFAULT_CSWRAP_TIMEOUT
         self.embed_context = 0
         self.results_limits_opts = []
+        self.results_limits_applied = False
         self.no_scan = False
         self.print_defects = False
         self.need_rpm_bi = False
@@ -1248,17 +1249,19 @@ cd %%s*/ || cd *\n\
                     cmd += f" <'{all_file}' >'{tmp_file}'"
                     if results.exec_cmd(cmd, shell=True) == 0:
                         shutil.move(tmp_file, all_file)
+                        props.results_limits_applied = True
 
             # we are done with mock
 
             # make sure to apply results limits because `csgrep --embed-context` might not be available in chroot
-            if props.results_limits_opts:
+            if props.results_limits_opts and not props.results_limits_applied:
                 tmp_file = f"{all_file}.tmp"
                 csgrep_cmd = "csgrep --mode=json " + strlist_to_shell_cmd(props.results_limits_opts)
                 csgrep_cmd += f" '{all_file}' >'{tmp_file}'"
                 ec = results.exec_cmd(csgrep_cmd, shell=True)
                 if 0 == ec:
                     shutil.move(tmp_file, all_file)
+                    props.results_limits_applied = True
                 else:
                     results.error("failed to apply results limits", ec=ec)
 
