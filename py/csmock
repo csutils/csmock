@@ -765,6 +765,11 @@ key event (defaults to 3).")
 exceeds the specified limit (defaults to 1024).")
 
     parser.add_argument(
+        "--limit-msg-len", type=int, default=512,
+        help="limit length of diagnostic messages by the specified number of chars \
+(defaults to 512).")
+
+    parser.add_argument(
         "-k", "--keep-going", action="store_true",
         help="continue as much as possible after an error")
 
@@ -907,6 +912,9 @@ exceeds the specified limit (defaults to 1024).")
 
     if args.warning_rate_limit > 0:
         props.results_limits_opts += [f"--warning-rate-limit={args.warning_rate_limit}"]
+
+    if args.limit_msg_len > 0:
+        props.results_limits_opts += [f"--limit-msg-len={args.limit_msg_len}"]
 
     if args.run_check:
         # run the %check section of specfile
