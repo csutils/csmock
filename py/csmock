@@ -433,6 +433,7 @@ class ScanProps:
         self.keep_going = False
         self.cswrap_timeout = DEFAULT_CSWRAP_TIMEOUT
         self.embed_context = 0
+        self.results_limits_opts = []
         self.no_scan = False
         self.print_defects = False
         self.need_rpm_bi = False
@@ -758,6 +759,11 @@ def main():
 key event (defaults to 3).")
 
     parser.add_argument(
+        "--warning-rate-limit", type=int, default=1024,
+        help="stop processing a warning if the count of its occurrences \
+exceeds the specified limit (defaults to 1024).")
+
+    parser.add_argument(
         "-k", "--keep-going", action="store_true",
         help="continue as much as possible after an error")
 
@@ -897,6 +903,9 @@ key event (defaults to 3).")
     if props.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
         props.install_opt_pkgs += ["csdiff"]
+
+    if args.warning_rate_limit > 0:
+        props.results_limits_opts += [f"--warning-rate-limit={args.warning_rate_limit}"]
 
     if args.run_check:
         # run the %check section of specfile
@@ -1230,12 +1239,28 @@ cd %%s*/ || cd *\n\
                     # embed context lines from source program files
                     tmp_file = f"{all_file}.tmp"
                     csgrep_cmd = f"csgrep --mode=json --embed-context {props.embed_context}"
+
+                    if props.results_limits_opts:
+                        # apply results limits already while embedding context to avoid creating excessively huge output
+                        csgrep_cmd += " " + strlist_to_shell_cmd(props.results_limits_opts)
+
                     cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell", csgrep_cmd]))
                     cmd += f" <'{all_file}' >'{tmp_file}'"
                     if results.exec_cmd(cmd, shell=True) == 0:
                         shutil.move(tmp_file, all_file)
 
             # we are done with mock
+
+            # make sure to apply results limits because `csgrep --embed-context` might not be available in chroot
+            if props.results_limits_opts:
+                tmp_file = f"{all_file}.tmp"
+                csgrep_cmd = "csgrep --mode=json " + strlist_to_shell_cmd(props.results_limits_opts)
+                csgrep_cmd += f" '{all_file}' >'{tmp_file}'"
+                ec = results.exec_cmd(csgrep_cmd, shell=True)
+                if 0 == ec:
+                    shutil.move(tmp_file, all_file)
+                else:
+                    results.error("failed to apply results limits", ec=ec)
 
             # apply filters, sort the list and record suppressed results
             supp_filters = [RPM_BI_FILTER, "csgrep --mode=json --strip-path-prefix /builddir/build/BUILD/"]
