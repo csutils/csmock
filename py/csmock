@@ -432,6 +432,7 @@ class ScanProps:
         self.post_process_hooks = []
         self.keep_going = False
         self.cswrap_timeout = DEFAULT_CSWRAP_TIMEOUT
+        self.embed_context = 0
         self.no_scan = False
         self.print_defects = False
         self.need_rpm_bi = False
@@ -1227,11 +1228,10 @@ cd %%s*/ || cd *\n\
 
                 if props.embed_context > 0:
                     # embed context lines from source program files
-                    tmp_file = "%s.tmp" % all_file
-                    cmd = strlist_to_shell_cmd(
-                        mock.get_mock_cmd(
-                            ["--shell", "csgrep --mode=json --embed-context %d" % props.embed_context]))
-                    cmd += " < '%s' > '%s'" % (all_file, tmp_file)
+                    tmp_file = f"{all_file}.tmp"
+                    csgrep_cmd = f"csgrep --mode=json --embed-context {props.embed_context}"
+                    cmd = strlist_to_shell_cmd(mock.get_mock_cmd(["--shell", csgrep_cmd]))
+                    cmd += f" <'{all_file}' >'{tmp_file}'"
                     if results.exec_cmd(cmd, shell=True) == 0:
                         shutil.move(tmp_file, all_file)
 
