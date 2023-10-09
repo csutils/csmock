@@ -128,6 +128,8 @@ Requires: csdiff > 3.0.4
 Requires: csgcca
 Requires: cswrap
 Requires: mock
+Requires: tar
+Requires: xz
 %if 0%{?rhel} != 7
 Recommends: modulemd-tools
 %endif
