@@ -170,6 +170,10 @@ class Plugin:
             mock.exec_chroot_cmd("/bin/rm -fv %s" % auth_token_dst)
 
             # check exit code of snyk code itself
+            if ec == 3:
+                # If there are no supported project, we return no results but no crash.
+                results.print_with_ts("snyk-code: no supported projects detected")
+                return 0
             if ec not in [0, 1]:
                 results.error("snyk code returned unexpected exit status: %d" % ec, ec=ec)
 
