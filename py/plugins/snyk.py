@@ -172,7 +172,9 @@ class Plugin:
             # check exit code of snyk code itself
             if ec == 3:
                 # If there are no supported project, we return no results but no crash.
-                results.print_with_ts("snyk-code: no supported projects detected")
+                results.print_with_ts("snyk-code: no supported project for Snyk")
+                # If no supported project, no results file is generated
+                props.copy_out_files.remove(SNYK_OUTPUT)
                 return 0
             if ec not in [0, 1]:
                 results.error("snyk code returned unexpected exit status: %d" % ec, ec=ec)
@@ -185,6 +187,9 @@ class Plugin:
 
         # convert the results into the csdiff's JSON format
         def filter_hook(results):
+            # If no supported project is found, we don't have results file
+            if not os.path.exists(SNYK_OUTPUT):
+                return 0
             src = results.dbgdir_raw + SNYK_OUTPUT
             dst = "%s/snyk-capture.js" % results.dbgdir_uni
             cmd = FILTER_CMD % (src, dst)
