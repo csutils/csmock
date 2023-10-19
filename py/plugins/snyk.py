@@ -26,9 +26,9 @@ SNYK_CACHE_DIR = "/var/tmp/csmock/snyk"
 
 SNYK_SCAN_DIR = "/builddir/build/BUILD"
 
-SNYK_OUTPUT = "/builddir/snyk-capture.sarif"
+SNYK_OUTPUT = "/builddir/snyk-results.sarif"
 
-SNYK_LOG = "/builddir/snyk-capture.log"
+SNYK_LOG = "/builddir/snyk-scan.log"
 
 FILTER_CMD = f"csgrep '%s' --mode=json --prepend-path-prefix={SNYK_SCAN_DIR}/ > '%s'"
 
@@ -191,7 +191,7 @@ class Plugin:
             if not os.path.exists(src):
                 # do not convert SARIF results if they were not provided by Snyk
                 return 0
-            dst = "%s/snyk-capture.js" % results.dbgdir_uni
+            dst = "%s/snyk-results.json" % results.dbgdir_uni
             cmd = FILTER_CMD % (src, dst)
             return results.exec_cmd(cmd, shell=True)
         props.post_process_hooks += [filter_hook]
