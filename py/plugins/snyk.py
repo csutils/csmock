@@ -187,10 +187,10 @@ class Plugin:
 
         # convert the results into the csdiff's JSON format
         def filter_hook(results):
-            # If no supported project is found, we don't have results file
-            if not os.path.exists(SNYK_OUTPUT):
-                return 0
             src = results.dbgdir_raw + SNYK_OUTPUT
+            if not os.path.exists(src):
+                # do not convert SARIF results if they were not provided by Snyk
+                return 0
             dst = "%s/snyk-capture.js" % results.dbgdir_uni
             cmd = FILTER_CMD % (src, dst)
             return results.exec_cmd(cmd, shell=True)
