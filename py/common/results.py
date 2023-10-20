@@ -193,7 +193,7 @@ class ScanResults:
         raise FatalError(ec)
 
     def handle_ec(self):
-        if not self.dying and (128 < self.ec):
+        if not self.dying and (128 < self.ec < (128 + 64)):
             # caught terminating signal, handle synchronous shutdown
             self.fatal_error("caught signal %d" % (self.ec - 128), self.ec)
 
