@@ -958,8 +958,8 @@ exceeds the specified limit (defaults to 1024).")
         else:
             props.nvr = re.sub("\\.tar$", "", re.sub("\\.[^.]*$", "", srpm_base))
 
-        # cut off version-release to obtain package name
-        props.pkg = re.sub("-[^-]+-[0-9][^-]*$", "", props.nvr)
+        # cut off the -version-release or -version suffix to obtain package name
+        props.pkg = re.sub("-[^-]+(-[0-9][^-]*)?$", "", props.nvr)
 
     # resolve name of the file/dir we are going to store the results to
     if args.output is None:
