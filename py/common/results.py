@@ -313,7 +313,8 @@ def finalize_results(js_file, results, props):
                     % (js_file, chk_re, csgrep_args)
 
         # finally take all defects that were tagged important by the scanner already
-        cmd += f" | csgrep --mode=json <(csgrep --mode=json --imp-level=1 '{js_file}') -"
+        cmd += " | csgrep --mode=json --set-imp-level=0"
+        cmd += f" <(csgrep --mode=json --imp-level=1 '{js_file}') -"
 
         # write the result into *-imp.js
         imp_js_file = re.sub("\\.js", "-imp.js", js_file)
