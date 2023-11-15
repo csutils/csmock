@@ -1,0 +1,4 @@
+[FORMAT]
+
+# increase threshold to eliminate C0301 warnings about lines exceeding 100 chars
+max-line-length=130
