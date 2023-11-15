@@ -132,7 +132,8 @@ class Plugin:
             results.ini_writer.append("analyzer-version-gitleaks", ver)
 
             props.copy_in_files += [gitleaks_bin]
-            cmd = "%s detect --no-git --source=%s --report-path=%s --report-format=sarif" % (gitleaks_bin, GITLEAKS_SCAN_DIR, GITLEAKS_OUTPUT)
+            cmd = f"{gitleaks_bin} detect --no-git cmd --source={GITLEAKS_SCAN_DIR}" \
+                  f" --report-path={GITLEAKS_OUTPUT} --report-format=sarif"
             props.copy_out_files += [GITLEAKS_OUTPUT, GITLEAKS_LOG]
 
             if args.gitleaks_config is not None:

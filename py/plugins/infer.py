@@ -121,7 +121,8 @@ class Plugin:
         filter_args_serialized = csmock.common.cflags.serialize_flags(filter_args, separator=" ")
 
         # the filter script tries to filter out false positives and transforms results into csdiff compatible format
-        filter_cmd = f"python3 {INFER_RESULTS_FILTER_SCRIPT} {filter_args_serialized} < {INFER_OUT_DIR}/report.json > {INFER_RESULTS}"
+        filter_cmd = f"python3 {INFER_RESULTS_FILTER_SCRIPT} {filter_args_serialized}" \
+                     f" < {INFER_OUT_DIR}/report.json > {INFER_RESULTS}"
 
         props.copy_out_files += [INFER_RESULTS]
 
