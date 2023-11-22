@@ -33,7 +33,7 @@ SNYK_LOG = "/builddir/snyk-scan.log"
 FILTER_CMD = f"csgrep '%s' --mode=json --prepend-path-prefix={SNYK_SCAN_DIR}/ > '%s'"
 
 # default value for the maximum amount of time taken by invocation of Snyk (5 hours)
-DEFAULT_SNYK_TIMEOUT=18000
+DEFAULT_SNYK_TIMEOUT = 18000
 
 
 class PluginProps:
@@ -74,6 +74,9 @@ class Plugin:
             "--snyk-timeout", type=int, default=DEFAULT_SNYK_TIMEOUT,
             help="maximum amount of time taken by invocation of Snyk [s]")
 
+        parser.add_argument(
+            "--snyk-code-test-opts",
+            help="space-separated list of additional options passed to the 'snyk code test' command")
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
@@ -103,7 +106,7 @@ class Plugin:
             self.snyk_bin = os.path.join(cache_dir, snyk_bin_name)
 
             if not args.snyk_refresh and os.path.exists(self.snyk_bin):
-                results.print_with_ts("reusing previously downloaded snyk executable: %s" % self.snyk_bin)
+                results.print_with_ts("reusing previously downloaded snyk executable: " + self.snyk_bin)
             else:
                 # fetch the binary executable
                 ec = results.exec_cmd(['curl', '-Lfso', self.snyk_bin, url])
@@ -143,6 +146,7 @@ class Plugin:
         def copy_resolv_conf(results, mock):
             mock.copy_in_resolv_conf()
             return 0
+
         props.post_depinst_hooks += [copy_resolv_conf]
 
         def scan_hook(results, mock, props):
@@ -156,8 +160,13 @@ class Plugin:
                 return ec
 
             # command to run snyk code
-            cmd = "%s code test -d %s --sarif-file-output=%s >/dev/null 2>%s" \
-                    % (self.snyk_bin, SNYK_SCAN_DIR, SNYK_OUTPUT, SNYK_LOG)
+            cmd = f"{self.snyk_bin} code test -d {SNYK_SCAN_DIR}"
+
+            # if we use the --snyk-code-test-opts flags, we append the flags to the SNYK CLI code
+            if args.snyk_code_test_opts:
+                cmd += f" {args.snyk_code_test_opts}"
+
+            cmd += f" --sarif-file-output={SNYK_OUTPUT} >/dev/null 2>{SNYK_LOG}"
 
             if args.snyk_timeout:
                 # wrap snyk invocation by timeout(1)
@@ -194,4 +203,5 @@ class Plugin:
             dst = "%s/snyk-results.json" % results.dbgdir_uni
             cmd = FILTER_CMD % (src, dst)
             return results.exec_cmd(cmd, shell=True)
+
         props.post_process_hooks += [filter_hook]
