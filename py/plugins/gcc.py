@@ -224,12 +224,10 @@ class Plugin:
 
             # sanitizers are not compatible with _FORTIFY_SOURCE
             # https://github.com/google/sanitizers/issues/247#issuecomment-1283500316
-            #
-            # annobin should always be present in the buildroot since it is
-            # required by redhat-rpm-config
-            self.flags.append_flags(["-fplugin=annobin",
-                                     "-fplugin-arg-annobin-no-active-checks"])
             self.flags.remove_flags(["-D_FORTIFY_SOURCE=*"])
+
+            # silence annobin's complaints about missing _FORTIFY_SOURCE defines
+            props.rpm_opts += ["--undefine", "_annotated_build"]
 
             # create directory for sanitizer's results
             def create_cap_dir_hook(results, mock):
