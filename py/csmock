@@ -177,7 +177,7 @@ def extra_build_repos(results, srpm):
     urls = []
 
     # check for a module build
-    m = re.match("^.*/(.*\.module\\+el.*)\\.src\\.rpm$", srpm)
+    m = re.match(r"^.*/(.*\.module\+el.*)\.src\.rpm$", srpm)
     if m:
         nvr = m.group(1)
         repo_url = prepare_module_build_repo(results, nvr)
