@@ -410,7 +410,7 @@ class ScanProps:
     def __init__(self):
         self.plugins = None
         self.spec_in = None
-        self.install_pkgs = []
+        self.install_pkgs = ["tar"]                     # needed for self.copy_in_files to work
         self.install_pkgs_blacklist = []
         self.install_opt_pkgs = []
         self.add_repos = []
