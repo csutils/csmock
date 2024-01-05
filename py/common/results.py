@@ -181,7 +181,8 @@ class ScanResults:
             self.ec = ec
 
     def error(self, msg, ec=1, err_prefix=""):
-        self.print_with_ts("%serror: %s\n" % (err_prefix, msg), prefix="!!! ")
+        level = "warning" if ec == 0 else "error"
+        self.print_with_ts(f"{err_prefix}{level}: {msg}\n", prefix="!!! ")
         self.update_ec(ec)
         if not self.dying and not self.keep_going and (self.ec != 0):
             raise FatalError(ec)
