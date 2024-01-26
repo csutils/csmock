@@ -404,5 +404,8 @@ def handle_known_fp_list(props, results):
         lines = file_handle.readlines()
         for line in lines:
             path_re = line.strip()
+            if len(path_re) == 0 or path_re.startswith("#"):
+                # skip comments and empty lines
+                continue
             filter_cmd = f'csgrep --mode=json --invert-match --path="{shell_quote(path_re)}"'
             props.result_filters += [filter_cmd]
