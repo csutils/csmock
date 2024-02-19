@@ -22,6 +22,7 @@ import argparse
 import copy
 import importlib
 import os
+import pathlib
 import pkgutil
 import re
 import shlex
@@ -193,10 +194,6 @@ class MockWrapper:
         self.results = results
         self.mock_profile = props.mock_profile
         self.mock_root_override = props.mock_root_override
-        lock = f"/tmp/.csmock-" + (self.mock_profile if not self.mock_root_override else
-                                   self.mock_root_override).replace('/','_')
-        self.lock_file = f"{lock}.lock"
-        self.meta_lock_file = f"{lock}.metalock"
         self.pid = os.getpid()
         self.scrub_done = props.skip_mock_init
         self.init_done = props.skip_mock_init
@@ -206,6 +203,24 @@ class MockWrapper:
         self.add_repos = props.add_repos
         # just to silence pylint, will be initialized in __enter__()
         self.def_cmd = None
+
+        # get buildroot directory
+        lock_name = self.mock_root = self.mock_root_override
+        if not self.mock_root:
+            cmd = ['mock', '-r', self.mock_profile, '--print-root-path']
+            ec, self.mock_root = results.get_cmd_output(cmd, shell=False)
+            if ec != 0:
+                results.error(f'mock could not determine root path for {self.mock_profile}', ec=ec)
+
+            # strip trailing newline
+            self.mock_root = self.mock_root.strip()
+
+            # use only the basename of the mock root
+            lock_name = pathlib.Path(self.mock_root).parent.stem
+
+        lock = f"/tmp/.csmock-{lock_name.replace('/', '_')}"
+        self.lock_file = f"{lock}.lock"
+        self.meta_lock_file = f"{lock}.metalock"
 
     def __enter__(self):
         cmd = "flock -w%u '%s' -c '\
