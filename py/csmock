@@ -200,6 +200,7 @@ class MockWrapper:
         self.pid = os.getpid()
         self.scrub_done = props.skip_mock_init
         self.init_done = props.skip_mock_init
+        self.scrub_on_exit = props.scrub_on_exit
         self.skip_clean = props.skip_mock_clean
         self.use_login_shell = props.use_login_shell
         self.add_repos = props.add_repos
@@ -264,6 +265,11 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             # clean up mock chroot
             if self.exec_mock_cmd(["--clean"]) != 0:
                 self.results.error("failed to clean mock chroot: %s" % self.mock_profile, ec=0)
+
+        if self.scrub_on_exit:
+            # scrub mock chroot
+            if self.exec_mock_cmd(["--scrub=all"]) != 0:
+                self.results.error("failed to scrub mock chroot: %s" % self.mock_profile, ec=0)
 
         # release the lock file
         cmd = "test -r '%s' && test %d = \"$(<%s)\" && rm -f '%s'" % (
@@ -442,6 +448,7 @@ class ScanProps:
         self.use_login_shell = True
         self.skip_mock_init = False
         self.skip_mock_clean = False
+        self.scrub_on_exit = False
         self.shell_cmd_to_build = None
         self.srpm = None
         self.base_srpm = None
@@ -786,9 +793,15 @@ exceeds the specified limit (defaults to 1024).")
         "--use-ldpwrap", action="store_true",
         help="use ldpwrap instead of csexec-loader [EXPERIMENTAL]")
 
-    parser.add_argument(
+    cleanup_group = parser.add_mutually_exclusive_group()
+
+    cleanup_group.add_argument(
         "--no-clean", action="store_true",
         help="do not clean chroot when it becomes unused")
+
+    cleanup_group.add_argument(
+        "--scrub-on-exit", action="store_true",
+        help="scrub all caches after the scan")
 
     parser.add_argument(
         "--no-scan", action="store_true",
@@ -903,6 +916,7 @@ exceeds the specified limit (defaults to 1024).")
     props.skip_patches          = args.skip_patches
     props.skip_mock_init        = args.skip_init
     props.skip_build            = args.skip_build
+    props.scrub_on_exit         = args.scrub_on_exit
     props.use_ldpwrap           = args.use_ldpwrap
     props.skip_mock_clean       = args.no_clean
 
