@@ -17,6 +17,8 @@
 
 import os
 
+from csmock.common.snyk import snyk_write_analysis_meta
+
 
 # default URL to download snyk binary executable
 SNYK_BIN_URL = "https://static.snyk.io/cli/latest/snyk-linux"
@@ -204,4 +206,8 @@ class Plugin:
             cmd = FILTER_CMD % (src, dst)
             return results.exec_cmd(cmd, shell=True)
 
-        props.post_process_hooks += [filter_hook]
+        def write_snyk_stats_metadata(results):
+            raw_results_file = results.dbgdir_raw + SNYK_OUTPUT
+            return snyk_write_analysis_meta(results, raw_results_file)
+
+        props.post_process_hooks += [write_snyk_stats_metadata, filter_hook]

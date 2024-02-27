@@ -27,6 +27,7 @@ install(FILES ${src_dir}/__init__.py        DESTINATION ${dst_dir})
 install(FILES ${src_dir}/common/__init__.py DESTINATION ${dst_dir}/common)
 install(FILES ${src_dir}/common/cflags.py   DESTINATION ${dst_dir}/common)
 install(FILES ${src_dir}/common/results.py  DESTINATION ${dst_dir}/common)
+install(FILES ${src_dir}/common/snyk.py     DESTINATION ${dst_dir}/common)
 install(FILES ${src_dir}/common/util.py     DESTINATION ${dst_dir}/common)
 
 macro(install_executable FILE_NAME)
