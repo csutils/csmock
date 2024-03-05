@@ -17,6 +17,7 @@
 
 import os
 import re
+import shlex
 
 
 def shell_quote(str_in):
@@ -32,6 +33,30 @@ def shell_quote(str_in):
         else:
             str_out += c
     return "\"" + str_out + "\""
+
+
+def arg_value_by_name(parser, args, arg_name):
+    """return value of an argument parsed by argparse.ArgumentParser"""
+    for action in parser._actions:
+        if arg_name in action.option_strings:
+            return getattr(args, action.dest)
+
+
+def sanitize_opts_arg(parser, args, arg_name):
+    """sanitize command-line options passed to an option of argparse.ArgumentParser"""
+    opts_str = arg_value_by_name(parser, args, arg_name)
+    if opts_str is None:
+        return None
+
+    # split, quote, and rejoin the options to avoid shell injection
+    try:
+        split_opts = shlex.split(args.snyk_code_test_opts)
+
+        # starting with Python 3.8, one can use shlex.join(split_opts)
+        return ' '.join(shlex.quote(arg) for arg in split_opts)
+
+    except ValueError as e:
+        parser.error(f"failed to parse value given to {arg_name}: {str(e)}")
 
 
 def strlist_to_shell_cmd(cmd_in, escape_special=False):

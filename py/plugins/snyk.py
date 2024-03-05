@@ -18,6 +18,7 @@
 import os
 
 from csmock.common.snyk import snyk_write_analysis_meta
+from csmock.common.util import sanitize_opts_arg
 
 
 # default URL to download snyk binary executable
@@ -83,6 +84,9 @@ class Plugin:
     def handle_args(self, parser, args, props):
         if not self.enabled:
             return
+
+        # sanitize options passed to --snyk-code-test-opts to avoid shell injection
+        self.snyk_code_test_opts = sanitize_opts_arg(parser, args, "--snyk-code-test-opts")
 
         # check whether we have access to snyk authentication token
         self.auth_token_src = os.path.expanduser(args.snyk_auth)
@@ -164,9 +168,9 @@ class Plugin:
             # command to run snyk code
             cmd = f"{self.snyk_bin} code test -d {SNYK_SCAN_DIR}"
 
-            # if we use the --snyk-code-test-opts flags, we append the flags to the SNYK CLI code
-            if args.snyk_code_test_opts:
-                cmd += f" {args.snyk_code_test_opts}"
+            if self.snyk_code_test_opts:
+                # propagate options given to --snyk-code-test-opts
+                cmd += f" {self.snyk_code_test_opts}"
 
             cmd += f" --sarif-file-output={SNYK_OUTPUT} >/dev/null 2>{SNYK_LOG}"
 
