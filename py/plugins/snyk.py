@@ -184,8 +184,9 @@ class Plugin:
             if ec == 3:
                 # If there are no supported project, we return no results but no crash.
                 results.print_with_ts("snyk-code: no supported project for Snyk")
-                # If no supported project, no results file is generated
+                # If no supported project, no results file is generated and no stats are generated
                 props.copy_out_files.remove(SNYK_OUTPUT)
+                props.post_process_hooks.remove(write_snyk_stats_metadata)
                 return 0
             if ec not in [0, 1]:
                 results.error("snyk code returned unexpected exit status: %d" % ec, ec=ec)
