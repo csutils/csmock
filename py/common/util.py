@@ -50,7 +50,7 @@ def sanitize_opts_arg(parser, args, arg_name):
 
     # split, quote, and rejoin the options to avoid shell injection
     try:
-        split_opts = shlex.split(args.snyk_code_test_opts)
+        split_opts = shlex.split(opts_str)
 
         # starting with Python 3.8, one can use shlex.join(split_opts)
         return ' '.join(shlex.quote(arg) for arg in split_opts)
