@@ -94,6 +94,9 @@ BuildRequires: help2man
 
 %if 0%{?rhel} == 7
 %global python3_pkgversion 36
+
+# needed for /usr/share/csmock/scripts/convert-clippy.py
+%global _python_bytecompile_errors_terminate_build 0
 %endif
 
 BuildRequires: python%{python3_pkgversion}-GitPython
@@ -160,6 +163,13 @@ Requires: csmock-common
 
 %description -n csmock-plugin-clang
 This package contains the clang plug-in for csmock.
+
+%package -n csmock-plugin-clippy
+Summary: csmock plug-in providing the support for Rust Clippy.
+Requires: csmock-common
+
+%description -n csmock-plugin-clippy
+This package contains the Rust Clippy plug-in for csmock.
 
 %package -n csmock-plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
@@ -313,6 +323,12 @@ This package contains the unicontrol plug-in for csmock.
 %files -n csmock-plugin-clang
 %{python3_sitelib}/csmock/plugins/clang.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/clang.*
+
+%files -n csmock-plugin-clippy
+%{_datadir}/csmock/scripts/convert-clippy.py
+%{_datadir}/csmock/scripts/inject-clippy.sh
+%{python3_sitelib}/csmock/plugins/clippy.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/clippy.*
 
 %files -n csmock-plugin-cppcheck
 %{python3_sitelib}/csmock/plugins/cppcheck.py*
