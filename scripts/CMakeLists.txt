@@ -36,6 +36,8 @@ if(ENABLE_CSMOCK)
         ${CMAKE_CURRENT_SOURCE_DIR}/run-bandit.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-pylint.sh
         ${CMAKE_CURRENT_SOURCE_DIR}/run-shellcheck.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}/convert-clippy.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/clippy.sh
         DESTINATION ${SHARE_INSTALL_PREFIX}/csmock/scripts
         PERMISSIONS ${PERM_EXECUTABLE})
 endif()
