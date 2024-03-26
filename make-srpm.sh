@@ -94,6 +94,9 @@ BuildRequires: help2man
 
 %if 0%{?rhel} == 7
 %global python3_pkgversion 36
+
+# needed for /usr/share/csmock/scripts/convert-clippy.py
+%global _python_bytecompile_errors_terminate_build 0
 %endif
 
 BuildRequires: python%{python3_pkgversion}-GitPython
