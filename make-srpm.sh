@@ -252,6 +252,13 @@ Requires: csmock-common
 %description -n csmock-plugin-unicontrol
 This package contains the unicontrol plug-in for csmock.
 
+%package -n csmock-plugin-clippy
+Summary: csmock plug-in providing the support for Rust Clippy.
+Requires: csmock-common
+
+%description -n csmock-plugin-clippy
+This package contains the Rust Clippy plug-in for csmock.
+
 %prep
 %autosetup
 
@@ -359,6 +366,11 @@ This package contains the unicontrol plug-in for csmock.
 %{_datadir}/csmock/scripts/find-unicode-control.py*
 %{python3_sitelib}/csmock/plugins/unicontrol.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/unicontrol.*
+
+%files -n csmock-plugin-clippy
+%{_datadir}/csmock/scripts/convert-clippy.py
+%{python3_sitelib}/csmock/plugins/clippy.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/clippy.*
 EOF
 
 if [[ "$1" != "--generate-spec" ]]; then
