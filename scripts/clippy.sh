@@ -3,6 +3,11 @@
 ORIGINAL_BINARY="/usr/bin/cargo"
 NEW_LOCATION="/usr/bin/cargo_original"
 
+if [ -f "$NEW_LOCATION" ]; then
+    rm "/builddir/clippy-output.txt"
+    exit 0
+fi
+
 mv $ORIGINAL_BINARY $NEW_LOCATION
 
 cat > $ORIGINAL_BINARY << 'EOF'

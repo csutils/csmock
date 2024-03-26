@@ -368,6 +368,7 @@ This package contains the Rust Clippy plug-in for csmock.
 %{python3_sitelib}/csmock/plugins/__pycache__/unicontrol.*
 
 %files -n csmock-plugin-clippy
+%{_datadir}/csmock/scripts/clippy.sh
 %{_datadir}/csmock/scripts/convert-clippy.py
 %{python3_sitelib}/csmock/plugins/clippy.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/clippy.*
