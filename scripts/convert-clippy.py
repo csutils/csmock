@@ -28,7 +28,7 @@ def main():
 
         message_type, message_content, file_path, line_number, rest = match.groups()
 
-        print("Error: RUST_CLIPPY:")
+        print("Error: RUST_CLIPPY_WARNING:")
         print(f"{package}/{file_path}:{line_number}: {message_type}: {message_content}")
         for x, line in enumerate(rest.split("\n")):
             if x == 0 and line.strip() == "":
