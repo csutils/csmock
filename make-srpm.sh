@@ -198,6 +198,13 @@ Requires: csmock-common
 %description -n csmock-plugin-pylint
 This package contains the pylint plug-in for csmock.
 
+%package -n csmock-plugin-semgrep
+Summary: csmock plug-in providing the support for semgrep scan
+Requires: csmock-common
+
+%description -n csmock-plugin-semgrep
+This package contains the semgrep plug-in for csmock.
+
 %package -n csmock-plugin-shellcheck
 Summary: csmock plug-in providing the support for ShellCheck.
 Requires: csmock-common
@@ -329,6 +336,10 @@ This package contains the unicontrol plug-in for csmock.
 %{_datadir}/csmock/scripts/run-pylint.sh
 %{python3_sitelib}/csmock/plugins/pylint.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/pylint.*
+
+%files -n csmock-plugin-semgrep
+%{python3_sitelib}/csmock/plugins/semgrep.py*
+%{python3_sitelib}/csmock/plugins/__pycache__/semgrep.*
 
 %files -n csmock-plugin-shellcheck
 %{_datadir}/csmock/scripts/run-shellcheck.sh
