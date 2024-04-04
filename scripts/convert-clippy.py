@@ -4,7 +4,7 @@ import json
 import sys
 import re
 
-MESSAGE_PATTERN     = r"^(.*?): (.*?)\s+-->\s+(.*?):(\d+):\d+(.*)"
+MESSAGE_PATTERN     = r"^(.*?): (.*?)\s+-->\s+(.*?):(\d+):(\d+)(.*)"
 # we extract package path from the package_id
 # eg -- "package_id":"stratisd 3.6.5 (path+file:///builddir/build/BUILD/stratisd-3.6.5)
 PACKAGE_ID_PATTERN  = r"path\+file://(.*)\)"
@@ -37,10 +37,10 @@ def main():
         if not match:
             continue
 
-        message_type, message_content, file_path, line_number, rest = match.groups()
+        message_type, message_content, file_path, line_number, column, rest = match.groups()
 
         print("Error: CLIPPY_WARNING:")
-        print(f"{package_path}/{file_path}:{line_number}: {message_type}: {message_content}")
+        print(f"{package_path}/{file_path}:{line_number}:{column}: {message_type}: {message_content}")
         for x, line in enumerate(rest.split("\n")):
             if x == 0 and line.strip() == "":
                 continue
