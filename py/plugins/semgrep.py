@@ -210,7 +210,7 @@ class Plugin:
             # read from SEMGREP_SCAN_CHROOT_ROOT_PATH to get the chroot root path
             chroot_root_path = ""
             with open(f"{results.dbgdir_raw}{SEMGREP_SCAN_CHROOT_ROOT_PATH}", "r", encoding="utf-8") as f:
-                chroot_root_path = f.read().rstrip("\n")
+                chroot_root_path = f.read().rstrip("/")
 
             # remove the `SEMGREP_SCAN_CHROOT_ROOT_PATH` file
             os.remove(f"{results.dbgdir_raw}{SEMGREP_SCAN_CHROOT_ROOT_PATH}")
