@@ -35,8 +35,6 @@ SEMGREP_SCAN_DIR = "/builddir/build/BUILD"
 
 SEMGREP_SCAN_OUTPUT = "/builddir/semgrep-scan-results.sarif"
 
-SEMGREP_SCAN_CHROOT_ROOT_PATH = "/builddir/semgrep-chroot-root"
-
 SEMGREP_SCAN_LOG = "/builddir/semgrep-scan.log"
 
 
@@ -60,6 +58,7 @@ class Plugin:
     def __init__(self):
         self.enabled = False
         self.semgrep_scan_opts = None
+        self.mock_root = None
 
     def get_props(self):  # pylint: disable=missing-function-docstring
         return PluginProps()
@@ -148,7 +147,6 @@ class Plugin:
             props.copy_out_files += [
                 SEMGREP_SCAN_OUTPUT,
                 SEMGREP_SCAN_LOG,
-                SEMGREP_SCAN_CHROOT_ROOT_PATH,
             ]
             return 0
 
@@ -159,9 +157,9 @@ class Plugin:
             semgrep_prefix = f"env PATH={semgrep_lib_dir}/bin:$PATH PYTHONPATH={semgrep_lib_dir}"
             # assuming semgrep rules are located under the 'rules' directory
             semgrep_rules_dir = os.path.join(results.tmpdir, "semgrep_rules/rules")
-            # write the chroot root path to the SEMGREP_SCAN_CHROOT_ROOT_PATH
-            with open(f"{mock.mock_root}{SEMGREP_SCAN_CHROOT_ROOT_PATH}", "w", encoding="utf-8") as f:
-                f.write(mock.mock_root)
+
+            # record the mock_root path (without the trailing /) because we need it in filter_hook
+            self.mock_root = mock.mock_root.rstrip("/")
 
             # command to run semgrep scan
             semgrep_scan_cmd = semgrep_prefix + (
@@ -177,7 +175,7 @@ class Plugin:
 
             # eventually append the target directory to be scanned
             semgrep_scan_cmd += (
-                f" --output={mock.mock_root}{SEMGREP_SCAN_OUTPUT} {mock.mock_root}{SEMGREP_SCAN_DIR}"
+                f" --output={mock.mock_root}{SEMGREP_SCAN_OUTPUT} {self.mock_root}{SEMGREP_SCAN_DIR}"
                 f" 2>{mock.mock_root}{SEMGREP_SCAN_LOG}"
             )
             # run semgrep scan
@@ -207,14 +205,6 @@ class Plugin:
                 return 0
             dst = f"{results.dbgdir_uni}/semgrep-scan-results.json"
 
-            # read from SEMGREP_SCAN_CHROOT_ROOT_PATH to get the chroot root path
-            chroot_root_path = ""
-            with open(f"{results.dbgdir_raw}{SEMGREP_SCAN_CHROOT_ROOT_PATH}", "r", encoding="utf-8") as f:
-                chroot_root_path = f.read().rstrip("/")
-
-            # remove the `SEMGREP_SCAN_CHROOT_ROOT_PATH` file
-            os.remove(f"{results.dbgdir_raw}{SEMGREP_SCAN_CHROOT_ROOT_PATH}")
-
             tmp_dir_basename = results.tmpdir.split("/")[-1]
             semgrep_rules_path_prefix = f"{tmp_dir_basename}/semgrep_rules/"
             # semgrep report has dot-separated rules path
@@ -224,7 +214,7 @@ class Plugin:
             # in its rules path. The following sed command strips suspicious path prefixes by removing
             # any sequence of non left-square-bracket characters preceding '{tmp_path}'
             cmd = (
-                fr"csgrep {src} --mode=json --strip-path-prefix {chroot_root_path}{SEMGREP_SCAN_DIR}/ "
+                fr"csgrep {src} --mode=json --strip-path-prefix {self.mock_root} "
                 fr"| sed 's|[^\[]*{tmp_path}||' > {dst}"  # pylint: disable=W1401
             )
 
