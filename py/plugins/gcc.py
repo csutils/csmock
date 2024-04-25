@@ -261,6 +261,11 @@ class Plugin:
                                   "disabling the tool" % analyzer_bin, ec=0)
                     return 0
 
+                # use -fdiagnostics-text-art-charset=none if supported by gcc in the chroot
+                flag = "-fdiagnostics-text-art-charset=none"
+                if 0 == mock.exec_mockbuild_cmd(f"{cmd} {flag}"):
+                    props.env["CSGCCA_ADD_OPTS"] = flag
+
                 if args.gcc_analyzer_bin:
                     # create an executable shell script to wrap the custom gcc binary
                     wrapper_script = CSMOCK_GCC_WRAPPER_TEMPLATE % analyzer_bin
