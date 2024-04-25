@@ -1124,6 +1124,9 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     # just to update rpm-list-mock.txt
                     find_missing_pkgs([], results, mock)
 
+                # make /builddir writable without root access
+                mock.exec_chroot_cmd("chown mockbuild -R /builddir")
+
                 if supermin_in_use:
                     # attempt to make name resolving work in the chroot
                     mock.copy_in_resolv_conf()
