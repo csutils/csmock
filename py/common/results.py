@@ -380,6 +380,11 @@ def handle_known_fp_list(props, results):
 
     # update scan metadata
     results.ini_writer.append("known-false-positives", props.known_false_positives)
+    cmd = ["rpm", "-qf", props.known_false_positives]
+    (ec, out) = results.get_cmd_output(cmd, shell=False)
+    if 0 == ec:
+        # record the RPM package that provided the known-false-positives file
+        results.ini_writer.append("known-false-positives-rpm", out.strip())
 
     # install global filter of known false positives
     filter_cmd = f'csdiff --json-output --show-internal "{props.known_false_positives}" -'
