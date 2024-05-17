@@ -178,8 +178,11 @@ class Plugin:
                 # wrap snyk invocation by timeout(1)
                 cmd = f"/usr/bin/timeout {args.snyk_timeout} {cmd}"
 
+            # snyk requires network connection in the chroot
+            mock_cmd = ["--enable-network", "--chroot", cmd]
+
             # run snyk code
-            ec = mock.exec_chroot_cmd(cmd)
+            ec = mock.exec_mock_cmd(mock_cmd)
 
             # remove authentication token from the chroot
             mock.exec_chroot_cmd("/bin/rm -fv %s" % auth_token_dst)
