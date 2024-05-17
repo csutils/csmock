@@ -15,7 +15,7 @@ rlJournalStart
             # than our development COPR repo.  Therefore, we need to flip the
             # priorities and update the packages manually.
             rlRun "echo 'priority=1' >> /etc/yum.repos.d/group_codescan-csutils-*.repo"
-            rlRun "dnf upgrade -y 'cs*'"
+            rlRun "yum upgrade -y 'cs*'"
         fi
 
         if [ -z "$TEST_PACKAGE" ]; then
