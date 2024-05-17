@@ -10,7 +10,7 @@ TEST_USER="csmock"
 rlJournalStart
     rlPhaseStartSetup
         # use the latest csutils in the Testing Farm
-        if rlIsFedora || rlIsRHELLike '>7'; then
+        if test "$PACKIT_FULL_REPO_NAME"; then
             # By default the testing-farm-tag-repository has higher priority
             # than our development COPR repo.  Therefore, we need to flip the
             # priorities and update the packages manually.
