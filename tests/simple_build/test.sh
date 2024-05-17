@@ -14,7 +14,7 @@ rlJournalStart
             # By default the testing-farm-tag-repository has higher priority
             # than our development COPR repo.  Therefore, we need to flip the
             # priorities and update the packages manually.
-            rlRun "dnf config-manager --save --setopt='copr:copr.fedorainfracloud.org:group_codescan:csutils.priority=1'"
+            rlRun "echo 'priority=1' >> /etc/yum.repos.d/group_codescan-csutils-*.repo"
             rlRun "dnf upgrade -y 'cs*'"
         fi
 
