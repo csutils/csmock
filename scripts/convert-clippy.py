@@ -10,6 +10,7 @@ MESSAGE_PATTERN     = r"^(.*?): (.*?)\s+-->\s+(.*?):(\d+):(\d+)(.*)"
 PACKAGE_ID_PATTERN  = r"path\+file://(.*)\)"
 # eg -- "package_id":"path+file:///builddir/build/BUILD/stratisd-3.6.5#stratisd@3.6.5"
 PACKAGE_ID_PATTERN2 = r"^path\+file:\/\/([^#]+)(?:#([^@]*))?(?:@(.+))?$"
+PACKAGE_ID_PATTERNS = [PACKAGE_ID_PATTERN, PACKAGE_ID_PATTERN2]
 
 def main():
     for line in sys.stdin:
@@ -23,8 +24,11 @@ def main():
         if item["reason"] != "compiler-message":
             continue
 
-        if (not (match := re.search(PACKAGE_ID_PATTERN, item["package_id"])) and
-            not (match := re.search(PACKAGE_ID_PATTERN2, item["package_id"]))):
+        for pattern in PACKAGE_ID_PATTERNS:
+            match = re.search(pattern, item["package_id"])
+            if match:
+                break
+        if not match:
             continue
 
         package_path = match.group(1)
