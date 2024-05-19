@@ -94,9 +94,7 @@ BuildRequires: help2man
 
 %if 0%{?rhel} == 7
 %global python3_pkgversion 36
-
-# needed for /usr/share/csmock/scripts/convert-clippy.py
-%global _python_bytecompile_errors_terminate_build 0
+%global __python %{python3}
 %endif
 
 BuildRequires: python%{python3_pkgversion}-GitPython
@@ -325,7 +323,10 @@ This package contains the unicontrol plug-in for csmock.
 %{python3_sitelib}/csmock/plugins/__pycache__/clang.*
 
 %files -n csmock-plugin-clippy
-%{_datadir}/csmock/scripts/convert-clippy.py
+%{_datadir}/csmock/scripts/convert-clippy.py*
+%if 0%{?rhel} == 7
+%{_datadir}/csmock/scripts/__pycache__/convert-clippy.*
+%endif
 %{_datadir}/csmock/scripts/inject-clippy.sh
 %{python3_sitelib}/csmock/plugins/clippy.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/clippy.*
@@ -344,6 +345,9 @@ This package contains the unicontrol plug-in for csmock.
 
 %files -n csmock-plugin-infer
 %{_datadir}/csmock/scripts/filter-infer.py*
+%if 0%{?rhel} == 7
+%{_datadir}/csmock/scripts/__pycache__/filter-infer.*
+%endif
 %{_datadir}/csmock/scripts/install-infer.sh
 %{python3_sitelib}/csmock/plugins/infer.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/infer.*
@@ -384,6 +388,9 @@ This package contains the unicontrol plug-in for csmock.
 
 %files -n csmock-plugin-unicontrol
 %{_datadir}/csmock/scripts/find-unicode-control.py*
+%if 0%{?rhel} == 7
+%{_datadir}/csmock/scripts/__pycache__/find-unicode-control.*
+%endif
 %{python3_sitelib}/csmock/plugins/unicontrol.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/unicontrol.*
 EOF
