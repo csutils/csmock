@@ -18,7 +18,7 @@ def main():
             item = json.loads(line)
         except Exception as e:
             print("rust-clippy: Error while converting results:", e, file=sys.stderr)
-            continue
+            sys.exit(1)
 
         if item["reason"] != "compiler-message":
             continue
