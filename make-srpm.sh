@@ -301,7 +301,7 @@ This package contains the unicontrol plug-in for csmock.
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
 %{_datadir}/csmock/scripts/enable-keep-going.sh
-%{_datadir}/csmock/scripts/chroot-fixups
+%attr(755,root,root) %{_datadir}/csmock/scripts/chroot-fixups
 %{_datadir}/csmock/scripts/patch-rawbuild.sh
 %{python3_sitelib}/csmock/__init__.py*
 %{python3_sitelib}/csmock/common
