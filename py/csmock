@@ -987,8 +987,10 @@ exceeds the specified limit (defaults to 1024).")
         else:
             props.nvr = re.sub("\\.tar$", "", re.sub("\\.[^.]*$", "", srpm_base))
 
-        # cut off the -version-release or -version suffix to obtain package name
-        props.pkg = re.sub("-[v]?[0-9][^-]*(-[0-9][^-]*)?$", "", props.nvr)
+        # cut off the `-version-release` or `-version` suffix to obtain package name where `version` can be
+        # a number optionally prefixed by `v` or a full-size SHA1 hash encoded in lowercase as, for example,
+        # in `project-koku-koku-cbe5e5c3355c1e140aa1cca7377aebe09d8d8466`
+        props.pkg = re.sub("-(([v]?[0-9][^-]*)|([0-9a-f]{40}))(-[0-9][^-]*)?$", "", props.nvr)
 
     # resolve name of the file/dir we are going to store the results to
     if args.output is None:
