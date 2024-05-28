@@ -1,3 +1,5 @@
+import os
+
 import csmock.common.util
 
 RUN_CLIPPY_CONVERT = "/usr/share/csmock/scripts/convert-clippy.py"
@@ -37,6 +39,10 @@ class Plugin:
 
         def convert_hook(results):
             src = f"{results.dbgdir_raw}{CLIPPY_OUTPUT}"
+            if not os.path.exists(src):
+                # if `cargo build` was not executed during the scan, there are no results to process
+                return 0
+
             dst = f"{results.dbgdir_uni}/clippy-capture.err"
             cmd = f'set -o pipefail; {RUN_CLIPPY_CONVERT} < {src} | csgrep --remove-duplicates > {dst}'
             return results.exec_cmd(cmd, shell=True)
