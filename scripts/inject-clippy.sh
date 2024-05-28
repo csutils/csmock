@@ -4,7 +4,8 @@ ORIGINAL_LOCATION="/usr/bin/cargo"
 NEW_LOCATION="/usr/bin/cargo_original"
 
 if [ -f "$NEW_LOCATION" ]; then
-    rm "/builddir/clippy-output.txt"
+    # remove capture file created by previous runs if --skip-init is in effect
+    rm -fv "/builddir/clippy-output.txt"
     exit 0
 fi
 
@@ -13,16 +14,18 @@ mv -v $ORIGINAL_LOCATION $NEW_LOCATION
 sed "s|REPLACE_ME|$NEW_LOCATION|g" > $ORIGINAL_LOCATION << 'EOF'
 #!/bin/bash
 
-ORIGINAL_PARAMS=("$@")
+# look for "build" in command-line args
+for ((i=0; i<$#; i++)); do
+    if [[ "${@[i]}" == "build" ]]; then
+        # found! --> execute the command with "build" substituted by "clippy"
+        set -x
+        REPLACE_ME "${@::i}" clippy "${@:i+1}" --message-format=json >> /builddir/clippy-output.txt
+        break
+    fi
+done
 
-# FIXME: "build" doesn't have to *always* be the first arg
-if [[ $1 == "build" ]]; then
-    set -x
-    set -- "clippy" "${@:2}"
-    REPLACE_ME "$@" --message-format=json >> /builddir/clippy-output.txt
-fi
-
-REPLACE_ME "${ORIGINAL_PARAMS[@]}"
+# execute the original command in any case
+exec REPLACE_ME "$@"
 EOF
 
 chmod +x $ORIGINAL_LOCATION
