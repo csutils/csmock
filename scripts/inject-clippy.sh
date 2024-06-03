@@ -15,11 +15,11 @@ sed "s|REPLACE_ME|$NEW_LOCATION|g" > $ORIGINAL_LOCATION << 'EOF'
 #!/bin/bash
 
 # look for "build" in command-line args
-for ((i=0; i<$#; i++)); do
-    if [[ "${@[i]}" == "build" ]]; then
+for ((i=1; i<$#; i++)); do
+    if [[ "${!i}" == "build" ]]; then
         # found! --> execute the command with "build" substituted by "clippy"
         set -x
-        REPLACE_ME "${@::i}" clippy "${@:i+1}" --message-format=json >> /builddir/clippy-output.txt
+        REPLACE_ME "${@:1:i-1}" clippy "${@:i+1}" --message-format=json >> /builddir/clippy-output.txt
         break
     fi
 done
