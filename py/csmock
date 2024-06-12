@@ -216,7 +216,7 @@ class MockWrapper:
             self.mock_root = self.mock_root.strip()
 
             # use only the basename of the mock root
-            lock_name = pathlib.Path(self.mock_root).parent.stem
+            lock_name = pathlib.Path(self.mock_root).parent.name
 
         lock = f"/tmp/.csmock-{lock_name.replace('/', '_')}"
         self.lock_file = f"{lock}.lock"
