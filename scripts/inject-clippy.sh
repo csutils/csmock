@@ -3,9 +3,11 @@
 ORIGINAL_LOCATION="/usr/bin/cargo"
 NEW_LOCATION="/usr/bin/cargo_original"
 
-if [ -f "$NEW_LOCATION" ]; then
-    # remove capture file created by previous runs if --skip-init is in effect
-    rm -fv "/builddir/clippy-output.txt"
+# create empty or truncate existing (if --skip-init is in effect) capture file
+runuser mockbuild -c "truncate --size=0 /builddir/clippy-output.txt"
+
+if [ -x "$NEW_LOCATION" ]; then
+    # binary already moved (most likely by a previous run of this script)
     exit 0
 fi
 
