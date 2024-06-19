@@ -4,7 +4,7 @@ import csmock.common.util
 
 RUN_CLIPPY_CONVERT = "/usr/share/csmock/scripts/convert-clippy.py"
 CLIPPY_OUTPUT = "/builddir/clippy-output.txt"
-CLIPPY_INSTALL = "/usr/share/csmock/scripts/inject-clippy.sh"
+CLIPPY_INJECT_SCRIPT = "/usr/share/csmock/scripts/inject-clippy.sh"
 
 class PluginProps:
     def __init__(self):
@@ -28,9 +28,9 @@ class Plugin:
         if not self.enabled:
             return
 
-        def install_clippy_hook(results, mock):
-            return mock.exec_chroot_cmd(CLIPPY_INSTALL)
-        props.post_depinst_hooks += [install_clippy_hook]
+        def inject_clippy_hook(results, mock):
+            return mock.exec_chroot_cmd(CLIPPY_INJECT_SCRIPT)
+        props.post_depinst_hooks += [inject_clippy_hook]
 
         props.install_pkgs += ["clippy"]
         props.copy_out_files += [CLIPPY_OUTPUT]
