@@ -74,6 +74,7 @@ DEFAULT_RPM_OPTS = [
 NOCHECK_RPM_OPTS = [
     "--define", "libguestfs_runtests 0",
     "--define", "runselftest 0",
+    "--without", "test",
     "--without", "testsuite"]
 
 RAWBUILD_RPM_OPTS = [
