@@ -38,16 +38,6 @@ jobs:
     - job: tests
       trigger: pull_request
       targets:
-          - epel-7-x86_64
-      identifier: epel7
-      tf_extra_params:
-          environments:
-              - artifacts:
-                  - type: repository-file
-                    id: https://copr.fedorainfracloud.org/coprs/g/codescan/csutils/repo/epel-7/group_codescan-csutils-epel-7
-    - job: tests
-      trigger: pull_request
-      targets:
           - epel-8-aarch64
           - epel-8-x86_64
       identifier: epel8
