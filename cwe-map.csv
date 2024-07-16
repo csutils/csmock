@@ -312,7 +312,7 @@
 "GCC_ANALYZER_WARNING","warning[-Wanalyzer-fd-use-after-close]","CWE-910"
 "GCC_ANALYZER_WARNING","warning[-Wanalyzer-file-leak]","CWE-775"
 "GCC_ANALYZER_WARNING","warning[-Wanalyzer-free-of-non-heap]","CWE-590"
-"GCC_ANALYZER_WARNING","warning[-Wanalyzer-infinite-recursion]","CWE-"674
+"GCC_ANALYZER_WARNING","warning[-Wanalyzer-infinite-recursion]","CWE-674"
 "GCC_ANALYZER_WARNING","warning[-Wanalyzer-jump-through-null]","CWE-476"
 "GCC_ANALYZER_WARNING","warning[-Wanalyzer-malloc-leak]","CWE-401"
 "GCC_ANALYZER_WARNING","warning[-Wanalyzer-mismatching-deallocation]","CWE-762"
