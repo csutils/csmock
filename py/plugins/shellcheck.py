@@ -27,6 +27,9 @@ SHELLCHECK_CAP_DIR = "/builddir/shellcheck-results"
 FILTER_CMD = "csgrep --mode=json --remove-duplicates --quiet " \
         "--invert-match --event '^note|warning\\[SC1090\\]'"
 
+# default maximum amount of wall-clock time taken by a single shellcheck process [s]
+DEFAULT_SC_TIMEOUT = 30
+
 
 class PluginProps:
     def __init__(self):
@@ -48,6 +51,10 @@ class Plugin:
 
     def init_parser(self, parser):
         csmock.common.util.install_script_scan_opts(parser, "shellcheck")
+        parser.add_argument(
+            "--shellcheck-timeout", type=int, default=DEFAULT_SC_TIMEOUT,
+            help="maximum amount of wall-clock time taken by a single shellcheck process [s]" \
+                f" (defaults to {DEFAULT_SC_TIMEOUT})")
 
     def handle_args(self, parser, args, props):
         if not self.enabled:
@@ -61,7 +68,9 @@ class Plugin:
         dirs_to_scan = " ".join([dir + "/*" for dir in dirs_to_scan.split()])
 
         props.install_pkgs += ["ShellCheck"]
-        cmd = f"SC_RESULTS_DIR={SHELLCHECK_CAP_DIR} {RUN_SHELLCHECK_SH} {dirs_to_scan}"
+        cmd = f"SC_RESULTS_DIR={SHELLCHECK_CAP_DIR} "
+        cmd += f"SC_TIMEOUT={args.shellcheck_timeout} "
+        cmd += f"{RUN_SHELLCHECK_SH} {dirs_to_scan}"
         props.post_build_chroot_cmds += [cmd]
         props.copy_out_files += [SHELLCHECK_CAP_DIR]
 

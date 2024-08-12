@@ -9,7 +9,8 @@ SC_JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
 export SC_JOBS
 
 # how long we wait (wall-clock time) for a single shellcheck process to finish
-export SC_TIMEOUT=30
+test -n "$SC_TIMEOUT" || export SC_TIMEOUT=30
+test 0 -lt "$SC_TIMEOUT" || exit $?
 
 # directory for shellcheck results
 test -n "$SC_RESULTS_DIR" || export SC_RESULTS_DIR="./shellcheck-results"
