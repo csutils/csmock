@@ -22,11 +22,10 @@ import csmock.common.util
 
 RUN_SHELLCHECK_SH = "/usr/share/csmock/scripts/run-shellcheck.sh"
 
-SHELLCHECK_CAPTURE = "/builddir/shellcheck-capture.err"
+SHELLCHECK_CAP_DIR = "/builddir/shellcheck-results"
 
-FILTER_CMD = "csgrep --mode=json --remove-duplicates --quiet '%s' " \
-        "--invert-match --event '^note|warning\\[SC1090\\]' " \
-        "> '%s'"
+FILTER_CMD = "csgrep --mode=json --remove-duplicates --quiet " \
+        "--invert-match --event '^note|warning\\[SC1090\\]'"
 
 
 class PluginProps:
@@ -59,16 +58,16 @@ class Plugin:
             parser, args, props, "shellcheck")
 
         props.install_pkgs += ["ShellCheck"]
-        cmd = "%s %s > %s" % (RUN_SHELLCHECK_SH, dirs_to_scan, SHELLCHECK_CAPTURE)
+        cmd = f"SC_RESULTS_DIR={SHELLCHECK_CAP_DIR} {RUN_SHELLCHECK_SH} {dirs_to_scan}"
         props.post_build_chroot_cmds += [cmd]
-        props.copy_out_files += [SHELLCHECK_CAPTURE]
+        props.copy_out_files += [SHELLCHECK_CAP_DIR]
 
         csmock.common.util.install_default_toolver_hook(props, "ShellCheck")
 
         def filter_hook(results):
-            src = os.path.join(results.dbgdir_raw, SHELLCHECK_CAPTURE[1:])
+            src = os.path.join(results.dbgdir_raw, SHELLCHECK_CAP_DIR[1:])
             dst = os.path.join(results.dbgdir_uni, "shellcheck-capture.json")
-            cmd = FILTER_CMD % (src, dst)
+            cmd = f"cd {src} && {FILTER_CMD} *.json > {dst}"
             return results.exec_cmd(cmd, shell=True)
 
         props.post_process_hooks += [filter_hook]
