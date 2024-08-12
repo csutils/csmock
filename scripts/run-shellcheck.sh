@@ -18,6 +18,19 @@ test -n "$SC_RESULTS_DIR" || export SC_RESULTS_DIR="./shellcheck-results"
 mkdir "${SC_RESULTS_DIR}" || exit $?
 touch "${SC_RESULTS_DIR}/empty.json" || exit $?
 
+# check whether shellcheck supports --format=json1
+export SC_RESULTS_{BEG,END}
+if shellcheck --help 2>/dev/null | grep -q json1; then
+    SC_OPTS=(--format=json1)
+    SC_RESULTS_BEG=
+    SC_RESULTS_END=
+else
+    # compatibility workaround for old versions of shellcheck
+    SC_OPTS=(--format=json)
+    SC_RESULTS_BEG='{"comments":'
+    SC_RESULTS_END='}'
+fi
+
 # implementation of the script that filters shell scripts
 filter_shell_scripts() {
     for i in "$@"; do
@@ -44,8 +57,16 @@ filter_shell_scripts"' "$@"'
 # function that creates a separate JSON file if shellcheck detects anything
 wrap_shellcheck() {
     dst="${SC_RESULTS_DIR}/sc-$$.json"
-    (set -x && timeout "${SC_TIMEOUT}" shellcheck --format=json1 "$@" > "$dst")
+
+    # compatibility workaround for old versions of shellcheck
+    echo -n "$SC_RESULTS_BEG" > "$dst"
+
+    (set -x && timeout "${SC_TIMEOUT}" shellcheck "${SC_OPTS[@]}" "$@" >> "$dst")
     EC=$?
+
+    # compatibility workaround for old versions of shellcheck
+    echo -n "$SC_RESULTS_END" >> "$dst"
+
     case $EC in
         0)
             # no findings detected -> remove the output file
@@ -64,8 +85,10 @@ wrap_shellcheck() {
     esac
 }
 
-# store a script that filters shell scripts to a variable
-SC_WRAP_SCRIPT="$(declare -f wrap_shellcheck)
+# store a script that filters shell scripts to a variable (and explicitly
+# propagate the ${SC_OPTS} shell array, which cannot be easily exported)
+SC_WRAP_SCRIPT="$(declare -p SC_OPTS)
+$(declare -f wrap_shellcheck)
 wrap_shellcheck"' "$@"'
 
 # find all shell scripts and run shellcheck on them
