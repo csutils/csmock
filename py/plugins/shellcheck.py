@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+
 import csmock.common.util
 
 
@@ -22,8 +24,8 @@ RUN_SHELLCHECK_SH = "/usr/share/csmock/scripts/run-shellcheck.sh"
 
 SHELLCHECK_CAPTURE = "/builddir/shellcheck-capture.err"
 
-FILTER_CMD = "csgrep --quiet '%s' " \
-        "| csgrep --invert-match --event '^note|warning\\[SC1090\\]' " \
+FILTER_CMD = "csgrep --mode=json --remove-duplicates --quiet '%s' " \
+        "--invert-match --event '^note|warning\\[SC1090\\]' " \
         "> '%s'"
 
 
@@ -64,8 +66,8 @@ class Plugin:
         csmock.common.util.install_default_toolver_hook(props, "ShellCheck")
 
         def filter_hook(results):
-            src = results.dbgdir_raw + SHELLCHECK_CAPTURE
-            dst = "%s/shellcheck-capture.err" % results.dbgdir_uni
+            src = os.path.join(results.dbgdir_raw, SHELLCHECK_CAPTURE[1:])
+            dst = os.path.join(results.dbgdir_uni, "shellcheck-capture.json")
             cmd = FILTER_CMD % (src, dst)
             return results.exec_cmd(cmd, shell=True)
 
