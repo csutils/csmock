@@ -1226,7 +1226,7 @@ cd %%s*/ || cd *\n\
                             if mock.exec_chroot_cmd("rpmbuild --nocheck") == 0:
                                 extra_rpm_opts += ["--nocheck"]
                             else:
-                                # fragile compatiblity workaround for older versions of rpm-build,
+                                # fragile compatibility workaround for older versions of rpm-build,
                                 # known to break if unescaped %check appears in a change log entry
                                 extra_rpm_opts += ["--define", "check\\\n%%check\\\nexit 0"]
 
@@ -1247,7 +1247,9 @@ cd %%s*/ || cd *\n\
 
                         # execute post-build commands in the chroot
                         for cmd in props.post_build_chroot_cmds:
-                            mock.exec_chroot_cmd(cmd)
+                            rv = mock.exec_chroot_cmd(cmd)
+                            if rv != 0:
+                                results.error(f"post-build-chroot command failed with exit code: {rv}", ec=0)
 
                     finally:
                         # get the (intermediate) results out of the chroot
