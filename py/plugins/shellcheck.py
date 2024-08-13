@@ -57,6 +57,9 @@ class Plugin:
         dirs_to_scan = csmock.common.util.dirs_to_scan_by_args(
             parser, args, props, "shellcheck")
 
+        # append "/*" to each directory in dirs_to_scan (to scan pkg-specific dirs)
+        dirs_to_scan = " ".join([dir + "/*" for dir in dirs_to_scan.split()])
+
         props.install_pkgs += ["ShellCheck"]
         cmd = f"SC_RESULTS_DIR={SHELLCHECK_CAP_DIR} {RUN_SHELLCHECK_SH} {dirs_to_scan}"
         props.post_build_chroot_cmds += [cmd]

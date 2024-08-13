@@ -36,6 +36,22 @@ if shellcheck --help 2>/dev/null | grep -q external-sources; then
     SC_OPTS+=(--external-sources)
 fi
 
+# check whether shellcheck supports --source-path
+if shellcheck --help 2>/dev/null | grep -q source-path; then
+    sp=
+    for dir in "$@"; do
+        # search path works only for directories
+        test -d "$dir" || continue
+
+        # append a single directory from cmd-line args of this script
+        sp="${sp}:${dir}"
+    done
+    if test -n "$sp"; then
+        # pass the colon-delimited list of dirs via --source-path to shellcheck
+        SC_OPTS+=(--source-path="${sp#:}")
+    fi
+fi
+
 # implementation of the script that filters shell scripts
 filter_shell_scripts() {
     for i in "$@"; do
