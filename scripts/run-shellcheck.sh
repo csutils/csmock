@@ -31,6 +31,11 @@ else
     SC_RESULTS_END='}'
 fi
 
+# check whether shellcheck supports --external-sources
+if shellcheck --help 2>/dev/null | grep -q external-sources; then
+    SC_OPTS+=(--external-sources)
+fi
+
 # implementation of the script that filters shell scripts
 filter_shell_scripts() {
     for i in "$@"; do
