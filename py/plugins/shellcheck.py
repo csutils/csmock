@@ -25,7 +25,7 @@ RUN_SHELLCHECK_SH = "/usr/share/csmock/scripts/run-shellcheck.sh"
 SHELLCHECK_CAP_DIR = "/builddir/shellcheck-results"
 
 FILTER_CMD = "csgrep --mode=json --remove-duplicates --quiet " \
-        "--invert-match --event '^note|warning\\[SC1090\\]'"
+        "--invert-match --event '^info|style|warning\\[SC1090\\]'"
 
 # default maximum number of scripts scanned by a single shellcheck process
 DEFAULT_SC_BATCH = 1
