@@ -21,6 +21,7 @@ import datetime
 import errno
 import os
 import re
+import shlex
 import shutil
 import signal
 import socket
@@ -30,7 +31,6 @@ import sys
 import tempfile
 
 # local imports
-from csmock.common.util         import shell_quote
 from csmock.common.util         import strlist_to_shell_cmd
 
 CSGREP_FINAL_FILTER_ARGS = "--invert-match --event \"internal warning\" \
@@ -208,7 +208,7 @@ class ScanResults:
         self.handle_ec()
         if echo:
             if shell:
-                self.print_with_ts(shell_quote(cmd))
+                self.print_with_ts(cmd)
             else:
                 self.print_with_ts(strlist_to_shell_cmd(cmd, escape_special=True))
         try:
@@ -412,5 +412,5 @@ def handle_known_fp_list(props, results):
             if len(path_re) == 0 or path_re.startswith("#"):
                 # skip comments and empty lines
                 continue
-            filter_cmd = f'csgrep --mode=json --invert-match --path="{shell_quote(path_re)}"'
+            filter_cmd = f'csgrep --mode=json --invert-match --path={shlex.quote(path_re)}'
             props.result_filters += [filter_cmd]
