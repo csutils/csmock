@@ -1,0 +1,11 @@
+summary: Test analysis using ShellCheck
+test: ./test.sh
+framework: beakerlib
+environment:
+      TEST_PACKAGE: dracut
+      TEST_TOOL: shellcheck
+component:
+  - csmock
+recommend:
+  - csmock
+duration: 1h

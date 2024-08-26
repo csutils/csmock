@@ -7,6 +7,10 @@ TEST_PACKAGE="${TEST_PACKAGE:-}"
 TEST_TOOL="${TEST_TOOL:-}"
 TEST_USER="csmock"
 
+# Add CS Koji
+BEAKERLIB_rpm_fetch_base_url+=( "https://kojihub.stream.centos.org/kojifiles/packages/" )
+BEAKERLIB_rpm_packageinfo_base_url+=( "https://kojihub.stream.centos.org/koji/" )
+
 rlJournalStart
     rlPhaseStartSetup
         # use the latest csutils in the Testing Farm
