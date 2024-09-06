@@ -1332,13 +1332,13 @@ def do_diff_scan(props, output, diff_patches):
                 # we are looking for defects in patches
                 assert not props.skip_patches
                 run0_props.skip_patches = True
-                title = "%s - Defects in Patches" % props.nvr
+                title = "%s - Findings in Patches" % props.nvr
             else:
                 # this is a version-diff-build
                 run0_props.srpm         = run0_props.base_srpm
                 run0_props.mock_profile = run0_props.base_mock_profile
                 csdiff += " --ignore-path"
-                title = "%s - Defects not detected in %s" % (props.nvr, props.base_srpm)
+                title = "%s - Findings not detected in %s" % (props.nvr, props.base_srpm)
 
             run0 = "%s/run0" % results.resdir
             ec = do_scan(run0_props, run0)
