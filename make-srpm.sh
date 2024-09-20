@@ -216,9 +216,17 @@ This package contains the semgrep plug-in for csmock.
 %package plugin-shellcheck
 Summary: csmock plug-in providing the support for ShellCheck.
 Requires: csmock-common
+Requires: csmock-plugin-shellcheck-core
 
 %description plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.
+
+%package plugin-shellcheck-core
+Conflicts: csmock-plugin-shellcheck < %{version}-%{release}
+Summary: script to run shellcheck on a directory tree
+
+%description plugin-shellcheck-core
+This package contains the run-shellcheck.sh script to run shellcheck on a directory tree.
 
 %package plugin-smatch
 Summary: csmock plug-in providing the support for smatch
@@ -362,9 +370,14 @@ This package contains the unicontrol plug-in for csmock.
 %{python3_sitelib}/csmock/plugins/__pycache__/semgrep.*
 
 %files plugin-shellcheck
-%{_datadir}/csmock/scripts/run-shellcheck.sh
 %{python3_sitelib}/csmock/plugins/shellcheck.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/shellcheck.*
+
+%files plugin-shellcheck-core
+%license COPYING
+%dir %{_datadir}/csmock
+%dir %{_datadir}/csmock/scripts
+%{_datadir}/csmock/scripts/run-shellcheck.sh
 
 %files plugin-smatch
 %{python3_sitelib}/csmock/plugins/smatch.py*
