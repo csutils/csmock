@@ -224,6 +224,9 @@ This package contains the shellcheck plug-in for csmock.
 %package plugin-shellcheck-core
 Conflicts: csmock-plugin-shellcheck < %{version}-%{release}
 Summary: script to run shellcheck on a directory tree
+%if 0%{?rhel} != 7
+Recommends: ShellCheck
+%endif
 
 %description plugin-shellcheck-core
 This package contains the run-shellcheck.sh script to run shellcheck on a directory tree.
