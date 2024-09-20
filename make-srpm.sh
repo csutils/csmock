@@ -123,7 +123,7 @@ Requires: python%{python3_pkgversion}-GitPython
 %description -n csbuild
 Tool for plugging static analyzers into the build process, free of mock.
 
-%package -n csmock-common
+%package common
 Summary: Core of csmock (a mock wrapper for Static Analysis tools)
 Requires: csdiff > 3.1.0
 Requires: csgcca
@@ -135,136 +135,136 @@ Requires: xz
 Recommends: modulemd-tools
 %endif
 
-%description -n csmock-common
+%description common
 This package contains the csmock tool that allows to scan SRPMs by Static
 Analysis tools in a fully automated way.
 
-%package -n csmock-plugin-bandit
+%package plugin-bandit
 Summary: csmock plug-in providing the support for Bandit.
 Requires: csmock-common
 
-%description -n csmock-plugin-bandit
+%description plugin-bandit
 This package contains the bandit plug-in for csmock.
 
-%package -n csmock-plugin-cbmc
+%package plugin-cbmc
 Summary: csmock plug-in providing the support for cbmc
 Requires: csexec
 Requires: csmock-common
 
-%description -n csmock-plugin-cbmc
+%description plugin-cbmc
 This package contains the cbmc plug-in for csmock.
 
-%package -n csmock-plugin-clang
+%package plugin-clang
 Summary: csmock plug-in providing the support for Clang
 Requires: csclng
 Requires: csmock-common
 
-%description -n csmock-plugin-clang
+%description plugin-clang
 This package contains the clang plug-in for csmock.
 
-%package -n csmock-plugin-clippy
+%package plugin-clippy
 Summary: csmock plug-in providing the support for Rust Clippy.
 Requires: csmock-common
 
-%description -n csmock-plugin-clippy
+%description plugin-clippy
 This package contains the Rust Clippy plug-in for csmock.
 
-%package -n csmock-plugin-cppcheck
+%package plugin-cppcheck
 Summary: csmock plug-in providing the support for Cppcheck
 Requires: cscppc
 Requires: csmock-common
 
-%description -n csmock-plugin-cppcheck
+%description plugin-cppcheck
 This package contains the cppcheck plug-in for csmock.
 
-%package -n csmock-plugin-divine
+%package plugin-divine
 Summary: csmock plug-in providing the support for divine
 Requires: csexec
 Requires: csmock-common
 
-%description -n csmock-plugin-divine
+%description plugin-divine
 This package contains the divine plug-in for csmock.
 
-%package -n csmock-plugin-gitleaks
+%package plugin-gitleaks
 Summary: experimental csmock plug-in
 Requires: csmock-common
 
-%description -n csmock-plugin-gitleaks
+%description plugin-gitleaks
 This package contains the gitleaks plug-in for csmock.
 
-%package -n csmock-plugin-infer
+%package plugin-infer
 Summary: csmock plug-in providing the support for Infer
 Requires: csmock-common
 
-%description -n csmock-plugin-infer
+%description plugin-infer
 This package contains the Infer plug-in for csmock.
 
-%package -n csmock-plugin-pylint
+%package plugin-pylint
 Summary: csmock plug-in providing the support for Pylint.
 Requires: csmock-common
 
-%description -n csmock-plugin-pylint
+%description plugin-pylint
 This package contains the pylint plug-in for csmock.
 
-%package -n csmock-plugin-semgrep
+%package plugin-semgrep
 Summary: csmock plug-in providing the support for semgrep scan
 Requires: csmock-common
 
-%description -n csmock-plugin-semgrep
+%description plugin-semgrep
 This package contains the semgrep plug-in for csmock.
 
-%package -n csmock-plugin-shellcheck
+%package plugin-shellcheck
 Summary: csmock plug-in providing the support for ShellCheck.
 Requires: csmock-common
 
-%description -n csmock-plugin-shellcheck
+%description plugin-shellcheck
 This package contains the shellcheck plug-in for csmock.
 
-%package -n csmock-plugin-smatch
+%package plugin-smatch
 Summary: csmock plug-in providing the support for smatch
 Requires: csmatch
 Requires: csmock-common
 Requires: cswrap
 
-%description -n csmock-plugin-smatch
+%description plugin-smatch
 This package contains the smatch plug-in for csmock.
 
-%package -n csmock-plugin-snyk
+%package plugin-snyk
 Summary: csmock plug-in providing the support for snyk
 Requires: csmock-common
 
-%description -n csmock-plugin-snyk
+%description plugin-snyk
 This package contains the snyk plug-in for csmock.
 
-%package -n csmock-plugin-strace
+%package plugin-strace
 Summary: csmock plug-in providing the support for strace
 Requires: csexec
 Requires: csmock-common
 
-%description -n csmock-plugin-strace
+%description plugin-strace
 This package contains the strace plug-in for csmock.
 
-%package -n csmock-plugin-symbiotic
+%package plugin-symbiotic
 Summary: csmock plug-in providing the support for symbiotic
 Requires: csexec
 Requires: csmock-common
 
-%description -n csmock-plugin-symbiotic
+%description plugin-symbiotic
 This package contains the symbiotic plug-in for csmock.
 
-%package -n csmock-plugin-valgrind
+%package plugin-valgrind
 Summary: csmock plug-in providing the support for valgrind
 Requires: csexec
 Requires: csmock-common
 
-%description -n csmock-plugin-valgrind
+%description plugin-valgrind
 This package contains the valgrind plug-in for csmock.
 
-%package -n csmock-plugin-unicontrol
+%package plugin-unicontrol
 Summary: experimental csmock plug-in
 Requires: csmock-common
 
-%description -n csmock-plugin-unicontrol
+%description plugin-unicontrol
 This package contains the unicontrol plug-in for csmock.
 
 %prep
@@ -288,7 +288,7 @@ This package contains the unicontrol plug-in for csmock.
 %{_mandir}/man1/csbuild.1*
 %{_datadir}/csbuild/scripts/run-scan.sh
 
-%files -n csmock-common
+%files common
 %license COPYING
 %doc README
 %dir %{_datadir}/csmock
@@ -309,20 +309,20 @@ This package contains the unicontrol plug-in for csmock.
 %{python3_sitelib}/csmock/plugins/__pycache__/__init__.*
 %{python3_sitelib}/csmock/plugins/__pycache__/gcc.*
 
-%files -n csmock-plugin-bandit
+%files plugin-bandit
 %{_datadir}/csmock/scripts/run-bandit.sh
 %{python3_sitelib}/csmock/plugins/bandit.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/bandit.*
 
-%files -n csmock-plugin-cbmc
+%files plugin-cbmc
 %{python3_sitelib}/csmock/plugins/cbmc.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/cbmc.*
 
-%files -n csmock-plugin-clang
+%files plugin-clang
 %{python3_sitelib}/csmock/plugins/clang.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/clang.*
 
-%files -n csmock-plugin-clippy
+%files plugin-clippy
 %{_datadir}/csmock/scripts/convert-clippy.py*
 %if 0%{?rhel} == 7
 %{_datadir}/csmock/scripts/__pycache__/convert-clippy.*
@@ -331,19 +331,19 @@ This package contains the unicontrol plug-in for csmock.
 %{python3_sitelib}/csmock/plugins/clippy.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/clippy.*
 
-%files -n csmock-plugin-cppcheck
+%files plugin-cppcheck
 %{python3_sitelib}/csmock/plugins/cppcheck.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/cppcheck.*
 
-%files -n csmock-plugin-divine
+%files plugin-divine
 %{python3_sitelib}/csmock/plugins/divine.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/divine.*
 
-%files -n csmock-plugin-gitleaks
+%files plugin-gitleaks
 %{python3_sitelib}/csmock/plugins/gitleaks.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/gitleaks.*
 
-%files -n csmock-plugin-infer
+%files plugin-infer
 %{_datadir}/csmock/scripts/filter-infer.py*
 %if 0%{?rhel} == 7
 %{_datadir}/csmock/scripts/__pycache__/filter-infer.*
@@ -352,41 +352,41 @@ This package contains the unicontrol plug-in for csmock.
 %{python3_sitelib}/csmock/plugins/infer.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/infer.*
 
-%files -n csmock-plugin-pylint
+%files plugin-pylint
 %{_datadir}/csmock/scripts/run-pylint.sh
 %{python3_sitelib}/csmock/plugins/pylint.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/pylint.*
 
-%files -n csmock-plugin-semgrep
+%files plugin-semgrep
 %{python3_sitelib}/csmock/plugins/semgrep.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/semgrep.*
 
-%files -n csmock-plugin-shellcheck
+%files plugin-shellcheck
 %{_datadir}/csmock/scripts/run-shellcheck.sh
 %{python3_sitelib}/csmock/plugins/shellcheck.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/shellcheck.*
 
-%files -n csmock-plugin-smatch
+%files plugin-smatch
 %{python3_sitelib}/csmock/plugins/smatch.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/smatch.*
 
-%files -n csmock-plugin-snyk
+%files plugin-snyk
 %{python3_sitelib}/csmock/plugins/snyk.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/snyk.*
 
-%files -n csmock-plugin-strace
+%files plugin-strace
 %{python3_sitelib}/csmock/plugins/strace.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/strace.*
 
-%files -n csmock-plugin-symbiotic
+%files plugin-symbiotic
 %{python3_sitelib}/csmock/plugins/symbiotic.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/symbiotic.*
 
-%files -n csmock-plugin-valgrind
+%files plugin-valgrind
 %{python3_sitelib}/csmock/plugins/valgrind.py*
 %{python3_sitelib}/csmock/plugins/__pycache__/valgrind.*
 
-%files -n csmock-plugin-unicontrol
+%files plugin-unicontrol
 %{_datadir}/csmock/scripts/find-unicode-control.py*
 %if 0%{?rhel} == 7
 %{_datadir}/csmock/scripts/__pycache__/find-unicode-control.*
