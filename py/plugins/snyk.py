@@ -33,7 +33,7 @@ SNYK_OUTPUT = "/builddir/snyk-results.sarif"
 
 SNYK_LOG = "/builddir/snyk-scan.log"
 
-FILTER_CMD = f"csgrep '%s' --mode=json --prepend-path-prefix={SNYK_SCAN_DIR}/ > '%s'"
+FILTER_CMD = f"csgrep '%s' --mode=json --prepend-path-prefix={SNYK_SCAN_DIR}/ --remove-duplicates > '%s'"
 
 # default value for the maximum amount of time taken by invocation of Snyk (5 hours)
 DEFAULT_SNYK_TIMEOUT = 18000
