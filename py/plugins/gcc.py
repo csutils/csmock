@@ -16,6 +16,7 @@
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
 # standard imports
+import os
 import subprocess
 
 # local imports
@@ -25,10 +26,20 @@ from csmock.common.cflags import add_custom_flag_opts, flags_by_warning_level
 
 CSGCCA_BIN = "/usr/bin/csgcca"
 
+# directory for GCC results (currently used only with `--gcc-analyzer-bin`)
+GCC_RESULTS_DIR = "/builddir/gcc-results"
+
 CSMOCK_GCC_WRAPPER_NAME = 'csmock-gcc-wrapper'
 CSMOCK_GCC_WRAPPER_PATH = '/usr/bin/%s' % CSMOCK_GCC_WRAPPER_NAME
-CSMOCK_GCC_WRAPPER_TEMPLATE = '#!/bin/bash\n' \
-                              'exec %s "$@"'
+
+# script to run gcc analyzer and dump its output to a seaprate SARIF file in GCC_RESULTS_DIR
+CSMOCK_GCC_WRAPPER_TEMPLATE = f"""#!/bin/bash
+fn=$(flock {GCC_RESULTS_DIR} mktemp "{GCC_RESULTS_DIR}/$$-XXXX.sarif")
+exec %s "$@" -fdiagnostics-set-output="sarif:file=$fn"
+"""
+
+# command to read and join all captured SARIF files
+FILTER_CMD = "csgrep --mode=json --remove-duplicates"
 
 SANITIZER_CAPTURE_DIR = "/builddir/gcc-sanitizer-capture"
 
@@ -288,6 +299,23 @@ class Plugin:
 
                     # tell csgcca to use the wrapped script rather than system gcc analyzer
                     props.env["CSGCCA_ANALYZER_BIN"] = CSMOCK_GCC_WRAPPER_NAME
+
+                    # create directory for gcc results
+                    def create_gcc_results_dir_hook(_, mock):
+                        cmd = f"mkdir -pv '{GCC_RESULTS_DIR}' && touch '{GCC_RESULTS_DIR}/empty.sarif'"
+                        return mock.exec_mockbuild_cmd(cmd)
+                    props.post_depinst_hooks += [create_gcc_results_dir_hook]
+
+                    # copy gcc results out of the chroot
+                    props.copy_out_files += [GCC_RESULTS_DIR]
+
+                    # process all captured SARIF files
+                    def filter_hook(results):
+                        src = os.path.join(results.dbgdir_raw, GCC_RESULTS_DIR[1:])
+                        dst = os.path.join(results.dbgdir_uni, "gcc-results.json")
+                        cmd = f'{FILTER_CMD} --file-glob "{src}/*.sarif" > "{dst}"'
+                        return results.exec_cmd(cmd, shell=True)
+                    props.post_process_hooks += [filter_hook]
 
                 # XXX: changing props this way is extremely fragile
                 # insert csgcca right before cswrap to avoid chaining
