@@ -351,7 +351,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             cmd = ["--install", "module-build-macros"] + cmd_add
             self.exec_mock_cmd(cmd, quiet=quiet)
 
-        cmd = ["--installdeps", srpm] + cmd_add
+        # install both static and dynamic build dependencies (replacement for --installdeps)
+        cmd = ["--calculate-build-dependencies", srpm] + cmd_add
         return (self.exec_mock_cmd(cmd, quiet=quiet) == 0)
 
     def emergency_install_pkgs(self, pkgs):
@@ -386,7 +387,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 continue
             self.init_done = True
 
-            # run `mock --installdeps`
+            # run `mock --calculate-build-dependencies`
             srpm_deps_ok = srpm is None or self.install_deps(srpm)
             if not srpm_deps_ok and not try_only:
                 srpm_base = os.path.basename(srpm)

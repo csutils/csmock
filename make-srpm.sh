@@ -128,7 +128,7 @@ Summary: Core of csmock (a mock wrapper for Static Analysis tools)
 Requires: csdiff > 3.1.0
 Requires: csgcca
 Requires: cswrap
-Requires: mock
+Requires: mock >= 5.7
 Requires: tar
 Requires: xz
 %if 0%{?rhel} != 7
