@@ -364,10 +364,10 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         return (self.exec_mock_cmd(["--remove"] + pkgs) == 0)
 
     def init_and_install(self, srpm, pkgs, keep_going=False, try_only=False):
-        for scrub_root in [False, True]:
-            if scrub_root and not self.scrub_done:
-                self.results.print_with_ts("trying to scrub cache...")
-                self.exec_mock_cmd(["--scrub=root-cache"], quiet=False)
+        for do_scrub in [False, True]:
+            if do_scrub and not self.scrub_done:
+                self.results.print_with_ts("trying to scrub everything...")
+                self.exec_mock_cmd(["--scrub=all"], quiet=False)
                 self.scrub_done = True
                 self.init_done = False
 
