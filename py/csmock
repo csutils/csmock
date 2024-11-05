@@ -363,15 +363,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
     def remove(self, pkgs):
         return (self.exec_mock_cmd(["--remove"] + pkgs) == 0)
 
-    def init_and_install(self, srpm, pkgs, force_scrub=False, keep_going=False, try_only=False):
-        if force_scrub:
-            scrub_root_passes = [True]
-            # yet another hack for libguestfs/supermin
-            self.exec_mock_cmd(["--scrub=dnf-cache"], quiet=False)
-        else:
-            scrub_root_passes = [False, True]
-
-        for scrub_root in scrub_root_passes:
+    def init_and_install(self, srpm, pkgs, keep_going=False, try_only=False):
+        for scrub_root in [False, True]:
             if scrub_root and not self.scrub_done:
                 self.exec_mock_cmd(["--scrub=root-cache"], quiet=False)
                 self.scrub_done = True
@@ -1080,13 +1073,9 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     results.error("pre-mock hook failed", ec=rv)
 
             with MockWrapper(results, props) as mock:
-                supermin_in_use = False
                 if srpm_dup is not None:
-                    (ec, _) = results.get_cmd_output("rpm -qp '%s' --requires | grep '^supermin'" % srpm_dup)
-                    supermin_in_use = (ec == 0)
-
                     # first rebuild the given SRPM (some deps might be required even for the rebuild)
-                    mock.init_and_install(srpm_dup, props.install_pkgs, force_scrub=supermin_in_use, try_only=True)
+                    mock.init_and_install(srpm_dup, props.install_pkgs, try_only=True)
 
                     # install the copied SRPM into the chroot
                     srpm_in = "/builddir/%s" % srpm_base
