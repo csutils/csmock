@@ -363,10 +363,6 @@ echo \"$self_pid\" > \"$lock_file\"'" \
     def remove(self, pkgs):
         return (self.exec_mock_cmd(["--remove"] + pkgs) == 0)
 
-    def copy_in_resolv_conf(self):
-        resconf = "/etc/resolv.conf"
-        return (self.exec_mock_cmd(["--copyin", resconf, resconf]) == 0)
-
     def init_and_install(self, srpm, pkgs, force_scrub=False, keep_going=False, try_only=False):
         if force_scrub:
             scrub_root_passes = [True]
@@ -1129,10 +1125,6 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
 
                 # make /builddir writable without root access
                 mock.exec_chroot_cmd("chown mockbuild -R /builddir")
-
-                if supermin_in_use:
-                    # attempt to make name resolving work in the chroot
-                    mock.copy_in_resolv_conf()
 
                 if props.shell_cmd_to_build is not None:
                     # prepare a build script in our tmp dir

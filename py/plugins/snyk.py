@@ -148,13 +148,6 @@ class Plugin:
         # fetch snyk binary executable before initializing the buildroot
         props.pre_mock_hooks += [fetch_snyk_hook]
 
-        # make networking work in the chroot
-        def copy_resolv_conf(results, mock):
-            mock.copy_in_resolv_conf()
-            return 0
-
-        props.post_depinst_hooks += [copy_resolv_conf]
-
         def scan_hook(results, mock, props):
             # copy snyk authentication token into the chroot
             dst_dir = "/builddir/.config/configstore"
