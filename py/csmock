@@ -366,29 +366,27 @@ echo \"$self_pid\" > \"$lock_file\"'" \
     def init_and_install(self, srpm, pkgs, keep_going=False, try_only=False):
         for scrub_root in [False, True]:
             if scrub_root and not self.scrub_done:
+                self.results.print_with_ts("trying to scrub cache...")
                 self.exec_mock_cmd(["--scrub=root-cache"], quiet=False)
                 self.scrub_done = True
                 self.init_done = False
 
+            # unless a scrub was done print warnings only
+            ec_by_scrub = int(self.scrub_done)
+
             # run `mock --init` if not disabled
             if not self.init_done and (self.exec_mock_cmd(["--init"], quiet=False) != 0):
-                if scrub_root:
-                    self.results.fatal_error("failed to init mock profile (%s)" % self.mock_profile)
-                else:
-                    self.results.error("failed to init mock profile (%s), trying to scrub cache..." \
-                            % self.mock_profile, ec=0)
-                    continue
+                self.results.error(f"failed to init mock profile ({self.mock_profile})",
+                                   ec=ec_by_scrub, fatal=ec_by_scrub)
+                continue
             self.init_done = True
 
             # run `mock --installdeps`
             srpm_deps_ok = srpm is None or self.install_deps(srpm)
             if not srpm_deps_ok and not try_only:
                 srpm_base = os.path.basename(srpm)
-                if self.scrub_done:
-                    self.results.error("failed to install build dependencies of %s" % srpm_base)
-                else:
-                    self.results.error("failed to install build dependencies of %s, trying to scrub cache..." \
-                            % srpm_base, ec=0)
+                self.results.error(f"failed to install build dependencies of {srpm_base}", ec=ec_by_scrub)
+                if not self.scrub_done:
                     continue
 
                 if keep_going:
@@ -406,13 +404,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             if try_only:
                 return False
 
-            if self.scrub_done:
-                self.results.error("failed to install required packages (%s)" % strlist_to_shell_cmd(missing_deps))
-                return False
-            else:
-                self.results.error("failed to install required packages (%s), trying to scrub cache..." \
-                        % strlist_to_shell_cmd(missing_deps), ec=0)
-                continue
+            self.results.error(f"failed to install required packages ({strlist_to_shell_cmd(missing_deps)})",
+                               ec=ec_by_scrub)
 
         return False
 

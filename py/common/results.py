@@ -180,7 +180,14 @@ class ScanResults:
         if self.ec < ec:
             self.ec = ec
 
-    def error(self, msg, ec=1, err_prefix=""):
+    def error(self, msg, ec=1, err_prefix="", fatal=False):
+        if fatal:
+            assert not err_prefix
+
+            # cannot recurse, should never return
+            self.fatal_error(msg, ec)
+            assert False
+
         level = "warning" if ec == 0 else "error"
         self.print_with_ts(f"{err_prefix}{level}: {msg}\n", prefix="!!! ")
         self.update_ec(ec)
