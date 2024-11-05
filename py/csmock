@@ -354,11 +354,16 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         cmd = ["--installdeps", srpm] + cmd_add
         return (self.exec_mock_cmd(cmd, quiet=quiet) == 0)
 
-    def emergency_install_deps(self, srpm):
-        (_, raw_deps) = self.results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
-        for dep in raw_deps.split("\n"):
+    def emergency_install_pkgs(self, pkgs):
+        """try to install pkgs one by one"""
+        for dep in pkgs:
             if (dep):
                 self.try_install([dep])
+
+    def emergency_install_deps(self, srpm):
+        (_, raw_deps) = self.results.get_cmd_output("rpm -qp '%s' --requires" % srpm)
+        pkgs = raw_deps.split("\n")
+        self.emergency_install_pkgs(pkgs)
 
     def remove(self, pkgs):
         return (self.exec_mock_cmd(["--remove"] + pkgs) == 0)
@@ -403,6 +408,11 @@ echo \"$self_pid\" > \"$lock_file\"'" \
                 return srpm_deps_ok
             if try_only:
                 return False
+
+            if keep_going:
+                # try to install the missing packages one by one
+                self.emergency_install_pkgs(missing_deps)
+                missing_deps = find_missing_pkgs(pkgs, self.results, self)
 
             self.results.error(f"failed to install required packages ({strlist_to_shell_cmd(missing_deps)})",
                                ec=ec_by_scrub)
