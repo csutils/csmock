@@ -352,7 +352,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             self.exec_mock_cmd(cmd, quiet=quiet)
 
         # install both static and dynamic build dependencies (replacement for --installdeps)
-        cmd = ["--calculate-build-dependencies", srpm] + cmd_add
+        cmd = ["--no-clean", "--calculate-build-dependencies", srpm] + cmd_add
         return (self.exec_mock_cmd(cmd, quiet=quiet) == 0)
 
     def emergency_install_pkgs(self, pkgs):
