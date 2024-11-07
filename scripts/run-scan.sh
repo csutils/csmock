@@ -25,7 +25,7 @@ BUILD_CMD="$2"
 test -n "$BUILD_CMD" || die "no BUILD_CMD given"
 
 FILTER_CMD="$3"
-test -n "$FILTER_CMD" || FILTER_CMD=cat
+test -n "$FILTER_CMD" || FILTER_CMD="cat"
 
 BASE_ERR="$4"
 if test -n "$BASE_ERR"; then

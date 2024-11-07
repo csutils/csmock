@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC2319
+
 export LC_ALL="C"
 
 # how many shell scripts we pass to shellcheck at a time
