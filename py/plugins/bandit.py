@@ -63,7 +63,7 @@ class Plugin:
         props.install_pkgs += ["bandit"]
 
         severity_filter = dict(zip(self._severity_levels, ['-l', '-ll', '-lll']))[args.bandit_severity_filter.upper()]
-        run_cmd = "%s %s %s > %s" % (RUN_BANDIT_SH, severity_filter, dirs_to_scan, BANDIT_CAPTURE)
+        run_cmd = f"shopt -s nullglob && {RUN_BANDIT_SH} {severity_filter} {dirs_to_scan} > {BANDIT_CAPTURE}"
         props.post_build_chroot_cmds += [run_cmd]
         props.copy_out_files += [BANDIT_CAPTURE]
 

@@ -94,7 +94,10 @@ DEFAULT_RESULT_FILTERS = [
 
 # path filter needed with `rpmbuild -bi`
 # TODO: introduce a csgrep option for this
-RPM_BI_FILTER = "sed 's|/builddir/build/BUILDROOT/[^/]*/|/builddir/build/BUILD//|'"
+# `/builddir/build/BUILDROOT/${NVR}/...` was used by old versions of `rpm`
+# `/builddir/build/BUILD/${NVR}/BUILDROOT/...` was later introduced by a backward-incompatible change in `rpm`
+# https://github.com/rpm-software-management/rpm/commit/9d35c8df497534e1fbd806a4dc78802bcf35d7cb
+RPM_BI_FILTER = "sed -r 's;/builddir/build/BUILD(ROOT/[^/]+|/[^/]+/BUILDROOT)/;/builddir/build/BUILD//;'"
 
 # path to csexec-loader is hard-coded for now
 CSEXEC_ENABLE_FLAG = "-Wl,--dynamic-linker,/usr/bin/csexec-loader"

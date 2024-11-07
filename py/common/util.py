@@ -139,7 +139,9 @@ def dirs_to_scan_by_args(parser, args, props, tool):
         dirs_to_scan += ["/builddir/build/BUILD"]
 
     if scan_install:
-        dirs_to_scan += ["/builddir/build/BUILDROOT"]
+        # the second variant was introduced by a backward-incompatible change in `rpm`
+        # https://github.com/rpm-software-management/rpm/commit/9d35c8df497534e1fbd806a4dc78802bcf35d7cb
+        dirs_to_scan += ["/builddir/build/BUILDROOT", "/builddir/build/BUILD/*/BUILDROOT"]
         props.need_rpm_bi = True
 
     return ' '.join(dirs_to_scan)

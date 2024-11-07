@@ -75,7 +75,8 @@ class Plugin:
         dirs_to_scan = " ".join([dir + "/*" for dir in dirs_to_scan.split()])
 
         props.install_pkgs += ["ShellCheck"]
-        cmd = f"SC_RESULTS_DIR={SHELLCHECK_CAP_DIR} "
+        cmd = "shopt -s nullglob && "
+        cmd += f"SC_RESULTS_DIR={SHELLCHECK_CAP_DIR} "
         cmd += f"SC_BATCH={args.shellcheck_batch} "
         cmd += f"SC_TIMEOUT={args.shellcheck_timeout} "
         cmd += f"{RUN_SHELLCHECK_SH} {dirs_to_scan}"
