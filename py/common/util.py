@@ -129,24 +129,20 @@ def dirs_to_scan_by_args(parser, args, props, tool):
         scan_install = (props.shell_cmd_to_build is None)
 
     if not scan_build and not scan_install:
-        parser.error("either --%s-scan-build or --%s-scan-install must be enabled" %
-                     (tool, tool))
+        parser.error(f"either --{tool}-scan-build or --{tool}-scan-install must be enabled")
 
     if scan_install and (props.shell_cmd_to_build is not None):
-        parser.error("--shell-cmd and --%s-scan-install cannot be used together" %
-                     tool)
+        parser.error(f"--shell-cmd and --{tool}-scan-install cannot be used together")
 
-    dirs_to_scan = ""
+    dirs_to_scan = []
     if scan_build:
-        dirs_to_scan += "/builddir/build/BUILD"
-        if scan_install:
-            dirs_to_scan += " "
+        dirs_to_scan += ["/builddir/build/BUILD"]
 
     if scan_install:
-        dirs_to_scan += "/builddir/build/BUILDROOT"
+        dirs_to_scan += ["/builddir/build/BUILDROOT"]
         props.need_rpm_bi = True
 
-    return dirs_to_scan
+    return ' '.join(dirs_to_scan)
 
 
 def require_file(parser, name):
