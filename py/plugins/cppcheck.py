@@ -45,7 +45,7 @@ class Plugin:
     def init_parser(self, parser):
         parser.add_argument(
             "--use-host-cppcheck", action="store_true",
-            help="use host's Cppcheck instead of the one in chroot \
+            help="use statically linked cppcheck installed on the host \
 (automatically enables the Cppcheck plug-in)")
 
         parser.add_argument(
@@ -103,6 +103,8 @@ class Plugin:
             cmd = mock.get_mock_cmd(["--chroot", "cppcheck --version"])
             (ec, verstr) = results.get_cmd_output(cmd, shell=False)
             if ec != 0:
+                if self.use_host_cppcheck:
+                    results.error("--use-host-cppcheck expects statically linked cppcheck installed on the host", ec=0)
                 results.error("failed to query cppcheck version", ec=ec)
                 return ec
 
