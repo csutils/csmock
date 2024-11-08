@@ -561,6 +561,15 @@ class ScanProps:
         cmd_out += "sh -c %s" % shell_quote(cmd_in)
         return cmd_out
 
+    def run_hooks(self, results, hook_name, *args):
+        """run all hooks from the list specified by hook_name"""
+        item = hook_name.replace("-", "_") + "_hooks"
+        hook_list = getattr(self, item)
+        for hook in hook_list:
+            rv = hook(*args)
+            if rv != 0:
+                results.error(f"{hook_name} hook failed", ec=rv)
+
 
 class PluginManager:
     def __init__(self):
@@ -1074,10 +1083,7 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
                     srpm_dup = None
 
             # run pre-mock hooks
-            for hook in props.pre_mock_hooks:
-                rv = hook(results, props)
-                if rv != 0:
-                    results.error("pre-mock hook failed", ec=rv)
+            props.run_hooks(results, "pre-mock", results, props)
 
             with MockWrapper(results, props) as mock:
                 if srpm_dup is not None:
@@ -1143,10 +1149,7 @@ cd %%s*/ || cd *\n\
                 results.exec_cmd(cmd, shell=True)
 
                 # run post-depinst hooks
-                for hook in props.post_depinst_hooks:
-                    rv = hook(results, mock)
-                    if rv != 0:
-                        results.error("post-depinst hook failed", ec=rv)
+                props.run_hooks(results, "post-depinst", results, mock)
 
                 if not props.no_scan:
                     if props.shell_cmd_to_build is None:
@@ -1228,10 +1231,7 @@ cd %%s*/ || cd *\n\
 
                     try:
                         # run post-install hooks
-                        for hook in props.post_install_hooks:
-                            rv = hook(results, mock, props)
-                            if rv != 0:
-                                results.error("post-install hook failed", ec=rv)
+                        props.run_hooks(results, "post-install", results, mock, props)
 
                         # execute post-build commands in the chroot
                         for cmd in props.post_build_chroot_cmds:
@@ -1256,10 +1256,7 @@ cd %%s*/ || cd *\n\
                         results.error("failed to pick cswrap results")
 
                     # run post-process hooks
-                    for hook in props.post_process_hooks:
-                        rv = hook(results)
-                        if rv != 0:
-                            results.error("post-process hook failed", ec=rv)
+                    props.run_hooks(results, "post-process", results)
 
                 # we are done with IniWriter
                 results.ini_writer.close()
