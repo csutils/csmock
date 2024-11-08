@@ -568,7 +568,7 @@ class ScanProps:
         for hook in hook_list:
             rv = hook(*args)
             if rv != 0:
-                results.error(f"{hook_name} hook failed", ec=rv)
+                results.error(f"{hook_name} hook {hook.__module__}::{hook.__name__}() returned {rv}", ec=rv)
 
 
 class PluginManager:
