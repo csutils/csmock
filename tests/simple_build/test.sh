@@ -50,7 +50,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Analyze $TEST_PACKAGE using $TEST_TOOL"
-        rlRun "su - $TEST_USER -c 'csmock -t $TEST_TOOL $CSMOCK_EXTRA_OPTS \"$SRPM\" --install pam'" 0 \
+        rlRun "su - $TEST_USER -c 'csmock -t $TEST_TOOL $CSMOCK_EXTRA_OPTS \"$SRPM\" --install pam --gcc-add-flag=-std=gnu11'" 0 \
             "Analyze $SRPM using $TEST_TOOL analyzer"
         rlFileSubmit "/home/$TEST_USER/$TEST_PACKAGE"*.tar.xz "$SRPM-$TEST_TOOL.tar.xz"
     rlPhaseEnd
