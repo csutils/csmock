@@ -82,11 +82,12 @@ filter_shell_scripts"' "$@"'
 # function that creates a separate JSON file if shellcheck detects anything
 wrap_shellcheck() {
     dst="${SC_RESULTS_DIR}/sc-$$.json"
+    log="${dst%.json}.log"
 
     # compatibility workaround for old versions of shellcheck
     echo -n "$SC_RESULTS_BEG" > "$dst"
 
-    (set -x && timeout "${SC_TIMEOUT}" shellcheck "${SC_OPTS[@]}" "$@" >> "$dst")
+    (set -x && timeout "${SC_TIMEOUT}" shellcheck "${SC_OPTS[@]}" "$@" >> "$dst" 2> "$log")
     EC=$?
 
     # compatibility workaround for old versions of shellcheck
@@ -94,12 +95,18 @@ wrap_shellcheck() {
 
     case $EC in
         0)
-            # no findings detected -> remove the output file
-            rm -f "$dst"
+            # no findings detected -> remove the output files
+            rm -f "$dst" "$log"
             ;;
 
         1)
             # findings detected -> successful run
+            if [ -n "$(<"$log")" ]; then
+                # something printed to stderr -> record an internal error of shellcheck
+                sed -re 's|^(shellcheck): ([^:]+): (.*)$|\2: internal error: \3 <--[\1]|' "$log" > "$dst"
+            else
+                rm -f "$log"
+            fi
             return 0
             ;;
 
