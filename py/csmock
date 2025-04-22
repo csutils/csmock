@@ -87,6 +87,7 @@ DEFAULT_CSWRAP_FILTERS = [
 
 # remember to use --mode=json for csgrep (TODO: improve csgrep's interface)
 DEFAULT_RESULT_FILTERS = [
+    "sed -r 's|(/builddir/build/BUILD/)[^/]+-build/|\\1|'",
     "csgrep --mode=json --path '^/builddir/build/BUILD/' \
 --strip-path-prefix /builddir/build/BUILD/",
     "csgrep --mode=json --invert-match --path '^ksh-.*[0-9]+\\.c$'",
