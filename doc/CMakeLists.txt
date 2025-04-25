@@ -18,30 +18,28 @@
 set(MAN_PAGES "")
 
 # rules to create symlinks to local python packages
-add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/py/csmock
-    COMMAND mkdir -pv ${PROJECT_BINARY_DIR}/py/csmock VERBATIM)
-add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/py/csmock/common
-    COMMAND ln -fsv ${PROJECT_SOURCE_DIR}/py/__init__.py
-                    ${PROJECT_SOURCE_DIR}/py/common
-                    ${PROJECT_SOURCE_DIR}/py/plugins
-                    ${PROJECT_BINARY_DIR}/py/csmock/
-    DEPENDS ${PROJECT_BINARY_DIR}/py/csmock VERBATIM)
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/csmock/common
+    COMMAND ln -fsv ${PROJECT_SOURCE_DIR}/csmock/__init__.py
+                    ${PROJECT_SOURCE_DIR}/csmock/common
+                    ${PROJECT_SOURCE_DIR}/csmock/plugins
+                    ${PROJECT_BINARY_DIR}/csmock/
+    DEPENDS ${PROJECT_BINARY_DIR}/csmock/csmock VERBATIM)
 
 # macro to generate a man page from the corresponding binary
 macro(create_manpage BINARY)
-    add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${BINARY}.1
-        COMMAND PYTHONPATH=${PROJECT_BINARY_DIR}/py ${HELP2MAN} --no-info
+    add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/csmock/${BINARY}.1
+        COMMAND PYTHONPATH=${PROJECT_BINARY_DIR}/csmock ${HELP2MAN} --no-info
         --section 1 --include ${CMAKE_CURRENT_SOURCE_DIR}/${BINARY}.h2m
-          ${PROJECT_BINARY_DIR}/${BINARY}
-        > ${PROJECT_BINARY_DIR}/${BINARY}.1
+          ${PROJECT_BINARY_DIR}/csmock/${BINARY}
+        > ${PROJECT_BINARY_DIR}/csmock/${BINARY}.1
         || rm -f ${PROJECT_BINARY_DIR}/${BINARY}.1
         COMMENT "Generating ${BINARY} man page"
-        DEPENDS ${PROJECT_BINARY_DIR}/${BINARY}
-                ${PROJECT_BINARY_DIR}/py/csmock/common
+        DEPENDS ${PROJECT_BINARY_DIR}/csmock/${BINARY}
+                ${PROJECT_BINARY_DIR}/csmock/common
         VERBATIM)
-    install(FILES ${PROJECT_BINARY_DIR}/${BINARY}.1
+    install(FILES ${PROJECT_BINARY_DIR}/csmock/${BINARY}.1
         DESTINATION ${SHARE_INSTALL_PREFIX}/man/man1)
-    set(MAN_PAGES ${MAN_PAGES} ${PROJECT_BINARY_DIR}/${BINARY}.1)
+    set(MAN_PAGES ${MAN_PAGES} ${PROJECT_BINARY_DIR}/csmock/${BINARY}.1)
 endmacro(create_manpage)
 
 # generate man pages using help2man if available
