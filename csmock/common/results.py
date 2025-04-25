@@ -380,6 +380,21 @@ def apply_result_filters(props, results, supp_filters=[]):
             results.exec_cmd(["ln", "-s", src, dst])
 
 
+def handle_kfp_git_url(props):
+    """Update props.result_filters based on props.kfp_git_url"""
+    if not props.kfp_git_url:
+        return
+
+    # construct the command to invoke csfilter-kfp
+    # FIXME: csfilter-kfp will update scan metadata in the JSON files but not in `scan.ini`  # pylint: disable=fixme
+    filter_cmd = f"csfilter-kfp --json-output --kfp-git-url={shlex.quote(props.kfp_git_url)} --verbose"
+    if props.nvr is not None:
+        filter_cmd += f" --project-nvr={shlex.quote(props.nvr)}"
+
+    # append the command as a results filter
+    props.result_filters += [filter_cmd]
+
+
 def handle_known_fp_list(props, results):
     """Update props.result_filters based on props.known_false_positives"""
     if not props.known_false_positives:
