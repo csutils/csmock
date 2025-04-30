@@ -1,6 +1,8 @@
-import csmock.common.util
 import re
 import os
+
+import csmock.common.util
+
 
 INFER_RESULTS_FILTER_SCRIPT = "/usr/share/csmock/scripts/filter-infer.py"
 INFER_INSTALL_SCRIPT = "/usr/share/csmock/scripts/install-infer.sh"

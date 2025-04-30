@@ -2,3 +2,9 @@
 
 # increase threshold to eliminate C0301 warnings about lines exceeding 100 chars
 max-line-length=130
+
+
+[MESSAGES CONTROL]
+
+# suppress pointless warnings about duplicated code across csmock plug-ins
+disable=duplicate-code

@@ -40,6 +40,7 @@ from csmock.common.results      import FatalError
 from csmock.common.results      import ScanResults
 from csmock.common.results      import apply_result_filters
 from csmock.common.results      import finalize_results
+from csmock.common.results      import handle_kfp_git_url
 from csmock.common.results      import handle_known_fp_list
 from csmock.common.results      import transform_results
 
@@ -481,6 +482,7 @@ class ScanProps:
         self.imp_checker_set = set()
         self.imp_csgrep_filters = []
         self.cswrap_path = None
+        self.kfp_git_url = None
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -879,6 +881,11 @@ exceeds the specified limit (defaults to 1024).")
         "--known-false-positives", default=default_kfp,
         help=f"suppress known false positives loaded from the given file ({default_kfp_text})")
 
+    # currently --kfp-git-url works independently of --known-false-positives
+    parser.add_argument(
+        "--kfp-git-url",
+        help="known false positives git URL (optionally taking a revision delimited by #)")
+
     csmock.common.util.add_paired_flag(
         parser, "use-login-shell",
         help="use login shell for build (default)")
@@ -948,6 +955,7 @@ exceeds the specified limit (defaults to 1024).")
     props.scrub_on_exit         = args.scrub_on_exit
     props.use_ldpwrap           = args.use_ldpwrap
     props.skip_mock_clean       = args.no_clean
+    props.kfp_git_url           = args.kfp_git_url
 
     if props.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
@@ -1054,6 +1062,7 @@ def do_scan(props, output):
             results.ini_writer.append("mock-config", props.mock_profile)
             results.ini_writer.append("project-name", props.nvr)
             handle_known_fp_list(props, results)
+            handle_kfp_git_url(props)
 
             if not props.any_tool:
                 # no tool enabled

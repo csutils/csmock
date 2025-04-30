@@ -33,10 +33,10 @@ install(FILES ${src_dir}/common/util.py     DESTINATION ${dst_dir}/common)
 macro(install_executable FILE_NAME)
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/${FILE_NAME}
-        ${PROJECT_BINARY_DIR}/${FILE_NAME}
+        ${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}
         @ONLY)
 
-    install(FILES ${PROJECT_BINARY_DIR}/${FILE_NAME}
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}
         DESTINATION bin
         PERMISSIONS ${PERM_EXECUTABLE})
 endmacro()

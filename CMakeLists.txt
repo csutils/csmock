@@ -36,6 +36,6 @@ if(ENABLE_CSMOCK)
         DESTINATION ${SHARE_INSTALL_PREFIX}/csmock)
 endif()
 
+add_subdirectory(csmock)
 add_subdirectory(doc)
 add_subdirectory(scripts)
-add_subdirectory(py)

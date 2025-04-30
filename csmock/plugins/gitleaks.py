@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with csmock.  If not, see <http://www.gnu.org/licenses/>.
 
-import csmock.common.util
-
 import os
 import re
 import shutil
+
+import csmock.common.util
 
 
 # default URL to download gitleaks binary executable (in a .tar.gz) from
