@@ -356,7 +356,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             cmd = ["--install", "module-build-macros"] + cmd_add
             self.exec_mock_cmd(cmd, quiet=quiet)
 
-        if "rhel-7" in self.mock_profile:
+        if re.search(r"rhel-[67]", self.mock_profile):
             # use --installdeps for legacy chroots
             base_cmd = "--installdeps"
         else:
