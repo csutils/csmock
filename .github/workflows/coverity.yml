@@ -22,4 +22,4 @@ jobs:
           email: ${{ secrets.COVERITY_SCAN_EMAIL }}
           token: ${{ secrets.COVERITY_SCAN_TOKEN }}
           project: csutils/csmock
-          command: --no-command --fs-capture-search ./py ./scripts
+          command: --no-command --fs-capture-search ./csmock ./scripts
