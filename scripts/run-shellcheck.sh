@@ -8,7 +8,7 @@ test -n "$SC_BATCH" || export SC_BATCH=1
 test 0 -lt "$SC_BATCH" || exit $?
 
 # how many shellcheck processes we run in parallel
-SC_JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
+test -n "$SC_JOBS" || SC_JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
 export SC_JOBS
 
 # how long we wait (wall-clock time) for a single shellcheck process to finish
