@@ -1171,7 +1171,7 @@ cd %%s*/ || cd *\n\
                 if not props.no_scan:
                     if props.shell_cmd_to_build is None:
                         # install the copied SRPM into the chroot
-                        mock.exec_chroot_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
+                        mock.exec_mockbuild_cmd("rpm -Uvh --nodeps '%s'" % srpm_dup)
                         # make the installed SRPM accessible (if the maintainer did not)
                         mock.exec_chroot_cmd("chmod -R +r /builddir")
 
