@@ -28,11 +28,11 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/csmock/common
 # macro to generate a man page from the corresponding binary
 macro(create_manpage BINARY)
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/csmock/${BINARY}.1
-        COMMAND PYTHONPATH=${PROJECT_BINARY_DIR}/csmock ${HELP2MAN} --no-info
+        COMMAND PYTHONPATH=${PROJECT_BINARY_DIR} ${HELP2MAN} --no-info
         --section 1 --include ${CMAKE_CURRENT_SOURCE_DIR}/${BINARY}.h2m
           ${PROJECT_BINARY_DIR}/csmock/${BINARY}
         > ${PROJECT_BINARY_DIR}/csmock/${BINARY}.1
-        || rm -f ${PROJECT_BINARY_DIR}/${BINARY}.1
+        || rm -f ${PROJECT_BINARY_DIR}/csmock/${BINARY}.1
         COMMENT "Generating ${BINARY} man page"
         DEPENDS ${PROJECT_BINARY_DIR}/csmock/${BINARY}
                 ${PROJECT_BINARY_DIR}/csmock/common

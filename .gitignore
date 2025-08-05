@@ -1,2 +1,3 @@
 /csmock_build/
 /csmock-*.src.rpm
+__pycache__/
