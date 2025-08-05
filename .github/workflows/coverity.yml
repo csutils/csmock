@@ -22,4 +22,8 @@ jobs:
           email: ${{ secrets.COVERITY_SCAN_EMAIL }}
           token: ${{ secrets.COVERITY_SCAN_TOKEN }}
           project: csutils/csmock
-          command: --no-command --fs-capture-search ./csmock ./scripts
+
+          # The GitHub Action this workflow is based on uses `cov-build`, which
+          # does not support buildless capture any more.  This way we make it
+          # use `coverity capture` instead of `cov-build`.
+          command: --ident; set -x; coverity --ticker-mode=no-spin capture --dir=cov-int --file-include-regex="csmock|scripts"
