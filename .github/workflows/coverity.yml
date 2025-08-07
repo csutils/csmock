@@ -3,7 +3,9 @@ name: Coverity
 
 on:
   push:
-    branches: [main]
+    branches:
+      - coverity
+      - main
 
 jobs:
   coverity:
@@ -26,4 +28,4 @@ jobs:
           # The GitHub Action this workflow is based on uses `cov-build`, which
           # does not support buildless capture any more.  This way we make it
           # use `coverity capture` instead of `cov-build`.
-          command: --ident; set -x; coverity --ticker-mode=no-spin capture --dir=cov-int --file-include-regex="csmock|scripts"
+          command: --ident; set -x; coverity --ticker-mode=no-spin capture --dir=cov-int --file-include-regex="csmock|scripts" --language=python
