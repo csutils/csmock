@@ -314,8 +314,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         args = ""
         if self.use_login_shell:
             args = " -l"
-        full_cmd = "/bin/su mockbuild%s -c %s" % (args, shell_quote(cmd))
-        return self.exec_chroot_cmd(full_cmd, quiet=quiet)
+        full_cmd = f"/bin/bash{args} -c {shell_quote(cmd)}"
+        return self.exec_mock_cmd(["--unpriv", "--chroot", full_cmd], quiet=quiet)
 
     def exec_rpmbuild_bi(self, props, extra_rpm_opts=[], extra_env={}):
         if props.spec_in is None:
