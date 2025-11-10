@@ -49,6 +49,9 @@ CSMOCK_DATADIR = "/usr/share/csmock"
 
 CWE_MAP_FILE = CSMOCK_DATADIR + "/cwe-map.csv"
 
+# path to the csgrep-static executable
+CSGREP_STATIC = "/usr/libexec/csgrep-static"
+
 CSMOCK_SCRIPTS = CSMOCK_DATADIR + "/scripts"
 
 CHROOT_FIXUPS = CSMOCK_SCRIPTS + "/chroot-fixups"
@@ -958,8 +961,8 @@ exceeds the specified limit (defaults to 1024).")
     props.kfp_git_url           = args.kfp_git_url
 
     if props.embed_context > 0:
-        # we need 'csgrep --embed-context' to work in the chroot for --embed-context
-        props.install_opt_pkgs += ["csdiff"]
+        # we need csgrep-static in the chroot for --embed-context
+        props.copy_in_files += [CSGREP_STATIC]
 
     if args.warning_rate_limit > 0:
         props.results_limits_opts += [f"--warning-rate-limit={args.warning_rate_limit}"]
@@ -1289,7 +1292,7 @@ cd %%s*/ || cd *\n\
                 if props.embed_context > 0:
                     # embed context lines from source program files
                     tmp_file = f"{all_file}.tmp"
-                    csgrep_cmd = f"csgrep --mode=json --embed-context {props.embed_context}"
+                    csgrep_cmd = f"{CSGREP_STATIC} --mode=json --embed-context {props.embed_context}"
 
                     if props.results_limits_opts:
                         # apply results limits already while embedding context to avoid creating excessively huge output
