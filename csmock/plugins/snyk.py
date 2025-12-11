@@ -115,7 +115,7 @@ class Plugin:
                 # make sure the cache directory exists
                 os.makedirs(cache_dir, mode=0o755, exist_ok=True)
             except OSError:
-                results.error("failed to create snyk cache directory: %s" % cache_dir)
+                results.error(f"failed to create snyk cache directory: {cache_dir}")
                 return 1
 
             url = args.snyk_bin_url
@@ -128,7 +128,7 @@ class Plugin:
                 # fetch the binary executable
                 ec = results.exec_cmd(["curl", "-Lfso", snyk_bin, url])
                 if 0 != ec:
-                    results.error("failed to download snyk binary executable: %s" % url)
+                    results.error(f"failed to download snyk binary executable: {url}")
                     return ec
 
                 # add eXecute permission on the downloaded file
