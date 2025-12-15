@@ -27,11 +27,9 @@ jobs:
       targets:
           - epel-all-aarch64
           - epel-all-ppc64le
-          - epel-all-s390x
           - epel-all-x86_64
           - fedora-all-aarch64
           - fedora-all-ppc64le
-          - fedora-all-s390x
           - fedora-all-x86_64
 
     # EPEL tests
