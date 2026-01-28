@@ -45,6 +45,7 @@ SANITIZER_CAPTURE_DIR = "/builddir/gcc-sanitizer-capture"
 
 # use the following flags only if they are supported by gcc in the chroot
 GCC_ANALYZER_NEW_FLAGS = [
+    "-fanalyzer-assume-nothrow",
     "-fdiagnostics-text-art-charset=none",
 ]
 
