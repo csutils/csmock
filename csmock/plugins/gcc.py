@@ -43,6 +43,12 @@ FILTER_CMD = "csgrep --mode=json --remove-duplicates"
 
 SANITIZER_CAPTURE_DIR = "/builddir/gcc-sanitizer-capture"
 
+# use the following flags only if they are supported by gcc in the chroot
+GCC_ANALYZER_NEW_FLAGS = [
+    "-fdiagnostics-text-art-charset=none",
+]
+
+
 class PluginProps:
     def __init__(self):
         self.description = "Plugin capturing GCC warnings, optionally with customized compiler flags."
@@ -272,10 +278,13 @@ class Plugin:
                                   "disabling the tool" % analyzer_bin, ec=0)
                     return 0
 
-                # use -fdiagnostics-text-art-charset=none if supported by gcc in the chroot
-                flag = "-fdiagnostics-text-art-charset=none"
-                if 0 == mock.exec_mockbuild_cmd(f"{cmd} {flag}"):
-                    props.env["CSGCCA_ADD_OPTS"] = flag
+                # check for useful GCC flags that were introduced in newer GCC versions
+                add_flags = [
+                    flag for flag in GCC_ANALYZER_NEW_FLAGS
+                    if 0 == mock.exec_mockbuild_cmd(f"{cmd} {flag}")
+                ]
+                if add_flags:
+                    props.env["CSGCCA_ADD_OPTS"] = ":".join(add_flags)
 
                 if args.gcc_analyzer_bin:
                     # create an executable shell script to wrap the custom gcc binary
