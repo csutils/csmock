@@ -483,6 +483,7 @@ class ScanProps:
         self.imp_csgrep_filters = []
         self.cswrap_path = None
         self.kfp_git_url = None
+        self.use_host_csgrep = False
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -886,6 +887,12 @@ exceeds the specified limit (defaults to 1024).")
         "--kfp-git-url",
         help="known false positives git URL (optionally taking a revision delimited by #)")
 
+    parser.add_argument(
+        "--use-host-csgrep",
+        action="store_true",
+        help="use staticly linked csgrep installed on host (removes build dependency on csdiff)",
+    )
+
     csmock.common.util.add_paired_flag(
         parser, "use-login-shell",
         help="use login shell for build (default)")
@@ -956,10 +963,14 @@ exceeds the specified limit (defaults to 1024).")
     props.use_ldpwrap           = args.use_ldpwrap
     props.skip_mock_clean       = args.no_clean
     props.kfp_git_url           = args.kfp_git_url
+    props.use_host_csgrep       = args.use_host_csgrep
 
     if props.embed_context > 0:
         # we need 'csgrep --embed-context' to work in the chroot for --embed-context
-        props.install_opt_pkgs += ["csdiff"]
+        if props.use_host_csgrep:
+            props.copy_in_files += ["/usr/libexec/csgrep-static"]
+        else:
+            props.install_opt_pkgs += ["csdiff"]
 
     if args.warning_rate_limit > 0:
         props.results_limits_opts += [f"--warning-rate-limit={args.warning_rate_limit}"]
@@ -1164,6 +1175,12 @@ cd %%s*/ || cd *\n\
                 cmd += strlist_to_shell_cmd(
                     mock.get_mock_cmd(["--shell", "tar -xC/"]))
                 results.exec_cmd(cmd, shell=True)
+
+                if props.use_host_csgrep:
+                    def symlink_static_csgrep_hook(_, mock):
+                        return mock.exec_chroot_cmd("ln -s /usr/libexec/csgrep-static /usr/bin/csgrep")
+
+                    props.post_depinst_hooks.append(symlink_static_csgrep_hook)
 
                 # run post-depinst hooks
                 props.run_hooks(results, "post-depinst", results, mock)
