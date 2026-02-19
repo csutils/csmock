@@ -78,7 +78,6 @@ fi
 cat > "$SPEC" << EOF
 # disable in source builds on EPEL <9
 %undefine __cmake_in_source_build
-%undefine __cmake3_in_source_build
 
 Name:       $PKG
 Version:    $VER
@@ -89,7 +88,7 @@ License:    GPL-3.0-or-later
 URL:        https://github.com/csutils/%{name}
 Source0:    https://github.com/csutils/%{name}/releases/download/%{name}-%{version}/%{name}-%{version}.tar.xz
 
-BuildRequires: cmake3
+BuildRequires: cmake
 BuildRequires: help2man
 
 %if 0%{?rhel} == 7
@@ -282,13 +281,13 @@ This package contains the unicontrol plug-in for csmock.
 %autosetup
 
 %build
-%cmake3                                       \\
+%cmake                                       \\
     -DVERSION='%{name}-%{version}-%{release}' \\
     -DPython3_EXECUTABLE='%{__python3}'
-%cmake3_build
+%cmake_build
 
 %install
-%cmake3_install
+%cmake_install
 
 # needed to create the csmock RPM
 %files
