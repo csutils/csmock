@@ -30,6 +30,7 @@ import shutil
 import subprocess
 import sys
 import time
+from typing import Optional, Tuple
 
 # local imports
 import csmock.common.util
@@ -203,6 +204,7 @@ class MockWrapper:
         self.results = results
         self.mock_profile = props.mock_profile
         self.mock_root_override = props.mock_root_override
+        self.hermetic_build = props.hermetic_build
         self.pid = os.getpid()
         self.scrub_done = props.skip_mock_init
         self.init_done = props.skip_mock_init
@@ -268,7 +270,7 @@ echo \"$self_pid\" > \"$lock_file\"'" \
         else:
             # fallback to any mock in $PATH (e.g. /usr/local/bin/mock)
             mock = "mock"
-        self.def_cmd = [mock, "-r", self.mock_profile]
+        self.def_cmd = [mock]
 
         # make csmock work in case the 'tmpfs' plug-in is enabled
         # (see <https://bugzilla.redhat.com/1190100> for details)
@@ -283,6 +285,21 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             self.def_cmd += [f"--config-opts=root={self.mock_root_override}"]
 
         return self
+
+    def setup_chroot(self, srpm):
+        """Set up the mock chroot, including hermetic build setup if requested."""
+        if self.hermetic_build is not None:
+            (lockfile, repo_dir) = self.hermetic_build
+            ec = self.exec_mock_cmd(["--hermetic-build", lockfile, repo_dir,
+                                     "--short-circuit=prep", "--rpmbuild-opts=--noprep",
+                                     "-N", srpm], quiet=False)
+            if ec != 0:
+                self.results.error("failed to set up hermetic chroot", ec=ec)
+            self.def_cmd += [f"--config-opts=offline_local_repository={repo_dir}"]
+
+        # -r is added here (rather than in __enter__) because mock's
+        # --hermetic-build is incompatible with -r and must run first
+        self.def_cmd += ["-r", self.mock_profile]
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if not self.skip_clean:
@@ -403,7 +420,8 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             self.init_done = True
 
             # run `mock --calculate-build-dependencies`
-            srpm_deps_ok = srpm is None or self.install_deps(srpm)
+            # skip for hermetic builds (deps should be calculated prior)
+            srpm_deps_ok = srpm is None or self.hermetic_build is not None or self.install_deps(srpm)
             if not srpm_deps_ok and not try_only:
                 srpm_base = os.path.basename(srpm)
                 self.results.error(f"failed to install build dependencies of {srpm_base}", ec=ec_by_scrub)
@@ -422,6 +440,13 @@ echo \"$self_pid\" > \"$lock_file\"'" \
             if not missing_deps:
                 # no misssing dependencies
                 return srpm_deps_ok
+
+            if self.hermetic_build and missing_deps:
+                self.results.print_with_ts(
+                    f"WARN: Proceeding with hermetic build despite missing deps: {strlist_to_shell_cmd(missing_deps)}"
+                )
+                return srpm_deps_ok
+
             if try_only:
                 return False
 
@@ -476,7 +501,7 @@ class ScanProps:
         self.shell_cmd_to_build = None
         self.srpm = None
         self.base_srpm = None
-        self.mock_profile = None
+        self.mock_profile: Optional[str] = None
         self.base_mock_profile = None
         self.mock_root_override = None
         self.any_tool = False
@@ -486,6 +511,7 @@ class ScanProps:
         self.imp_csgrep_filters = []
         self.cswrap_path = None
         self.kfp_git_url = None
+        self.hermetic_build: Optional[Tuple] = None
 
     def enable_cswrap(self):
         if self.cswrap_enabled:
@@ -862,6 +888,14 @@ exceeds the specified limit (defaults to 1024).")
         help='override the build root directory for mock (disables yum and root cache)'
     )
 
+    parser.add_argument(
+        "--hermetic-build",
+        nargs=2,
+        metavar=("LOCKFILE", "REPO_DIRECTORY"),
+        help="perform a hermetic (fully offline) build using a pre-generated "
+        "lockfile and offline RPM repository (see mock --hermetic-build)",
+    )
+
     # --skip-patches, --diff-patches, and --shell-cmd are mutually exclusive
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -996,6 +1030,17 @@ exceeds the specified limit (defaults to 1024).")
 
     props.mock_root_override = args.mock_root_override
 
+    if args.hermetic_build is not None:
+        (lockfile, repo_dir) = args.hermetic_build
+        require_file(parser, lockfile)
+        if not os.path.isdir(repo_dir):
+            parser.error(f"not a directory: {repo_dir}")
+        if not os.path.isdir(os.path.join(repo_dir, "repodata")):
+            parser.error(f"repo directory missing repodata/: {repo_dir}")
+        props.hermetic_build = (os.path.realpath(lockfile), os.path.realpath(repo_dir))
+        props.mock_profile = "hermetic-build"
+        props.skip_mock_init = True
+
     # append the list of packages to install specified on command-line
     for pkg in args.install:
         props.install_pkgs += pkg.split()
@@ -1106,6 +1151,8 @@ the package.  Use --tools or --all-tools to enable them!\n", ec=0)
             props.run_hooks(results, "pre-mock", results, props)
 
             with MockWrapper(results, props) as mock:
+                mock.setup_chroot(props.srpm)
+
                 if srpm_dup is not None:
                     # first rebuild the given SRPM (some deps might be required even for the rebuild)
                     mock.init_and_install(srpm_dup, props.install_pkgs, try_only=True)
