@@ -15,6 +15,9 @@ export SC_JOBS
 test -n "$SC_TIMEOUT" || export SC_TIMEOUT=30
 test 0 -lt "$SC_TIMEOUT" || exit $?
 
+# skip files containing Jinja2 template syntax ({{ }}, {% %}, {# #})
+test -n "$SC_SKIP_JINJA" || export SC_SKIP_JINJA=0
+
 # directory for shellcheck results
 test -n "$SC_RESULTS_DIR" || export SC_RESULTS_DIR="./shellcheck-results"
 
@@ -62,7 +65,6 @@ filter_shell_scripts() {
         # match by file name suffix
         if [[ "$i" =~ ^.*\.(ash|bash|bats|dash|ksh|sh)$ ]]; then
             echo "$i"
-            echo -n . >&2
             continue
         fi
 
@@ -70,14 +72,26 @@ filter_shell_scripts() {
         RE_SHEBANG='^\s*((#|!)|(#\s*!)|(!\s*#))\s*(/usr(/local)?)?/bin/(env\s+)?(ash|bash|bats|dash|ksh|sh)\b'
         if test -x "$i" && head -n1 "$i" | grep -qE --text "$RE_SHEBANG"; then
             echo "$i"
-            echo -n . >&2
         fi
+    done
+}
+
+apply_exclusion() {
+    while read -r i; do
+        # skip Jinja2 templates if requested
+        if [ "$SC_SKIP_JINJA" -eq 1 ] && grep -qE '\{\{|\{%|\{#' "$i" 2>/dev/null; then
+            continue
+        fi
+
+        echo "$i"
+        echo -n . >&2
     done
 }
 
 # store a script that filters shell scripts to a variable
 FILTER_SCRIPT="$(declare -f filter_shell_scripts)
-filter_shell_scripts"' "$@"'
+$(declare -f apply_exclusion)
+filter_shell_scripts"' "$@" | apply_exclusion'
 
 # function that creates a separate JSON file if shellcheck detects anything
 wrap_shellcheck() {
