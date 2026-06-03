@@ -74,3 +74,8 @@ jobs:
       owner: "@codescan"
       project: "csutils"
       branch: main
+
+    - <<: *copr
+      trigger: release
+      owner: "@codescan"
+      project: "csutils"
