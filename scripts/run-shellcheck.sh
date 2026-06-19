@@ -15,7 +15,7 @@ export SC_JOBS
 test -n "$SC_TIMEOUT" || export SC_TIMEOUT=30
 test 0 -lt "$SC_TIMEOUT" || exit $?
 
-# skip files containing Jinja2 template syntax ({{ }}, {% %}, {# #})
+# skip files containing Jinja2 template syntax ({{{ }}}, {% %}, {# #})
 test -n "$SC_SKIP_JINJA" || export SC_SKIP_JINJA=0
 
 # directory for shellcheck results
@@ -79,7 +79,7 @@ filter_shell_scripts() {
 apply_exclusion() {
     while read -r i; do
         # skip Jinja2 templates if requested
-        if [ "$SC_SKIP_JINJA" -eq 1 ] && grep -qE '\{\{|\{%|\{#' "$i" 2>/dev/null; then
+        if [ "$SC_SKIP_JINJA" -eq 1 ] && grep -qP '\{\{\{|\{%|(?<!\$)\{#' "$i" 2>/dev/null; then
             continue
         fi
 
