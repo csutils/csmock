@@ -305,7 +305,9 @@ This package contains the unicontrol plug-in for csmock.
 %dir %{_datadir}/csmock
 %dir %{_datadir}/csmock/scripts
 %dir %{python3_sitelib}/csmock
+%dir %{python3_sitelib}/csmock/__pycache__/
 %dir %{python3_sitelib}/csmock/plugins
+%dir %{python3_sitelib}/csmock/plugins/__pycache__/
 %{_bindir}/csmock
 %{_mandir}/man1/csmock.1*
 %{_datadir}/csmock/cwe-map.csv
